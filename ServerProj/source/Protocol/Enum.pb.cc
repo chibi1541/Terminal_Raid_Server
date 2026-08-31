@@ -22,28 +22,30 @@ namespace _pbi = _pb::internal;
 
 namespace Protocol {
 }  // namespace Protocol
-static const ::_pb::EnumDescriptor* file_level_enum_descriptors_Enum_2eproto[4];
+static const ::_pb::EnumDescriptor* file_level_enum_descriptors_Enum_2eproto[5];
 static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_Enum_2eproto = nullptr;
 const uint32_t TableStruct_Enum_2eproto::offsets[1] = {};
 static constexpr ::_pbi::MigrationSchema* schemas = nullptr;
 static constexpr ::_pb::Message* const* file_default_instances = nullptr;
 
 const char descriptor_table_protodef_Enum_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
-  "\n\nEnum.proto\022\010Protocol*\177\n\nObjectType\022\017\n\013"
-  "OBJECT_NONE\020\000\022\020\n\014OBJECT_ACTOR\020\001\022\025\n\021OBJEC"
-  "T_SNAKE_HEAD\020\002\022\025\n\021OBJECT_SNAKE_BODY\020\003\022\017\n"
-  "\013OBJECT_ITEM\020\004\022\017\n\013OBJECT_WALL\020\005*T\n\rDirec"
-  "tionType\022\014\n\010DIR_NONE\020\000\022\014\n\010DIR_LEFT\020\001\022\r\n\t"
-  "DIR_RIGHT\020\002\022\n\n\006DIR_UP\020\003\022\014\n\010DIR_DOWN\020\004*A\n"
-  "\tFieldType\022\020\n\014FIELD_GROUND\020\000\022\016\n\nFIELD_IT"
-  "EM\020\001\022\022\n\016FIELD_OBSTACLE\020\002*p\n\013PlayerColor\022"
-  "\017\n\013COLOR_WHITE\020\000\022\017\n\013COLOR_GREEN\020\001\022\r\n\tCOL"
-  "OR_RED\020\002\022\016\n\nCOLOR_BLUE\020\003\022\016\n\nCOLOR_CYAN\020\004"
-  "\022\020\n\014COLOR_PURPLE\020\005b\006proto3"
+  "\n\nEnum.proto\022\010Protocol*g\n\nObjectType\022\017\n\013"
+  "OBJECT_NONE\020\000\022\020\n\014OBJECT_ACTOR\020\001\022\021\n\rOBJEC"
+  "T_PLAYER\020\002\022\022\n\016OBJECT_MONSTER\020\003\022\017\n\013OBJECT"
+  "_WALL\020\004*b\n\rCharacterType\022\022\n\016CHARACTER_NO"
+  "NE\020\000\022\024\n\020CHARACTER_KNIGHT\020\001\022\023\n\017CHARACTER_"
+  "ACHER\020\002\022\022\n\016CHARACTER_MAGE\020\003*T\n\rDirection"
+  "Type\022\014\n\010DIR_NONE\020\000\022\014\n\010DIR_LEFT\020\001\022\r\n\tDIR_"
+  "RIGHT\020\002\022\n\n\006DIR_UP\020\003\022\014\n\010DIR_DOWN\020\004*A\n\tFie"
+  "ldType\022\020\n\014FIELD_GROUND\020\000\022\016\n\nFIELD_ITEM\020\001"
+  "\022\022\n\016FIELD_OBSTACLE\020\002*p\n\013PlayerColor\022\017\n\013C"
+  "OLOR_WHITE\020\000\022\017\n\013COLOR_GREEN\020\001\022\r\n\tCOLOR_R"
+  "ED\020\002\022\016\n\nCOLOR_BLUE\020\003\022\016\n\nCOLOR_CYAN\020\004\022\020\n\014"
+  "COLOR_PURPLE\020\005b\006proto3"
   ;
 static ::_pbi::once_flag descriptor_table_Enum_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_Enum_2eproto = {
-    false, false, 426, descriptor_table_protodef_Enum_2eproto,
+    false, false, 502, descriptor_table_protodef_Enum_2eproto,
     "Enum.proto",
     &descriptor_table_Enum_2eproto_once, nullptr, 0, 0,
     schemas, file_default_instances, TableStruct_Enum_2eproto::offsets,
@@ -68,7 +70,22 @@ bool ObjectType_IsValid(int value) {
     case 2:
     case 3:
     case 4:
-    case 5:
+      return true;
+    default:
+      return false;
+  }
+}
+
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* CharacterType_descriptor() {
+  ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_Enum_2eproto);
+  return file_level_enum_descriptors_Enum_2eproto[1];
+}
+bool CharacterType_IsValid(int value) {
+  switch (value) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
       return true;
     default:
       return false;
@@ -77,7 +94,7 @@ bool ObjectType_IsValid(int value) {
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* DirectionType_descriptor() {
   ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_Enum_2eproto);
-  return file_level_enum_descriptors_Enum_2eproto[1];
+  return file_level_enum_descriptors_Enum_2eproto[2];
 }
 bool DirectionType_IsValid(int value) {
   switch (value) {
@@ -94,7 +111,7 @@ bool DirectionType_IsValid(int value) {
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* FieldType_descriptor() {
   ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_Enum_2eproto);
-  return file_level_enum_descriptors_Enum_2eproto[2];
+  return file_level_enum_descriptors_Enum_2eproto[3];
 }
 bool FieldType_IsValid(int value) {
   switch (value) {
@@ -109,7 +126,7 @@ bool FieldType_IsValid(int value) {
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* PlayerColor_descriptor() {
   ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_Enum_2eproto);
-  return file_level_enum_descriptors_Enum_2eproto[3];
+  return file_level_enum_descriptors_Enum_2eproto[4];
 }
 bool PlayerColor_IsValid(int value) {
   switch (value) {

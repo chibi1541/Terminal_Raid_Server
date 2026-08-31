@@ -17,6 +17,8 @@ enum : uint16
 	PKT_S_ENTER_ROOM = 1005,
 	PKT_C_EXIT_ROOM = 1006,
 	PKT_S_EXIT_ROOM = 1007,
+	PKT_S_SPAWN = 1008,
+	PKT_S_DESPAWN = 1009,
 };
 
 bool Handle_INVALID(PacketSessionRef& session, BYTE* buffer, int32 len);
@@ -55,6 +57,8 @@ public:
 	static SendBufferRef MakeSendBuffer(Protocol::S_PONG& pkt) {return MakeSendBuffer(pkt, PKT_S_PONG); }
 	static SendBufferRef MakeSendBuffer(Protocol::S_ENTER_ROOM& pkt) {return MakeSendBuffer(pkt, PKT_S_ENTER_ROOM); }
 	static SendBufferRef MakeSendBuffer(Protocol::S_EXIT_ROOM& pkt) {return MakeSendBuffer(pkt, PKT_S_EXIT_ROOM); }
+	static SendBufferRef MakeSendBuffer(Protocol::S_SPAWN& pkt) {return MakeSendBuffer(pkt, PKT_S_SPAWN); }
+	static SendBufferRef MakeSendBuffer(Protocol::S_DESPAWN& pkt) {return MakeSendBuffer(pkt, PKT_S_DESPAWN); }
 
 
 private:

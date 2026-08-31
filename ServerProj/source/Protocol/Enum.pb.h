@@ -50,10 +50,9 @@ namespace Protocol {
 enum ObjectType : int {
   OBJECT_NONE = 0,
   OBJECT_ACTOR = 1,
-  OBJECT_SNAKE_HEAD = 2,
-  OBJECT_SNAKE_BODY = 3,
-  OBJECT_ITEM = 4,
-  OBJECT_WALL = 5,
+  OBJECT_PLAYER = 2,
+  OBJECT_MONSTER = 3,
+  OBJECT_WALL = 4,
   ObjectType_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
   ObjectType_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
 };
@@ -75,6 +74,33 @@ inline bool ObjectType_Parse(
     ::PROTOBUF_NAMESPACE_ID::ConstStringParam name, ObjectType* value) {
   return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<ObjectType>(
     ObjectType_descriptor(), name, value);
+}
+enum CharacterType : int {
+  CHARACTER_NONE = 0,
+  CHARACTER_KNIGHT = 1,
+  CHARACTER_ACHER = 2,
+  CHARACTER_MAGE = 3,
+  CharacterType_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
+  CharacterType_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
+};
+bool CharacterType_IsValid(int value);
+constexpr CharacterType CharacterType_MIN = CHARACTER_NONE;
+constexpr CharacterType CharacterType_MAX = CHARACTER_MAGE;
+constexpr int CharacterType_ARRAYSIZE = CharacterType_MAX + 1;
+
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* CharacterType_descriptor();
+template<typename T>
+inline const std::string& CharacterType_Name(T enum_t_value) {
+  static_assert(::std::is_same<T, CharacterType>::value ||
+    ::std::is_integral<T>::value,
+    "Incorrect type passed to function CharacterType_Name.");
+  return ::PROTOBUF_NAMESPACE_ID::internal::NameOfEnum(
+    CharacterType_descriptor(), enum_t_value);
+}
+inline bool CharacterType_Parse(
+    ::PROTOBUF_NAMESPACE_ID::ConstStringParam name, CharacterType* value) {
+  return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<CharacterType>(
+    CharacterType_descriptor(), name, value);
 }
 enum DirectionType : int {
   DIR_NONE = 0,
@@ -185,6 +211,11 @@ template <> struct is_proto_enum< ::Protocol::ObjectType> : ::std::true_type {};
 template <>
 inline const EnumDescriptor* GetEnumDescriptor< ::Protocol::ObjectType>() {
   return ::Protocol::ObjectType_descriptor();
+}
+template <> struct is_proto_enum< ::Protocol::CharacterType> : ::std::true_type {};
+template <>
+inline const EnumDescriptor* GetEnumDescriptor< ::Protocol::CharacterType>() {
+  return ::Protocol::CharacterType_descriptor();
 }
 template <> struct is_proto_enum< ::Protocol::DirectionType> : ::std::true_type {};
 template <>

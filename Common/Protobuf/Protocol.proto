@@ -34,10 +34,10 @@ message C_ENTER_ROOM
 message S_ENTER_ROOM
 {
 	bool success = 1;
-	uint32 needplayer = 2;
-	uint32 width = 3;
-	uint32 height = 4;
-	repeated PlayerInfo players = 5;
+	uint32 width = 2;
+	uint32 height = 3;
+	ObjectInfo myObject = 4;
+	repeated ObjectInfo objects = 5;	// 나를 제외한 룸 안의 기존 개체 전부
 }
 
 message C_EXIT_ROOM
@@ -50,3 +50,16 @@ message S_EXIT_ROOM
 	
 }
 
+// 신규 패킷은 반드시 파일 맨 뒤에 추가할 것.
+// GenPackets.exe 가 메시지 선언 순서대로 1000부터 ID를 매기기 때문에
+// 중간에 끼워 넣으면 기존 패킷 ID가 전부 밀린다.
+
+message S_SPAWN
+{
+	repeated ObjectInfo objects = 1;
+}
+
+message S_DESPAWN
+{
+	repeated uint64 objectIds = 1;
+}

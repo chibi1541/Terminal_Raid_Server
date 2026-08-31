@@ -1,8 +1,6 @@
 #pragma once
 
-class GameSession;
-
-using GameSessionRef = std::shared_ptr<GameSession>;
+#include "GameSession.h"
 
 class GameSessionManager
 {

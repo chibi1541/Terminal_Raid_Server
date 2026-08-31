@@ -1,0 +1,32 @@
+﻿#include "pch.h"
+#include "Game/GameObject.h"
+
+void GameObject::SetHp(int32 hp)
+{
+	if (hp < 0)
+		hp = 0;
+	else if (hp > _maxHp)
+		hp = _maxHp;
+
+	_hp = hp;
+}
+
+void GameObject::SetMaxHp(int32 maxHp)
+{
+	_maxHp = (maxHp > 0) ? maxHp : 1;
+
+	// 최대치가 줄면 현재 체력도 같이 눌러준다.
+	if (_hp > _maxHp)
+		_hp = _maxHp;
+}
+
+void GameObject::FillObjectInfo(Protocol::ObjectInfo* info)
+{
+	// 개체 타입은 objectId 상위 16비트에 들어 있으므로 따로 싣지 않는다.
+	info->set_objectid(_objectId);
+
+	Protocol::CreatureState* state = info->mutable_state();
+	state->mutable_pos()->CopyFrom(_pos);
+	state->set_hp(_hp);
+	state->set_maxhp(_maxHp);
+}
