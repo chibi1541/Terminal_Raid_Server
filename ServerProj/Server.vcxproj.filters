@@ -33,6 +33,15 @@
     <ClCompile Include="source\Protocol\Struct.pb.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\GameSession.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\GameSessionManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Room.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Common\Protobuf\Enum.proto" />
@@ -53,6 +62,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\Protocol\Protocol.pb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\GameSessionManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\GameSession.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Room.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
