@@ -1,0 +1,52 @@
+﻿syntax = "proto3";
+
+package Protocol;
+
+import "Enum.proto";
+import "Struct.proto";
+
+message C_LOGIN
+{
+	string name = 1;
+}
+
+message S_LOGIN
+{
+	bool success = 1;
+	User user = 2;
+}
+
+message C_PING
+{
+	
+}
+
+message S_PONG
+{
+
+}
+
+message C_ENTER_ROOM
+{
+
+}
+
+message S_ENTER_ROOM
+{
+	bool success = 1;
+	uint32 needplayer = 2;
+	uint32 width = 3;
+	uint32 height = 4;
+	repeated PlayerInfo players = 5;
+}
+
+message C_EXIT_ROOM
+{
+	
+}
+
+message S_EXIT_ROOM
+{
+	
+}
+

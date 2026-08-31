@@ -1,0 +1,41 @@
+﻿// .proto 버전
+syntax = "proto3";
+
+// package name
+package Protocol;
+
+enum ObjectType
+{
+	OBJECT_NONE = 0;
+	OBJECT_ACTOR = 1;
+	OBJECT_SNAKE_HEAD = 2;
+	OBJECT_SNAKE_BODY = 3;
+	OBJECT_ITEM = 4;
+	OBJECT_WALL = 5;
+}
+
+enum DirectionType
+{
+	DIR_NONE = 0;
+	DIR_LEFT = 1;
+	DIR_RIGHT = 2;
+	DIR_UP = 3;
+	DIR_DOWN = 4;
+}
+
+enum FieldType
+{
+	FIELD_GROUND = 0;
+	FIELD_ITEM = 1;
+	FIELD_OBSTACLE = 2; 
+}
+
+enum PlayerColor
+{
+	COLOR_WHITE = 0;
+	COLOR_GREEN = 1;
+	COLOR_RED = 2;
+	COLOR_BLUE = 3;
+	COLOR_CYAN = 4;
+	COLOR_PURPLE = 5;
+}

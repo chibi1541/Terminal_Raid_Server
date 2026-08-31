@@ -1,0 +1,57 @@
+﻿// .proto 버전
+syntax = "proto3";
+
+// package name
+package Protocol;
+
+import "Enum.proto";
+
+message User
+{
+	uint64 id = 1;
+	string name = 2;
+	PlayerColor color = 3;
+}
+
+message Vector2
+{
+	int32 x = 1;
+	int32 y = 2;
+}
+
+message PlayerInfo
+{
+	uint64 id = 1;
+	string name = 2;
+	uint32 score = 3;
+	PlayerColor color = 4;
+	HeadData head = 5;
+	bool isgameover = 6;
+}
+
+message ActorInfo
+{
+	uint64 objectId = 1;
+	Vector2 pos = 2;
+}
+
+message FieldData
+{
+	Vector2 pos = 1;
+	uint32 fieldflag = 2;
+}
+
+message TrailData
+{
+	Vector2 pos = 1;
+	DirectionType prevdir = 2;
+	DirectionType curdir = 3;
+}
+
+message HeadData
+{
+	ActorInfo actor = 1;
+	float moveSpeed = 2;
+	DirectionType dir = 3;
+	repeated TrailData trails = 4;
+}
