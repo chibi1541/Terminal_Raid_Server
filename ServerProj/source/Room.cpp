@@ -4,6 +4,7 @@
 #include "Game/Player.h"
 #include "Game/ObjectIdGenerator.h"
 #include "GameSession.h"
+#include <chrono>
 
 // 생성은 main()에서 한다. Room.h의 주석 참고.
 shared_ptr<Room> GRoom;
@@ -18,9 +19,11 @@ Room::~Room()
 
 void Room::BeginPlay()
 {
+	LoadLevel();
+
 	DoTimer(TICK_INTERVAL_MS, &Room::Tick);
 
-	LOG_INFO(L"[room] begin play (%u x %u)", _width, _height);
+	LOG_INFO(L"[room] begin play (%u x %u)", GetWidth(), GetHeight());
 }
 
 void Room::Tick()
@@ -120,8 +123,8 @@ void Room::SendEnterRoom(shared_ptr<Player> player)
 
 	Protocol::S_ENTER_ROOM enterPkt;
 	enterPkt.set_success(true);
-	enterPkt.set_width(_width);
-	enterPkt.set_height(_height);
+	enterPkt.set_width(GetWidth());
+	enterPkt.set_height(GetHeight());
 	player->FillObjectInfo(enterPkt.mutable_myobject());
 
 	for (auto& item : _objects)
@@ -139,11 +142,39 @@ Protocol::Vector2 Room::FindSpawnPos()
 {
 	// RandomRange32의 난수 엔진은 락 없는 전역 static이다.
 	// 룸 잡 큐 안에서만 부르기 때문에 직렬화가 보장된다. 다른 스레드에서 부르지 말 것.
-	Protocol::Vector2 pos;
-	pos.set_x(RandomRange32(1, static_cast<int32>(_width) - 2));
-	pos.set_y(RandomRange32(1, static_cast<int32>(_height) - 2));
+	const int32 width = _level.GetWidth();
+	const int32 height = _level.GetHeight();
 
-	// TODO : 다른 개체와 겹치는지 확인. 지금은 겹쳐도 그냥 둔다.
+	Protocol::Vector2 pos;
+
+	for (int32 i = 0; i < SPAWN_MAX_TRY; i++)
+	{
+		const int32 x = RandomRange32(0, width - 1);
+		const int32 y = RandomRange32(0, height - 1);
+
+		if (_level.IsCellBlocked(x, y))
+			continue;
+
+		pos.set_x(x);
+		pos.set_y(y);
+		return pos;
+	}
+
+	// 무작위로 못 찾았으면 순차로 훑는다. 좁은 맵에서 무한 재시도로 빠지지 않게.
+	for (int32 y = 0; y < height; y++)
+	{
+		for (int32 x = 0; x < width; x++)
+		{
+			if (_level.IsCellBlocked(x, y))
+				continue;
+
+			pos.set_x(x);
+			pos.set_y(y);
+			return pos;
+		}
+	}
+
+	LOG_ERROR(L"[room] no walkable cell to spawn");
 	return pos;
 }
 
@@ -161,7 +192,7 @@ std::wstring Room::DescribeObjects()
 	WCHAR buffer[512];
 
 	::swprintf_s(buffer, L"room %u x %u, objects %d",
-		_width, _height, static_cast<int32>(_objects.size()));
+		GetWidth(), GetHeight(), static_cast<int32>(_objects.size()));
 
 	std::wstring result = buffer;
 
@@ -179,6 +210,156 @@ std::wstring Room::DescribeObjects()
 			(player != nullptr && player->IsDummy()) ? " [dummy]" : "");
 
 		result += buffer;
+	}
+
+	return result;
+}
+
+/*----------------
+	레벨 / 길찾기
+-----------------*/
+
+bool Room::LoadLevel()
+{
+	// Server.exe는 Binaries/Debug 에서 실행되므로 프로젝트 루트까지 두 단계 올라간다.
+	static const WCHAR* LEVEL_PATH = L"../Config/Level01.xml";
+
+	if (_level.LoadFromFile(LEVEL_PATH))
+		return true;
+
+	// 맵 파일 하나 때문에 서버가 안 뜨는 것보다는 빈 맵으로라도 뜨는 편이 낫다.
+	_level.BuildEmpty(120, 30, 3);
+	return false;
+}
+
+uint64 Room::FindFirstPlayerId()
+{
+	for (auto& item : _objects)
+	{
+		if (item.second->GetObjType() == Protocol::OBJECT_PLAYER)
+			return item.first;
+	}
+
+	return 0;
+}
+
+bool Room::FindPathToObject(TilePos start, uint64 targetObjectId,
+							OUT Vector<TilePos>& outPath, OUT TilePos& outStart, OUT TilePos& outGoal)
+{
+	outPath.clear();
+
+	GameObjectRef target = Find(targetObjectId);
+	if (target == nullptr)
+		return false;
+
+	const NavGrid& grid = _level.GetNavGrid();
+	const TilePos rawGoal = grid.CellToTile(target->GetPosX(), target->GetPosY());
+
+	// 타일 통행 판정이 보수적이라(3x3 전부 비어야 통행 가능) 플레이어가 벽 옆에 서 있기만 해도
+	// 그 타일이 막힌 것으로 나온다. 그대로 실패시키면 알고리즘 버그로 오해하기 쉬우므로
+	// 출발지와 목적지 양쪽 다 가장 가까운 통행 가능 타일로 스냅한다.
+	if (grid.FindNearestWalkable(start, SNAP_MAX_RADIUS, OUT outStart) == false)
+		return false;
+
+	if (grid.FindNearestWalkable(rawGoal, SNAP_MAX_RADIUS, OUT outGoal) == false)
+		return false;
+
+	return _pathFinder.FindPath(grid, outStart, outGoal, OUT outPath);
+}
+
+/*---------------
+	Debug 출력
+----------------*/
+
+std::wstring Room::DescribeLevel()
+{
+	const NavGrid& grid = _level.GetNavGrid();
+
+	WCHAR buffer[256];
+	::swprintf_s(buffer, L"level : %d x %d cells, tileSize %d -> %d x %d tiles",
+		_level.GetWidth(), _level.GetHeight(), _level.GetTileSize(),
+		grid.GetWidth(), grid.GetHeight());
+
+	std::wstring result = buffer;
+	result += L"\n  # = blocked, . = walkable";
+
+	for (int32 ty = 0; ty < grid.GetHeight(); ty++)
+	{
+		result += L"\n  ";
+
+		for (int32 tx = 0; tx < grid.GetWidth(); tx++)
+			result += grid.IsWalkable(tx, ty) ? L'.' : L'#';
+	}
+
+	return result;
+}
+
+std::wstring Room::DescribePath(const Vector<TilePos>& path, TilePos start, TilePos goal)
+{
+	const NavGrid& grid = _level.GetNavGrid();
+
+	const int32 width = grid.GetWidth();
+	const int32 height = grid.GetHeight();
+
+	// 타일 격자를 그대로 문자 버퍼로 만들고 경로를 덧그린다.
+	Vector<WCHAR> canvas;
+	canvas.resize(static_cast<size_t>(width) * height, L'.');
+
+	for (int32 ty = 0; ty < height; ty++)
+	{
+		for (int32 tx = 0; tx < width; tx++)
+		{
+			if (grid.IsWalkable(tx, ty) == false)
+				canvas[static_cast<size_t>(ty) * width + tx] = L'#';
+		}
+	}
+
+	for (const TilePos& tile : path)
+	{
+		if (tile.x < 0 || tile.y < 0 || tile.x >= width || tile.y >= height)
+			continue;
+
+		canvas[static_cast<size_t>(tile.y) * width + tile.x] = L'*';
+	}
+
+	// 경로 위에 점프 포인트를 덧그린다.
+	// J가 *를 덮게 두는 이유 : 경로 위의 점프 포인트가 가장 보고 싶은 것인데
+	// *가 이기면 그게 전부 가려진다. 사이를 잇는 *는 그대로 남아 경로 모양도 읽힌다.
+	// 경로 위에 점프 포인트를 덧그린다.
+	// J가 *를 덮게 두는 이유 : 경로 위의 점프 포인트가 가장 보고 싶은 것인데
+	// *가 이기면 그게 전부 가려진다. 사이를 잇는 *는 그대로 남아 경로 모양도 읽힌다.
+	for (const TilePos& tile : _pathFinder.GetLastOpenedJumpPoints())
+	{
+		if (tile.x < 0 || tile.y < 0 || tile.x >= width || tile.y >= height)
+			continue;
+
+		canvas[static_cast<size_t>(tile.y) * width + tile.x] = L'J';
+	}
+
+	// 경로가 실제로 지나는 점프 포인트는 J 위에 S로 덮어쓴다.
+	// 이러면 어느 점프 포인트가 실제 루트로 채택됐는지 한눈에 갈린다.
+	// 목록의 첫 원소가 출발 타일이라 시작 표시도 여기서 같이 칠해진다.
+	for (const TilePos& tile : _pathFinder.GetLastPathJumpPoints())
+	{
+		if (tile.x < 0 || tile.y < 0 || tile.x >= width || tile.y >= height)
+			continue;
+
+		canvas[static_cast<size_t>(tile.y) * width + tile.x] = L'S';
+	}
+
+	// 시작과 목표는 그 위에 덮어쓴다.
+	if (start.x >= 0 && start.y >= 0 && start.x < width && start.y < height)
+		canvas[static_cast<size_t>(start.y) * width + start.x] = L'S';
+
+	if (goal.x >= 0 && goal.y >= 0 && goal.x < width && goal.y < height)
+		canvas[static_cast<size_t>(goal.y) * width + goal.x] = L'G';
+
+	std::wstring result = L"S = jump point on the path (first S is the start), G = goal, * = path, J = opened but unused jump point, # = blocked";
+
+	for (int32 ty = 0; ty < height; ty++)
+	{
+		result += L"\n  ";
+		result.append(&canvas[static_cast<size_t>(ty) * width], width);
 	}
 
 	return result;

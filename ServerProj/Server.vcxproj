@@ -112,6 +112,9 @@
   <ItemGroup>
     <ClCompile Include="source\Debug\GameCommands.cpp" />
     <ClCompile Include="source\Game\GameObject.cpp" />
+    <ClCompile Include="source\Game\JpsPathFinder.cpp" />
+    <ClCompile Include="source\Game\Level.cpp" />
+    <ClCompile Include="source\Game\NavGrid.cpp" />
     <ClCompile Include="source\Game\ObjectIdGenerator.cpp" />
     <ClCompile Include="source\Game\Player.cpp" />
     <ClCompile Include="source\GameSession.cpp" />
@@ -144,6 +147,9 @@
   <ItemGroup>
     <ClInclude Include="source\Debug\GameCommands.h" />
     <ClInclude Include="source\Game\GameObject.h" />
+    <ClInclude Include="source\Game\JpsPathFinder.h" />
+    <ClInclude Include="source\Game\Level.h" />
+    <ClInclude Include="source\Game\NavGrid.h" />
     <ClInclude Include="source\Game\ObjectIdGenerator.h" />
     <ClInclude Include="source\Game\Player.h" />
     <ClInclude Include="source\GameSession.h" />

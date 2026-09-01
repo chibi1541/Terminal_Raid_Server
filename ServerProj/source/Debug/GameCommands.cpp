@@ -3,6 +3,7 @@
 #include "CommandRegistry.h"
 #include "Room.h"
 #include "Game/Player.h"
+#include "Game/NavGrid.h"
 
 namespace
 {
@@ -43,7 +44,7 @@ void GameCommands::Register()
 	if (GCommandRegistry == nullptr)
 		return;
 
-	GCommandRegistry->Register(L"room", L"room", L"룸 상태와 개체 목록",
+	GCommandRegistry->Register(L"room", L"room", L"room state and object list",
 		[](CommandContext& context)
 		{
 			if (GRoom == nullptr)
@@ -56,7 +57,7 @@ void GameCommands::Register()
 		}, CommandRunMode::GameThread);
 
 	GCommandRegistry->Register(L"spawn", L"spawn <name> [x] [y]",
-		L"세션 없는 더미 플레이어를 룸에 넣는다 (접속 중인 클라에 S_SPAWN이 간다)",
+		L"add a session-less dummy player to the room (connected clients get S_SPAWN)",
 		[](CommandContext& context)
 		{
 			if (GRoom == nullptr)
@@ -110,7 +111,7 @@ void GameCommands::Register()
 		}, CommandRunMode::GameThread);
 
 	GCommandRegistry->Register(L"despawn", L"despawn <objectId>",
-		L"룸에서 개체를 빼낸다 (접속 중인 클라에 S_DESPAWN이 간다)",
+		L"remove an object from the room (connected clients get S_DESPAWN)",
 		[](CommandContext& context)
 		{
 			if (GRoom == nullptr)
@@ -138,7 +139,7 @@ void GameCommands::Register()
 		}, CommandRunMode::GameThread);
 
 	GCommandRegistry->Register(L"tp", L"tp <objectId> <x> <y>",
-		L"개체 좌표를 강제로 옮긴다 (이동 동기화가 들어오면 브로드캐스트까지 붙일 자리)",
+		L"force an object position (broadcast comes later with movement sync)",
 		[](CommandContext& context)
 		{
 			if (GRoom == nullptr)
@@ -170,7 +171,128 @@ void GameCommands::Register()
 			object->SetPos(x, y);
 
 			// TODO : 이동 패킷이 생기면 여기서 브로드캐스트.
-			context.Reply(L"objectId=%llu moved to (%d, %d) (클라에는 아직 안 알림)",
+			context.Reply(L"objectId=%llu moved to (%d, %d) (clients not notified yet)",
 				objectId, x, y);
+		}, CommandRunMode::GameThread);
+
+	GCommandRegistry->Register(L"level", L"level", L"level info and tile map",
+		[](CommandContext& context)
+		{
+			if (GRoom == nullptr)
+			{
+				context.Reply(L"room not created");
+				return;
+			}
+
+			context.Reply(L"%s", GRoom->DescribeLevel().c_str());
+		}, CommandRunMode::GameThread);
+
+	GCommandRegistry->Register(L"levelreload", L"levelreload", L"reload the level XML",
+		[](CommandContext& context)
+		{
+			if (GRoom == nullptr)
+			{
+				context.Reply(L"room not created");
+				return;
+			}
+
+			if (GRoom->LoadLevel())
+				context.Reply(L"level reloaded.\n%s", GRoom->DescribeLevel().c_str());
+			else
+				context.Reply(L"level load failed, fell back to empty map. check the log");
+		}, CommandRunMode::GameThread);
+
+	GCommandRegistry->Register(L"path", L"path <startTileX> <startTileY> [objectId]",
+		L"find a path from a tile to a player using JPS (first player if objectId omitted)",
+		[](CommandContext& context)
+		{
+			if (GRoom == nullptr)
+			{
+				context.Reply(L"room not created");
+				return;
+			}
+
+			int32 startX = 0;
+			int32 startY = 0;
+
+			if (context.ArgCount() < 3 ||
+				ParseInt32(context.Arg(1), OUT startX) == false ||
+				ParseInt32(context.Arg(2), OUT startY) == false)
+			{
+				context.Reply(L"usage : path <startTileX> <startTileY> [objectId]");
+				return;
+			}
+
+			uint64 targetId = 0;
+
+			if (context.ArgCount() >= 4)
+			{
+				if (ParseUint64(context.Arg(3), OUT targetId) == false)
+				{
+					context.Reply(L"invalid objectId : %s", context.Arg(3).c_str());
+					return;
+				}
+			}
+			else
+			{
+				targetId = GRoom->FindFirstPlayerId();
+
+				if (targetId == 0)
+				{
+					context.Reply(L"no player in the room. use spawn to place a dummy, or connect a client");
+					return;
+				}
+			}
+
+			const TilePos rawStart{ startX, startY };
+
+			Vector<TilePos> path;
+			TilePos usedStart;
+			TilePos usedGoal;
+
+			LARGE_INTEGER freq = {};
+			LARGE_INTEGER begin = {};
+			LARGE_INTEGER end = {};
+			::QueryPerformanceFrequency(OUT &freq);
+			::QueryPerformanceCounter(OUT &begin);
+
+			const bool found = GRoom->FindPathToObject(rawStart, targetId, OUT path, OUT usedStart, OUT usedGoal);
+
+			::QueryPerformanceCounter(OUT &end);
+
+			const double elapsedUs = (freq.QuadPart > 0)
+				? (static_cast<double>(end.QuadPart - begin.QuadPart) * 1000000.0 / freq.QuadPart)
+				: 0.0;
+
+			if (found == false)
+			{
+				context.Reply(L"path not found : start (%d, %d) -> objectId %llu   expanded %d nodes, %.1f us",
+					rawStart.x, rawStart.y, targetId,
+					GRoom->GetLastExpandedCount(), elapsedUs);
+				return;
+			}
+
+			WCHAR buffer[256];
+			::swprintf_s(buffer, L"path %d tiles, jump points %d taken / %d opened, expanded %d nodes, %.1f us",
+				static_cast<int32>(path.size()), GRoom->GetLastPathJumpPointCount(),
+				GRoom->GetLastOpenedCount(), GRoom->GetLastExpandedCount(), elapsedUs);
+
+			std::wstring header = buffer;
+
+			// 스냅이 일어났으면 반드시 알려준다.
+			// 안 그러면 요청한 좌표와 결과가 달라 보여 알고리즘을 의심하게 된다.
+			if (usedStart != rawStart)
+			{
+				::swprintf_s(buffer, L"\nstart (%d, %d) -> (%d, %d) snapped (requested tile is blocked)",
+					rawStart.x, rawStart.y, usedStart.x, usedStart.y);
+				header += buffer;
+			}
+
+			::swprintf_s(buffer, L"\ngoal  objectId %llu -> tile (%d, %d)",
+				targetId, usedGoal.x, usedGoal.y);
+			header += buffer;
+
+			context.Reply(L"%s\n%s", header.c_str(),
+				GRoom->DescribePath(path, usedStart, usedGoal).c_str());
 		}, CommandRunMode::GameThread);
 }

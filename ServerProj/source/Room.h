@@ -1,6 +1,8 @@
 ﻿#pragma once
 #include "JobQueue.h"
 #include "Game/GameObject.h"
+#include "Game/Level.h"
+#include "Game/JpsPathFinder.h"
 
 class Player;
 
@@ -19,7 +21,9 @@ class Room : public JobQueue
 {
 	enum
 	{
-		TICK_INTERVAL_MS = 50,
+		TICK_INTERVAL_MS	= 50,
+		SPAWN_MAX_TRY		= 64,	// 통행 가능한 셀을 무작위로 찾을 때의 시도 횟수
+		SNAP_MAX_RADIUS		= 8,	// 막힌 타일을 통행 가능한 타일로 스냅할 때의 최대 반경
 	};
 
 public:
@@ -43,11 +47,40 @@ public:
 	Protocol::Vector2	FindSpawnPos();
 	GameObjectRef		Find(uint64 objectId);
 
-	uint32	GetWidth() const { return _width; }
-	uint32	GetHeight() const { return _height; }
+	uint32	GetWidth() const	{ return static_cast<uint32>(_level.GetWidth()); }
+	uint32	GetHeight() const	{ return static_cast<uint32>(_level.GetHeight()); }
+
+	const Level& GetLevel() const { return _level; }
+
+	/*----------
+		길찾기
+
+		전부 룸 잡 큐 안에서만 부를 것.
+		_pathFinder는 탐색 버퍼를 재사용하므로 스레드 안전하지 않다.
+	-----------*/
+
+	bool	LoadLevel();
+
+	// 출발지와 목적지가 막힌 타일이면 가장 가까운 통행 가능 타일로 스냅한다.
+	// outStart / outGoal에 실제로 사용된 타일이 담긴다.
+	bool	FindPathToObject(TilePos start, uint64 targetObjectId,
+							 OUT Vector<TilePos>& outPath, OUT TilePos& outStart, OUT TilePos& outGoal);
+
+	uint64	FindFirstPlayerId();
 
 	/* Debug : 콘솔 / Admin 명령이 사용한다 */
 	std::wstring	DescribeObjects();
+	std::wstring	DescribeLevel();
+	std::wstring	DescribePath(const Vector<TilePos>& path, TilePos start, TilePos goal);
+	int32			GetLastExpandedCount() const { return _pathFinder.GetLastExpandedCount(); }
+	int32			GetLastOpenedCount() const
+	{
+		return static_cast<int32>(_pathFinder.GetLastOpenedJumpPoints().size());
+	}
+	int32			GetLastPathJumpPointCount() const
+	{
+		return static_cast<int32>(_pathFinder.GetLastPathJumpPoints().size());
+	}
 
 private:
 	// 갓 입장한 플레이어에게 룸 전체 스냅샷을 보낸다.
@@ -56,8 +89,8 @@ private:
 private:
 	HashMap<uint64, GameObjectRef> _objects;
 
-	uint32 _width = 120;
-	uint32 _height = 30;
+	Level			_level;
+	JpsPathFinder	_pathFinder;
 };
 
 // Room은 StlAllocator 기반 컨테이너를 들고 있어서 GMemory보다 먼저 만들어지면 안 된다.
