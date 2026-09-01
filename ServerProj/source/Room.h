@@ -3,6 +3,7 @@
 #include "Game/GameObject.h"
 #include "Game/Level.h"
 #include "Game/JpsPathFinder.h"
+#include "Game/QuadTree.h"
 
 class Player;
 
@@ -68,10 +69,33 @@ public:
 
 	uint64	FindFirstPlayerId();
 
+	// 디버그 명령이 만든 더미 플레이어만 전부 걷어낸다. 접속 중인 클라는 건드리지 않는다.
+	int32	RemoveAllDummies();
+
+	/*----------
+		충돌 판정
+
+		전부 룸 잡 큐 안에서만 부를 것. 트리는 스레드 안전하지 않다.
+
+		트리는 Tick 맨 앞에서 다시 만들어지므로, 질의 결과는 그 틱 안에서만 유효하다.
+		틱 밖에서(예: 디버그 명령) 질의하려면 RebuildCollisionTree 를 먼저 부를 것.
+	-----------*/
+
+	void	RebuildCollisionTree();
+	void	QueryRange(const Bounds& range, OUT Vector<GameObject*>& out);
+	void	QueryCircle(int32 centerX, int32 centerY, int32 radius, OUT Vector<GameObject*>& out);
+
+	// 쿼드트리 결과를 대조하기 위한 전수 조사. 디버그 명령 전용이다.
+	void	QueryCircleBruteForce(int32 centerX, int32 centerY, int32 radius,
+								  OUT Vector<GameObject*>& out);
+
 	/* Debug : 콘솔 / Admin 명령이 사용한다 */
 	std::wstring	DescribeObjects();
 	std::wstring	DescribeLevel();
 	std::wstring	DescribePath(const Vector<TilePos>& path, TilePos start, TilePos goal);
+	std::wstring	DescribeTree() const		{ return _collisionTree.Describe(); }
+	int32			GetTreeNodeCount() const	{ return _collisionTree.GetNodeCount(); }
+	int32			GetLastVisitedNodes() const	{ return _collisionTree.GetLastVisitedNodes(); }
 	int32			GetLastExpandedCount() const { return _pathFinder.GetLastExpandedCount(); }
 	int32			GetLastOpenedCount() const
 	{
@@ -91,6 +115,7 @@ private:
 
 	Level			_level;
 	JpsPathFinder	_pathFinder;
+	QuadTree		_collisionTree;
 };
 
 // Room은 StlAllocator 기반 컨테이너를 들고 있어서 GMemory보다 먼저 만들어지면 안 된다.

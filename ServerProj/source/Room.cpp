@@ -28,8 +28,12 @@ void Room::BeginPlay()
 
 void Room::Tick()
 {
+	// 이번 틱에 쓸 공간 인덱스를 먼저 세운다.
+	// 이 아래에서 도는 이동 / 전투 로직은 전부 이 트리를 보게 된다.
+	RebuildCollisionTree();
+
 	// TODO : 이동 / 전투 갱신.
-	// 지금은 틱 루프만 살려둔다. (jobs 명령의 reserved timers가 0이면 루프가 끊긴 것)
+	// (jobs 명령의 reserved timers가 0이면 틱 루프가 끊긴 것)
 	DoTimer(TICK_INTERVAL_MS, &Room::Tick);
 }
 
@@ -363,4 +367,95 @@ std::wstring Room::DescribePath(const Vector<TilePos>& path, TilePos start, Tile
 	}
 
 	return result;
+}
+
+/*-------------
+	충돌 판정
+--------------*/
+
+void Room::RebuildCollisionTree()
+{
+	Bounds rootBounds = Bounds::Make(0, 0, _level.GetWidth() - 1, _level.GetHeight() - 1);
+
+	// 루트 경계를 개체들의 합집합까지 넓힌다.
+	//
+	// 반지름이 큰 개체가 맵 가장자리에 있으면 경계가 월드 밖으로 삐져나간다.
+	// 그런 개체는 어느 자식에도 안 들어가서 루트에 담기는데, 루트가 자기 개체를
+	// 품지 못하면 바깥을 향한 질의가 루트에서 통째로 컬링되어 그 개체를 놓친다.
+	// (querytest 가 잡아낸 버그다)
+	for (auto& item : _objects)
+	{
+		GameObject* object = item.second.get();
+
+		if (object == nullptr || object->IsAlive() == false)
+			continue;
+
+		rootBounds.Encapsulate(object->GetBounds());
+	}
+
+	_collisionTree.Reset(rootBounds);
+
+	for (auto& item : _objects)
+	{
+		GameObject* object = item.second.get();
+
+		// 죽은 개체는 판정 대상에서 뺀다.
+		if (object == nullptr || object->IsAlive() == false)
+			continue;
+
+		_collisionTree.Insert(object);
+	}
+}
+
+void Room::QueryRange(const Bounds& range, OUT Vector<GameObject*>& out)
+{
+	_collisionTree.QueryRange(range, OUT out);
+}
+
+void Room::QueryCircle(int32 centerX, int32 centerY, int32 radius, OUT Vector<GameObject*>& out)
+{
+	_collisionTree.QueryCircle(centerX, centerY, radius, OUT out);
+}
+
+void Room::QueryCircleBruteForce(int32 centerX, int32 centerY, int32 radius,
+								 OUT Vector<GameObject*>& out)
+{
+	out.clear();
+
+	for (auto& item : _objects)
+	{
+		GameObject* object = item.second.get();
+
+		if (object == nullptr || object->IsAlive() == false)
+			continue;
+
+		if (object->OverlapsCircle(centerX, centerY, radius))
+			out.push_back(object);
+	}
+}
+
+int32 Room::RemoveAllDummies()
+{
+	// Leave 가 _objects 를 건드리므로 먼저 대상을 추려두고 지운다.
+	Vector<GameObjectRef> targets;
+
+	for (auto& item : _objects)
+	{
+		GameObjectRef& object = item.second;
+
+		if (object->GetObjType() != Protocol::OBJECT_PLAYER)
+			continue;
+
+		Player* player = static_cast<Player*>(object.get());
+
+		if (player->IsDummy() == false)
+			continue;
+
+		targets.push_back(object);
+	}
+
+	for (GameObjectRef& object : targets)
+		Leave(object);
+
+	return static_cast<int32>(targets.size());
 }

@@ -30,3 +30,17 @@ void GameObject::FillObjectInfo(Protocol::ObjectInfo* info)
 	state->set_hp(_hp);
 	state->set_maxhp(_maxHp);
 }
+
+Bounds GameObject::GetBounds() const
+{
+	return Bounds::FromCircle(_pos.x(), _pos.y(), _radius);
+}
+
+bool GameObject::OverlapsCircle(int32 centerX, int32 centerY, int32 radius) const
+{
+	const int32 dx = _pos.x() - centerX;
+	const int32 dy = _pos.y() - centerY;
+	const int32 sum = _radius + radius;
+
+	return (dx * dx + dy * dy) <= (sum * sum);
+}

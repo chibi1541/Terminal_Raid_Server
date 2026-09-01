@@ -117,6 +117,7 @@
     <ClCompile Include="source\Game\NavGrid.cpp" />
     <ClCompile Include="source\Game\ObjectIdGenerator.cpp" />
     <ClCompile Include="source\Game\Player.cpp" />
+    <ClCompile Include="source\Game\QuadTree.cpp" />
     <ClCompile Include="source\GameSession.cpp" />
     <ClCompile Include="source\GameSessionManager.cpp" />
     <ClCompile Include="source\pch.cpp">
@@ -146,12 +147,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\Debug\GameCommands.h" />
+    <ClInclude Include="source\Game\Bounds.h" />
     <ClInclude Include="source\Game\GameObject.h" />
     <ClInclude Include="source\Game\JpsPathFinder.h" />
     <ClInclude Include="source\Game\Level.h" />
     <ClInclude Include="source\Game\NavGrid.h" />
     <ClInclude Include="source\Game\ObjectIdGenerator.h" />
     <ClInclude Include="source\Game\Player.h" />
+    <ClInclude Include="source\Game\QuadTree.h" />
     <ClInclude Include="source\GameSession.h" />
     <ClInclude Include="source\GameSessionManager.h" />
     <ClInclude Include="source\pch.h" />

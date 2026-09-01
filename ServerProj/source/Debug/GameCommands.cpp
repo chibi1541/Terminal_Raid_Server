@@ -4,6 +4,8 @@
 #include "Room.h"
 #include "Game/Player.h"
 #include "Game/NavGrid.h"
+#include "Game/QuadTree.h"
+#include <algorithm>
 
 namespace
 {
@@ -37,6 +39,26 @@ namespace
 		outValue = static_cast<uint64>(value);
 		return true;
 	}
+
+	// 두 결과의 개체 집합이 같은지 본다. 순서는 다를 수 있으므로 id 로 정렬해 비교한다.
+	bool SameObjectSet(Vector<GameObject*>& lhs, Vector<GameObject*>& rhs)
+	{
+		if (lhs.size() != rhs.size())
+			return false;
+
+		auto byId = [](GameObject* a, GameObject* b) { return a->GetObjId() < b->GetObjId(); };
+
+		std::sort(lhs.begin(), lhs.end(), byId);
+		std::sort(rhs.begin(), rhs.end(), byId);
+
+		for (size_t i = 0; i < lhs.size(); i++)
+		{
+			if (lhs[i]->GetObjId() != rhs[i]->GetObjId())
+				return false;
+		}
+
+		return true;
+	}
 }
 
 void GameCommands::Register()
@@ -56,7 +78,7 @@ void GameCommands::Register()
 			context.Reply(L"%s", GRoom->DescribeObjects().c_str());
 		}, CommandRunMode::GameThread);
 
-	GCommandRegistry->Register(L"spawn", L"spawn <name> [x] [y]",
+	GCommandRegistry->Register(L"spawn", L"spawn <name> [x] [y] [radius]",
 		L"add a session-less dummy player to the room (connected clients get S_SPAWN)",
 		[](CommandContext& context)
 		{
@@ -68,7 +90,7 @@ void GameCommands::Register()
 
 			if (context.ArgCount() < 2)
 			{
-				context.Reply(L"usage : spawn <name> [x] [y]");
+				context.Reply(L"usage : spawn <name> [x] [y] [radius]");
 				return;
 			}
 
@@ -103,11 +125,25 @@ void GameCommands::Register()
 				useRandomSpawnPos = false;
 			}
 
+			// 반지름을 주면 분할선에 걸치는 개체를 만들 수 있다. 쿼드트리 검증에 필요하다.
+			if (context.ArgCount() >= 5)
+			{
+				int32 radius = 0;
+
+				if (ParseInt32(context.Arg(4), OUT radius) == false)
+				{
+					context.Reply(L"invalid radius : %s", context.Arg(4).c_str());
+					return;
+				}
+
+				player->SetRadius(radius);
+			}
+
 			// 이미 룸 잡 큐 안이므로 DoAsync 없이 바로 부른다.
 			GRoom->Enter(static_pointer_cast<GameObject>(player), useRandomSpawnPos);
 
-			context.Reply(L"spawned objectId=%llu at (%d, %d)",
-				player->GetObjId(), player->GetPosX(), player->GetPosY());
+			context.Reply(L"spawned objectId=%llu at (%d, %d) r=%d",
+				player->GetObjId(), player->GetPosX(), player->GetPosY(), player->GetRadius());
 		}, CommandRunMode::GameThread);
 
 	GCommandRegistry->Register(L"despawn", L"despawn <objectId>",
@@ -294,5 +330,253 @@ void GameCommands::Register()
 
 			context.Reply(L"%s\n%s", header.c_str(),
 				GRoom->DescribePath(path, usedStart, usedGoal).c_str());
+		}, CommandRunMode::GameThread);
+
+	GCommandRegistry->Register(L"tree", L"tree", L"collision quadtree structure",
+		[](CommandContext& context)
+		{
+			if (GRoom == nullptr)
+			{
+				context.Reply(L"room not created");
+				return;
+			}
+
+			// 명령은 틱 밖에서 실행되므로 최신 상태를 보려면 먼저 다시 세워야 한다.
+			GRoom->RebuildCollisionTree();
+
+			context.Reply(L"%s", GRoom->DescribeTree().c_str());
+		}, CommandRunMode::GameThread);
+
+	GCommandRegistry->Register(L"query", L"query <x> <y> <radius>",
+		L"circle query against the quadtree, cross-checked with brute force",
+		[](CommandContext& context)
+		{
+			if (GRoom == nullptr)
+			{
+				context.Reply(L"room not created");
+				return;
+			}
+
+			int32 x = 0;
+			int32 y = 0;
+			int32 radius = 0;
+
+			if (context.ArgCount() < 4 ||
+				ParseInt32(context.Arg(1), OUT x) == false ||
+				ParseInt32(context.Arg(2), OUT y) == false ||
+				ParseInt32(context.Arg(3), OUT radius) == false)
+			{
+				context.Reply(L"usage : query <x> <y> <radius>");
+				return;
+			}
+
+			GRoom->RebuildCollisionTree();
+
+			Vector<GameObject*> treeResult;
+			Vector<GameObject*> bruteResult;
+
+			LARGE_INTEGER freq = {};
+			LARGE_INTEGER begin = {};
+			LARGE_INTEGER end = {};
+			::QueryPerformanceFrequency(OUT &freq);
+			::QueryPerformanceCounter(OUT &begin);
+
+			GRoom->QueryCircle(x, y, radius, OUT treeResult);
+
+			::QueryPerformanceCounter(OUT &end);
+
+			GRoom->QueryCircleBruteForce(x, y, radius, OUT bruteResult);
+
+			const double elapsedUs = (freq.QuadPart > 0)
+				? (static_cast<double>(end.QuadPart - begin.QuadPart) * 1000000.0 / freq.QuadPart)
+				: 0.0;
+
+			const bool match = SameObjectSet(treeResult, bruteResult);
+
+			WCHAR buffer[256];
+			::swprintf_s(buffer,
+				L"query (%d, %d) r=%d : %d hits, visited %d / %d nodes, %.1f us   [%s]",
+				x, y, radius, static_cast<int32>(treeResult.size()),
+				GRoom->GetLastVisitedNodes(), GRoom->GetTreeNodeCount(), elapsedUs,
+				match ? L"MATCH" : L"MISMATCH vs brute force");
+
+			std::wstring result = buffer;
+
+			if (match == false)
+			{
+				::swprintf_s(buffer, L"\n  brute force found %d", static_cast<int32>(bruteResult.size()));
+				result += buffer;
+			}
+
+			for (GameObject* object : treeResult)
+			{
+				::swprintf_s(buffer, L"\n  id=%llu pos=(%d, %d) r=%d",
+					object->GetObjId(), object->GetPosX(), object->GetPosY(), object->GetRadius());
+				result += buffer;
+			}
+
+			context.Reply(L"%s", result.c_str());
+		}, CommandRunMode::GameThread);
+
+	GCommandRegistry->Register(L"querytest", L"querytest [count]",
+		L"run random circle queries and compare every result against brute force",
+		[](CommandContext& context)
+		{
+			if (GRoom == nullptr)
+			{
+				context.Reply(L"room not created");
+				return;
+			}
+
+			int32 count = 1000;
+
+			if (context.ArgCount() >= 2 && ParseInt32(context.Arg(1), OUT count) == false)
+			{
+				context.Reply(L"usage : querytest [count]");
+				return;
+			}
+
+			if (count <= 0 || count > 100000)
+			{
+				context.Reply(L"count must be in 1..100000");
+				return;
+			}
+
+			GRoom->RebuildCollisionTree();
+
+			const int32 width = static_cast<int32>(GRoom->GetWidth());
+			const int32 height = static_cast<int32>(GRoom->GetHeight());
+
+			Vector<GameObject*> treeResult;
+			Vector<GameObject*> bruteResult;
+
+			int32 mismatch = 0;
+			int32 totalHits = 0;
+			std::wstring firstFailure;
+
+			for (int32 i = 0; i < count; i++)
+			{
+				// 맵 밖으로 조금 삐져나가는 질의도 섞이도록 범위를 넉넉히 잡는다.
+				const int32 x = RandomRange32(-4, width + 3);
+				const int32 y = RandomRange32(-4, height + 3);
+				const int32 radius = RandomRange32(0, 12);
+
+				GRoom->QueryCircle(x, y, radius, OUT treeResult);
+				GRoom->QueryCircleBruteForce(x, y, radius, OUT bruteResult);
+
+				totalHits += static_cast<int32>(treeResult.size());
+
+				if (SameObjectSet(treeResult, bruteResult))
+					continue;
+
+				mismatch++;
+
+				if (firstFailure.empty())
+				{
+					WCHAR buffer[256];
+					::swprintf_s(buffer,
+						L"\n  first failure : query %d %d %d   tree=%d brute=%d",
+						x, y, radius, static_cast<int32>(treeResult.size()),
+						static_cast<int32>(bruteResult.size()));
+					firstFailure = buffer;
+				}
+			}
+
+			WCHAR buffer[256];
+			::swprintf_s(buffer, L"querytest : %d queries, %d hits total, %d mismatches",
+				count, totalHits, mismatch);
+
+			std::wstring result = buffer;
+			result += firstFailure;
+
+			context.Reply(L"%s", result.c_str());
+		}, CommandRunMode::GameThread);
+
+	GCommandRegistry->Register(L"spawnmany", L"spawnmany <count> [radius] [x] [y]",
+		L"spawn many dummies at once (random walkable spots, or scattered around x y)",
+		[](CommandContext& context)
+		{
+			if (GRoom == nullptr)
+			{
+				context.Reply(L"room not created");
+				return;
+			}
+
+			int32 count = 0;
+
+			if (context.ArgCount() < 2 || ParseInt32(context.Arg(1), OUT count) == false)
+			{
+				context.Reply(L"usage : spawnmany <count> [radius] [x] [y]");
+				return;
+			}
+
+			if (count <= 0 || count > 2000)
+			{
+				context.Reply(L"count must be in 1..2000");
+				return;
+			}
+
+			int32 radius = 0;
+
+			if (context.ArgCount() >= 3 && ParseInt32(context.Arg(2), OUT radius) == false)
+			{
+				context.Reply(L"invalid radius : %s", context.Arg(2).c_str());
+				return;
+			}
+
+			// x y 를 주면 그 근처에 몰아서 만든다. 안 주면 맵 전체에 흩뿌린다.
+			bool clustered = false;
+			int32 centerX = 0;
+			int32 centerY = 0;
+
+			if (context.ArgCount() >= 5)
+			{
+				if (ParseInt32(context.Arg(3), OUT centerX) == false ||
+					ParseInt32(context.Arg(4), OUT centerY) == false)
+				{
+					context.Reply(L"invalid coordinates : %s %s",
+						context.Arg(3).c_str(), context.Arg(4).c_str());
+					return;
+				}
+
+				clustered = true;
+			}
+
+			for (int32 i = 0; i < count; i++)
+			{
+				PlayerRef player = MakeShared<Player>();
+				player->SetName("bulk");
+				player->SetRadius(radius);
+
+				if (clustered)
+				{
+					// 분할선에 걸치는 개체가 섞이도록 좁게 흩어놓는다.
+					player->SetPos(centerX + RandomRange32(-4, 4), centerY + RandomRange32(-4, 4));
+				}
+
+				GRoom->Enter(static_pointer_cast<GameObject>(player), clustered == false);
+			}
+
+			GRoom->RebuildCollisionTree();
+
+			context.Reply(L"spawned %d dummies (radius %d)%s\n%s",
+				count, radius, clustered ? L" clustered" : L" scattered",
+				GRoom->DescribeTree().c_str());
+		}, CommandRunMode::GameThread);
+
+	GCommandRegistry->Register(L"despawnall", L"despawnall",
+		L"remove every dummy spawned by debug commands (connected clients are kept)",
+		[](CommandContext& context)
+		{
+			if (GRoom == nullptr)
+			{
+				context.Reply(L"room not created");
+				return;
+			}
+
+			const int32 removed = GRoom->RemoveAllDummies();
+			GRoom->RebuildCollisionTree();
+
+			context.Reply(L"removed %d dummies", removed);
 		}, CommandRunMode::GameThread);
 }
