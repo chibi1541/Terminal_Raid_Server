@@ -110,6 +110,15 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="source\AI\BehaviorTree.cpp" />
+    <ClCompile Include="source\AI\BehaviorTreeManager.cpp" />
+    <ClCompile Include="source\AI\Blackboard.cpp" />
+    <ClCompile Include="source\AI\BtCanvasLoader.cpp" />
+    <ClCompile Include="source\AI\BtInstance.cpp" />
+    <ClCompile Include="source\AI\BtLeaf.cpp" />
+    <ClCompile Include="source\AI\BtLeafLibrary.cpp" />
+    <ClCompile Include="source\AI\BtNodeRegistry.cpp" />
+    <ClCompile Include="source\AI\BtTypes.cpp" />
     <ClCompile Include="source\Debug\GameCommands.cpp" />
     <ClCompile Include="source\Game\GameObject.cpp" />
     <ClCompile Include="source\Game\JpsPathFinder.cpp" />
@@ -146,6 +155,14 @@
     <None Include="..\Common\Protobuf\Struct.proto" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="source\AI\BehaviorTree.h" />
+    <ClInclude Include="source\AI\BehaviorTreeManager.h" />
+    <ClInclude Include="source\AI\Blackboard.h" />
+    <ClInclude Include="source\AI\BtCanvasLoader.h" />
+    <ClInclude Include="source\AI\BtInstance.h" />
+    <ClInclude Include="source\AI\BtLeaf.h" />
+    <ClInclude Include="source\AI\BtNodeRegistry.h" />
+    <ClInclude Include="source\AI\BtTypes.h" />
     <ClInclude Include="source\Debug\GameCommands.h" />
     <ClInclude Include="source\Game\Bounds.h" />
     <ClInclude Include="source\Game\GameObject.h" />

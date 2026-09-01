@@ -1,0 +1,143 @@
+{
+	"nodes": [
+		{
+			"id": "n_bb",
+			"type": "text",
+			"x": -900,
+			"y": -400,
+			"width": 300,
+			"height": 180,
+			"text": "# Blackboard\n\n- alerted: 0\n- waitTimer: 0.0"
+		},
+		{
+			"id": "n_root",
+			"type": "text",
+			"x": -100,
+			"y": -400,
+			"width": 300,
+			"height": 110,
+			"text": "# Selector [root] top level"
+		},
+		{
+			"id": "n_seqA",
+			"type": "text",
+			"x": -400,
+			"y": -180,
+			"width": 300,
+			"height": 110,
+			"text": "# Sequence chase branch"
+		},
+		{
+			"id": "n_chk",
+			"type": "text",
+			"x": -560,
+			"y": 40,
+			"width": 300,
+			"height": 140,
+			"text": "# CheckBlackboard\nkey: alerted\nop: ==\nvalue: 1"
+		},
+		{
+			"id": "n_log1",
+			"type": "text",
+			"x": -220,
+			"y": 40,
+			"width": 300,
+			"height": 120,
+			"text": "# Log\nmessage: chasing"
+		},
+		{
+			"id": "n_seqB",
+			"type": "text",
+			"x": 200,
+			"y": -180,
+			"width": 300,
+			"height": 110,
+			"text": "# Sequence idle branch"
+		},
+		{
+			"id": "n_log2",
+			"type": "text",
+			"x": 60,
+			"y": 40,
+			"width": 260,
+			"height": 120,
+			"text": "# Log\nmessage: idle"
+		},
+		{
+			"id": "n_wait",
+			"type": "text",
+			"x": 360,
+			"y": 40,
+			"width": 260,
+			"height": 140,
+			"text": "# Wait\nduration: 0.15\ntimer: waitTimer"
+		},
+		{
+			"id": "n_set",
+			"type": "text",
+			"x": 660,
+			"y": 40,
+			"width": 300,
+			"height": 140,
+			"text": "# SetBlackboard\nkey: alerted\nvalue: 1"
+		}
+	],
+	"edges": [
+		{
+			"id": "e1",
+			"fromNode": "n_root",
+			"fromSide": "bottom",
+			"toNode": "n_seqA",
+			"toSide": "top",
+			"label": ""
+		},
+		{
+			"id": "e2",
+			"fromNode": "n_root",
+			"fromSide": "bottom",
+			"toNode": "n_seqB",
+			"toSide": "top",
+			"label": ""
+		},
+		{
+			"id": "e3",
+			"fromNode": "n_seqA",
+			"fromSide": "bottom",
+			"toNode": "n_chk",
+			"toSide": "top",
+			"label": ""
+		},
+		{
+			"id": "e4",
+			"fromNode": "n_seqA",
+			"fromSide": "bottom",
+			"toNode": "n_log1",
+			"toSide": "top",
+			"label": ""
+		},
+		{
+			"id": "e5",
+			"fromNode": "n_seqB",
+			"fromSide": "bottom",
+			"toNode": "n_log2",
+			"toSide": "top",
+			"label": ""
+		},
+		{
+			"id": "e6",
+			"fromNode": "n_seqB",
+			"fromSide": "bottom",
+			"toNode": "n_wait",
+			"toSide": "top",
+			"label": ""
+		},
+		{
+			"id": "e7",
+			"fromNode": "n_seqB",
+			"fromSide": "bottom",
+			"toNode": "n_set",
+			"toSide": "top",
+			"label": ""
+		}
+	]
+}

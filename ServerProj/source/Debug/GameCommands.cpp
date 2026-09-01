@@ -5,6 +5,9 @@
 #include "Game/Player.h"
 #include "Game/NavGrid.h"
 #include "Game/QuadTree.h"
+#include "AI/BehaviorTreeManager.h"
+#include "AI/BtNodeRegistry.h"
+#include "AI/BtInstance.h"
 #include <algorithm>
 
 namespace
@@ -38,6 +41,18 @@ namespace
 
 		outValue = static_cast<uint64>(value);
 		return true;
+	}
+
+	// 명령 인자는 wstring 이다. 트리 이름 같은 ASCII 값만 좁은 문자열로 옮긴다.
+	string ToNarrow(const std::wstring& text)
+	{
+		string result;
+		result.reserve(text.size());
+
+		for (wchar_t ch : text)
+			result += (ch < 128) ? static_cast<char>(ch) : '?';
+
+		return result;
 	}
 
 	// 두 결과의 개체 집합이 같은지 본다. 순서는 다를 수 있으므로 id 로 정렬해 비교한다.
@@ -578,5 +593,222 @@ void GameCommands::Register()
 			GRoom->RebuildCollisionTree();
 
 			context.Reply(L"removed %d dummies", removed);
+		}, CommandRunMode::GameThread);
+
+	GCommandRegistry->Register(L"bt", L"bt <leaves|load|reload|dump|attach|detach|step|state> ...",
+		L"behavior tree debugging",
+		[](CommandContext& context)
+		{
+			if (GRoom == nullptr)
+			{
+				context.Reply(L"room not created");
+				return;
+			}
+
+			const std::wstring& sub = context.Arg(1);
+
+			if (sub.empty() || ::_wcsicmp(sub.c_str(), L"help") == 0)
+			{
+				context.Reply(L"bt auto <on|off>              automatic ticking from Room::Tick\n"
+					L"bt leaves                     registered leaf types\n"
+					L"bt load <name>                load Config/AI/<name>.canvas\n"
+					L"bt reload <name>              reload and rebind attached instances\n"
+					L"bt dump [name]                tree structure with resolved child order\n"
+					L"bt attach <objectId> <name>   attach an instance to an object\n"
+					L"bt detach <objectId>          remove the instance\n"
+					L"bt step <objectId> [count]    tick manually, print status and visit path\n"
+					L"bt state <objectId>           blackboard and composite resume state");
+				return;
+			}
+
+			if (::_wcsicmp(sub.c_str(), L"auto") == 0)
+			{
+				if (context.ArgCount() >= 3)
+				{
+					const bool enable = (::_wcsicmp(context.Arg(2).c_str(), L"on") == 0);
+					GRoom->SetBehaviorAutoTick(enable);
+				}
+
+				context.Reply(L"auto tick is %s", GRoom->IsBehaviorAutoTick() ? L"on" : L"off");
+				return;
+			}
+
+			if (::_wcsicmp(sub.c_str(), L"leaves") == 0)
+			{
+				context.Reply(L"%s", BtNodeRegistry::DescribeAll().c_str());
+				return;
+			}
+
+			if (::_wcsicmp(sub.c_str(), L"load") == 0)
+			{
+				if (context.ArgCount() < 3)
+				{
+					context.Reply(L"usage : bt load <name>");
+					return;
+				}
+
+				const string name = ToNarrow(context.Arg(2));
+				const BehaviorTree* tree = GRoom->GetBtManager().Load(name);
+
+				if (tree == nullptr)
+				{
+					context.Reply(L"load failed. check the log for the reason");
+					return;
+				}
+
+				context.Reply(L"%s", tree->Describe().c_str());
+				return;
+			}
+
+			if (::_wcsicmp(sub.c_str(), L"reload") == 0)
+			{
+				if (context.ArgCount() < 3)
+				{
+					context.Reply(L"usage : bt reload <name>");
+					return;
+				}
+
+				const string name = ToNarrow(context.Arg(2));
+
+				if (GRoom->ReloadBehaviorTree(name) == false)
+				{
+					context.Reply(L"reload failed, previous tree kept. check the log");
+					return;
+				}
+
+				const BehaviorTree* tree = GRoom->GetBtManager().Find(name);
+				context.Reply(L"reloaded, attached instances rebound.\n%s", tree->Describe().c_str());
+				return;
+			}
+
+			if (::_wcsicmp(sub.c_str(), L"dump") == 0)
+			{
+				if (context.ArgCount() < 3)
+				{
+					context.Reply(L"%s", GRoom->GetBtManager().DescribeAll().c_str());
+					return;
+				}
+
+				const BehaviorTree* tree = GRoom->GetBtManager().Find(ToNarrow(context.Arg(2)));
+
+				if (tree == nullptr)
+				{
+					context.Reply(L"not loaded. use 'bt load' first");
+					return;
+				}
+
+				context.Reply(L"%s", tree->Describe().c_str());
+				return;
+			}
+
+			if (::_wcsicmp(sub.c_str(), L"attach") == 0)
+			{
+				uint64 objectId = 0;
+
+				if (context.ArgCount() < 4 || ParseUint64(context.Arg(2), OUT objectId) == false)
+				{
+					context.Reply(L"usage : bt attach <objectId> <name>");
+					return;
+				}
+
+				if (GRoom->AttachBehavior(objectId, ToNarrow(context.Arg(3))) == false)
+				{
+					context.Reply(L"attach failed : no such object, or the tree did not load");
+					return;
+				}
+
+				context.Reply(L"attached %hs to objectId=%llu",
+					ToNarrow(context.Arg(3)).c_str(), objectId);
+				return;
+			}
+
+			if (::_wcsicmp(sub.c_str(), L"detach") == 0)
+			{
+				uint64 objectId = 0;
+
+				if (context.ArgCount() < 3 || ParseUint64(context.Arg(2), OUT objectId) == false)
+				{
+					context.Reply(L"usage : bt detach <objectId>");
+					return;
+				}
+
+				context.Reply(GRoom->DetachBehavior(objectId)
+					? L"detached" : L"no instance on that object");
+				return;
+			}
+
+			if (::_wcsicmp(sub.c_str(), L"step") == 0)
+			{
+				uint64 objectId = 0;
+
+				if (context.ArgCount() < 3 || ParseUint64(context.Arg(2), OUT objectId) == false)
+				{
+					context.Reply(L"usage : bt step <objectId> [count]");
+					return;
+				}
+
+				int32 count = 1;
+
+				if (context.ArgCount() >= 4 && ParseInt32(context.Arg(3), OUT count) == false)
+				{
+					context.Reply(L"invalid count : %s", context.Arg(3).c_str());
+					return;
+				}
+
+				if (count <= 0 || count > 1000)
+				{
+					context.Reply(L"count must be in 1..1000");
+					return;
+				}
+
+				BtInstance* instance = GRoom->FindBehavior(objectId);
+
+				if (instance == nullptr)
+				{
+					context.Reply(L"no instance on objectId=%llu", objectId);
+					return;
+				}
+
+				std::wstring result;
+				WCHAR buffer[512];
+
+				for (int32 i = 0; i < count; i++)
+				{
+					const BtStatus status = GRoom->TickBehavior(objectId, GRoom->GetTickDeltaTime());
+
+					::swprintf_s(buffer, L"%stick %lld : %s   visit %s",
+						(i == 0) ? L"" : L"\n", instance->GetTickCount(),
+						ToString(status), instance->DescribeLastVisit().c_str());
+
+					result += buffer;
+				}
+
+				context.Reply(L"%s", result.c_str());
+				return;
+			}
+
+			if (::_wcsicmp(sub.c_str(), L"state") == 0)
+			{
+				uint64 objectId = 0;
+
+				if (context.ArgCount() < 3 || ParseUint64(context.Arg(2), OUT objectId) == false)
+				{
+					context.Reply(L"usage : bt state <objectId>");
+					return;
+				}
+
+				BtInstance* instance = GRoom->FindBehavior(objectId);
+
+				if (instance == nullptr)
+				{
+					context.Reply(L"no instance on objectId=%llu", objectId);
+					return;
+				}
+
+				context.Reply(L"objectId=%llu\n%s", objectId, instance->DescribeState().c_str());
+				return;
+			}
+
+			context.Reply(L"unknown subcommand : %s   (try 'bt help')", sub.c_str());
 		}, CommandRunMode::GameThread);
 }

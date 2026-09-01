@@ -4,6 +4,8 @@
 #include "Game/Level.h"
 #include "Game/JpsPathFinder.h"
 #include "Game/QuadTree.h"
+#include "AI/BehaviorTreeManager.h"
+#include "AI/BtInstance.h"
 
 class Player;
 
@@ -85,6 +87,33 @@ public:
 	void	QueryRange(const Bounds& range, OUT Vector<GameObject*>& out);
 	void	QueryCircle(int32 centerX, int32 centerY, int32 radius, OUT Vector<GameObject*>& out);
 
+	/*----------
+		AI
+
+		전부 룸 잡 큐 안에서만 부를 것.
+	-----------*/
+
+	BehaviorTreeManager&	GetBtManager() { return _btManager; }
+
+	// 트리를 다시 읽고, 붙어 있던 인스턴스를 새 트리로 다시 묶는다.
+	// 재로드는 트리 주소도 슬롯 구성도 바꾸므로 다시 묶지 않으면 대롱거린다.
+	bool		ReloadBehaviorTree(const string& name);
+
+	bool		AttachBehavior(uint64 objectId, const string& treeName);
+	bool		DetachBehavior(uint64 objectId);
+	BtInstance*	FindBehavior(uint64 objectId);
+
+	// 자동 틱을 끄면 Tick 이 AI 를 건드리지 않는다.
+	// bt step 으로 한 틱씩 재현하며 볼 때 켜져 있으면 상태가 계속 굴러가 관찰이 안 된다.
+	void		SetBehaviorAutoTick(bool enabled)	{ _behaviorAutoTick = enabled; }
+	bool		IsBehaviorAutoTick() const			{ return _behaviorAutoTick; }
+
+	// 붙어 있는 인스턴스를 한 틱 돌린다. Tick 이 부르고, 디버그 명령도 부른다.
+	void		TickBehaviors(float deltaTime);
+	BtStatus	TickBehavior(uint64 objectId, float deltaTime);
+
+	float		GetTickDeltaTime() const { return static_cast<float>(TICK_INTERVAL_MS) / 1000.0f; }
+
 	// 쿼드트리 결과를 대조하기 위한 전수 조사. 디버그 명령 전용이다.
 	void	QueryCircleBruteForce(int32 centerX, int32 centerY, int32 radius,
 								  OUT Vector<GameObject*>& out);
@@ -114,6 +143,13 @@ private:
 	HashMap<uint64, GameObjectRef> _objects;
 
 	Level			_level;
+	BehaviorTreeManager	_btManager;
+
+	// Debug 발판 : Monster 가 생기면 Monster 가 BtInstance 를 직접 소유하게 된다.
+	// 지금은 몬스터가 없어 더미 플레이어에 붙여 검증한다.
+	HashMap<uint64, BtInstance> _behaviors;
+	bool						_behaviorAutoTick = true;
+
 	JpsPathFinder	_pathFinder;
 	QuadTree		_collisionTree;
 };

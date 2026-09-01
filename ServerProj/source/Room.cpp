@@ -32,6 +32,9 @@ void Room::Tick()
 	// 이 아래에서 도는 이동 / 전투 로직은 전부 이 트리를 보게 된다.
 	RebuildCollisionTree();
 
+	// 붙어 있는 AI 를 돌린다. 공간 인덱스를 세운 뒤라 리프가 질의를 쓸 수 있다.
+	TickBehaviors(GetTickDeltaTime());
+
 	// TODO : 이동 / 전투 갱신.
 	// (jobs 명령의 reserved timers가 0이면 틱 루프가 끊긴 것)
 	DoTimer(TICK_INTERVAL_MS, &Room::Tick);
@@ -458,4 +461,108 @@ int32 Room::RemoveAllDummies()
 		Leave(object);
 
 	return static_cast<int32>(targets.size());
+}
+
+/*------
+	AI
+-------*/
+
+bool Room::ReloadBehaviorTree(const string& name)
+{
+	const BehaviorTree* before = _btManager.Find(name);
+	const BehaviorTree* after = _btManager.Reload(name);
+
+	if (after == nullptr)
+		return false;
+
+	// 재로드는 트리 객체를 새로 만들고 블랙보드 슬롯 구성도 바꿀 수 있다.
+	// 붙어 있던 인스턴스를 그대로 두면 없어진 주소를 가리키게 되므로 여기서 다시 묶는다.
+	for (auto& item : _behaviors)
+	{
+		const BehaviorTree* bound = item.second.GetTree();
+
+		if (bound == before || bound == after)
+			item.second.Bind(after);
+	}
+
+	return true;
+}
+
+bool Room::AttachBehavior(uint64 objectId, const string& treeName)
+{
+	if (Find(objectId) == nullptr)
+		return false;
+
+	const BehaviorTree* tree = _btManager.Load(treeName);
+
+	if (tree == nullptr)
+		return false;
+
+	_behaviors[objectId].Bind(tree);
+	return true;
+}
+
+bool Room::DetachBehavior(uint64 objectId)
+{
+	return _behaviors.erase(objectId) > 0;
+}
+
+BtInstance* Room::FindBehavior(uint64 objectId)
+{
+	auto findIt = _behaviors.find(objectId);
+
+	if (findIt == _behaviors.end())
+		return nullptr;
+
+	return &findIt->second;
+}
+
+BtStatus Room::TickBehavior(uint64 objectId, float deltaTime)
+{
+	BtInstance* instance = FindBehavior(objectId);
+
+	if (instance == nullptr)
+		return BtStatus::Failure;
+
+	GameObjectRef object = Find(objectId);
+
+	if (object == nullptr)
+		return BtStatus::Failure;
+
+	BtContext context;
+	context.room = this;
+	context.self = object.get();
+	context.deltaTime = deltaTime;
+
+	return instance->Tick(context);
+}
+
+void Room::TickBehaviors(float deltaTime)
+{
+	if (_behaviorAutoTick == false || _behaviors.empty())
+		return;
+
+	// 룸을 떠난 개체의 인스턴스는 여기서 걷어낸다.
+	Vector<uint64> stale;
+
+	for (auto& item : _behaviors)
+	{
+		GameObjectRef object = Find(item.first);
+
+		if (object == nullptr)
+		{
+			stale.push_back(item.first);
+			continue;
+		}
+
+		BtContext context;
+		context.room = this;
+		context.self = object.get();
+		context.deltaTime = deltaTime;
+
+		item.second.Tick(context);
+	}
+
+	for (uint64 objectId : stale)
+		_behaviors.erase(objectId);
 }

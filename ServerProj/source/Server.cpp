@@ -15,6 +15,7 @@
 #include "ConsoleCommand.h"
 #include "ServerStats.h"
 #include "CrashDump.h"
+#include "AI/BtNodeRegistry.h"
 
 enum
 {
@@ -67,6 +68,10 @@ int main()
 	SetRandomSeed32();
 
 	ClientPacketHandler::Init();
+
+	// 캔버스가 참조할 리프 타입들을 먼저 등록한다.
+	// 트리 로드보다 반드시 앞에 와야 이름을 못 찾는 실패가 안 난다.
+	BtNodeRegistry::RegisterBuiltins();
 
 	// Room은 StlAllocator 컨테이너를 들고 있어서 GMemory가 준비된 뒤에 만들어야 한다.
 	// (자세한 내용은 Room.h 주석)
