@@ -13,6 +13,7 @@ bool Level::LoadFromFile(const WCHAR* path)
 		return false;
 	}
 
+	const WCHAR* levelId = root.GetStringAttr(L"levelId");
 	const int32 width = root.GetInt32Attr(L"width");
 	const int32 height = root.GetInt32Attr(L"height");
 	const int32 tileSize = root.GetInt32Attr(L"tileSize", 3);
@@ -52,20 +53,23 @@ bool Level::LoadFromFile(const WCHAR* path)
 			cells[static_cast<size_t>(y) * width + x] = (line[x] == BLOCK_CHAR) ? 1 : 0;
 	}
 
+	_levelId = levelId;
 	_width = width;
 	_height = height;
 	_tileSize = tileSize;
 	_cells = std::move(cells);
 	_navGrid.Build(_cells, _width, _height, _tileSize);
 
-	LOG_INFO(L"[level] loaded %s : %d x %d cells, tileSize %d -> %d x %d tiles",
-		path, _width, _height, _tileSize, _navGrid.GetWidth(), _navGrid.GetHeight());
+	LOG_INFO(L"[level] loaded %s (id=%s) : %d x %d cells, tileSize %d -> %d x %d tiles",
+		path, _levelId.empty() ? L"(none)" : _levelId.c_str(),
+		_width, _height, _tileSize, _navGrid.GetWidth(), _navGrid.GetHeight());
 
 	return true;
 }
 
 void Level::BuildEmpty(int32 width, int32 height, int32 tileSize)
 {
+	_levelId = L"(empty)";
 	_width = (width > 0) ? width : 1;
 	_height = (height > 0) ? height : 1;
 	_tileSize = (tileSize > 0) ? tileSize : 1;

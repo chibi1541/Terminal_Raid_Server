@@ -235,7 +235,7 @@ bool Room::LoadLevel()
 		return true;
 
 	// 맵 파일 하나 때문에 서버가 안 뜨는 것보다는 빈 맵으로라도 뜨는 편이 낫다.
-	_level.BuildEmpty(120, 30, 3);
+	_level.BuildEmpty(380, 280, 4);
 	return false;
 }
 

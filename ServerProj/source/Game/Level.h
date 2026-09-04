@@ -7,10 +7,12 @@
 	셀 단위의 진실. XML에서 읽고, 여기서 NavGrid를 굽는다.
 
 	XML 형식 (한 글자가 한 셀, '#'이 장애물)
-		<Level width="120" height="30" tileSize="3">
+		<Level levelId="Cemetery" width="120" height="30" tileSize="3">
 			<Row>########...</Row>
 			...
 		</Level>
+
+	levelId : 콘텐츠 식별자. 로드 로그 / 진단용이다. 없으면 빈 문자열.
 -----------*/
 
 class Level
@@ -27,6 +29,8 @@ public:
 	// 맵 파일 하나 때문에 서버가 안 뜨는 것보다는 낫다.
 	void	BuildEmpty(int32 width, int32 height, int32 tileSize);
 
+	const std::wstring&	GetLevelId() const	{ return _levelId; }
+
 	int32	GetWidth() const	{ return _width; }		// 셀 개수
 	int32	GetHeight() const	{ return _height; }
 	int32	GetTileSize() const	{ return _tileSize; }
@@ -37,6 +41,7 @@ public:
 	const NavGrid&	GetNavGrid() const { return _navGrid; }
 
 private:
+	std::wstring	_levelId;
 	int32			_width = 0;
 	int32			_height = 0;
 	int32			_tileSize = 3;
