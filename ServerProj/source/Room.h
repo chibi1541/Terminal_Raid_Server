@@ -24,9 +24,10 @@ class Room : public JobQueue
 {
 	enum
 	{
-		TICK_INTERVAL_MS	= 50,
-		SPAWN_MAX_TRY		= 64,	// 통행 가능한 셀을 무작위로 찾을 때의 시도 횟수
-		SNAP_MAX_RADIUS		= 8,	// 막힌 타일을 통행 가능한 타일로 스냅할 때의 최대 반경
+		TICK_INTERVAL_MS		= 50,
+		SPAWN_MAX_TRY			= 64,	// 통행 가능한 셀을 무작위로 찾을 때의 시도 횟수
+		SNAP_MAX_RADIUS			= 8,	// 막힌 타일을 통행 가능한 타일로 스냅할 때의 최대 반경
+		MOVE_KEYFRAME_INTERVAL	= 10,	// 이 틱마다 움직이는 액터를 강제로 브로드캐스트 (500ms 드리프트 보정)
 	};
 
 public:
@@ -47,8 +48,27 @@ public:
 	void	BeginPlay();
 	void	Tick();
 
+	// 현재 서버 틱. Tick() 마다 1 증가. 이동 패킷의 보간 기준이다.
+	uint64	GetTickCount() const { return _tickCount; }
+
 	Protocol::Vector2	FindSpawnPos();
 	GameObjectRef		Find(uint64 objectId);
+
+	/*----------
+		이동 (Movement)
+
+		전부 룸 잡 큐 안에서만 부를 것.
+	-----------*/
+
+	// 플레이어 입력. 방향 홀드 - dir 이 DIR_NONE 이면 정지.
+	// C_MOVE 핸들러가 DoAsync 로 넘긴다.
+	void	HandleMove(GameObjectRef object, uint32 inputSeq, uint32 clientTick, int32 dir);
+
+	// 목표 셀까지 JPS 경로를 깔고 추종 시작. 디버그 goto / 향후 AI 리프가 공유한다.
+	bool	OrderMoveTo(uint64 objectId, int32 cellX, int32 cellY);
+
+	// 디버그 : 이동 루프만 count 틱 수동으로 굴린다. (bt step 과 같은 방식)
+	void	DebugStepMovement(int32 count);
 
 	uint32	GetWidth() const	{ return static_cast<uint32>(_level.GetWidth()); }
 	uint32	GetHeight() const	{ return static_cast<uint32>(_level.GetHeight()); }
@@ -139,6 +159,27 @@ private:
 	// 갓 입장한 플레이어에게 룸 전체 스냅샷을 보낸다.
 	void	SendEnterRoom(shared_ptr<Player> player);
 
+	/*----------
+		이동 내부 구현
+	-----------*/
+
+	// 이번 틱, 움직이는 모든 액터의 위치를 적분한다. Tick() 이 부른다.
+	// 스텝은 고정 TICK_INTERVAL_MS 로 정수 계산한다 (float 미사용).
+	void	UpdateMovement();
+
+	// dirty 표시된 액터를 S_MOVE 한 방에 묶어 브로드캐스트한다.
+	void	BroadcastMoves();
+
+	// 고정소수점 위치에 step 을 더하되 벽을 뚫지 않는다. 축을 분리해 슬라이드하고
+	// 코너컷은 막는다. 액터-액터 충돌은 이번 범위 밖.
+	// 반환값 : 복제 셀(_pos)이 바뀌었으면 true.
+	bool	IntegrateActor(GameObject* object, int32 stepX, int32 stepY);
+
+	// 8방향 enum -> 정수 단위 벡터.
+	static void					DirUnit(Protocol::DirectionType dir, OUT int32& ux, OUT int32& uy);
+	// 두 셀의 부호 차이 -> 8방향 enum.
+	static Protocol::DirectionType	DirTo(const Protocol::Vector2& from, const Protocol::Vector2& to);
+
 private:
 	HashMap<uint64, GameObjectRef> _objects;
 
@@ -152,6 +193,9 @@ private:
 
 	JpsPathFinder	_pathFinder;
 	QuadTree		_collisionTree;
+
+	uint64			_tickCount = 0;
+	uint64			_lastKeyframeTick = 0;
 };
 
 // Room은 StlAllocator 기반 컨테이너를 들고 있어서 GMemory보다 먼저 만들어지면 안 된다.

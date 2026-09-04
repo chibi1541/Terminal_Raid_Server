@@ -19,6 +19,9 @@ enum : uint16
 	PKT_S_EXIT_ROOM = 1007,
 	PKT_S_SPAWN = 1008,
 	PKT_S_DESPAWN = 1009,
+	PKT_C_MOVE = 1010,
+	PKT_S_MOVE = 1011,
+	PKT_S_MOVE_ACK = 1012,
 };
 
 bool Handle_INVALID(PacketSessionRef& session, BYTE* buffer, int32 len);
@@ -28,6 +31,7 @@ bool Handle_C_LOGIN(PacketSessionRef& session, Protocol::C_LOGIN& pkt);
 bool Handle_C_PING(PacketSessionRef& session, Protocol::C_PING& pkt);
 bool Handle_C_ENTER_ROOM(PacketSessionRef& session, Protocol::C_ENTER_ROOM& pkt);
 bool Handle_C_EXIT_ROOM(PacketSessionRef& session, Protocol::C_EXIT_ROOM& pkt);
+bool Handle_C_MOVE(PacketSessionRef& session, Protocol::C_MOVE& pkt);
 
 // PacketHandler 클래스 자동화
 class ClientPacketHandler
@@ -43,6 +47,7 @@ public:
 		GPacketHandler[PKT_C_PING] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::C_PING>(Handle_C_PING, session, buffer, len); };
 		GPacketHandler[PKT_C_ENTER_ROOM] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::C_ENTER_ROOM>(Handle_C_ENTER_ROOM, session, buffer, len); };
 		GPacketHandler[PKT_C_EXIT_ROOM] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::C_EXIT_ROOM>(Handle_C_EXIT_ROOM, session, buffer, len); };
+		GPacketHandler[PKT_C_MOVE] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::C_MOVE>(Handle_C_MOVE, session, buffer, len); };
 
 	}
 
@@ -59,6 +64,8 @@ public:
 	static SendBufferRef MakeSendBuffer(Protocol::S_EXIT_ROOM& pkt) {return MakeSendBuffer(pkt, PKT_S_EXIT_ROOM); }
 	static SendBufferRef MakeSendBuffer(Protocol::S_SPAWN& pkt) {return MakeSendBuffer(pkt, PKT_S_SPAWN); }
 	static SendBufferRef MakeSendBuffer(Protocol::S_DESPAWN& pkt) {return MakeSendBuffer(pkt, PKT_S_DESPAWN); }
+	static SendBufferRef MakeSendBuffer(Protocol::S_MOVE& pkt) {return MakeSendBuffer(pkt, PKT_S_MOVE); }
+	static SendBufferRef MakeSendBuffer(Protocol::S_MOVE_ACK& pkt) {return MakeSendBuffer(pkt, PKT_S_MOVE_ACK); }
 
 
 private:

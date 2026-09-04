@@ -108,12 +108,16 @@ enum DirectionType : int {
   DIR_RIGHT = 2,
   DIR_UP = 3,
   DIR_DOWN = 4,
+  DIR_UP_LEFT = 5,
+  DIR_UP_RIGHT = 6,
+  DIR_DOWN_LEFT = 7,
+  DIR_DOWN_RIGHT = 8,
   DirectionType_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
   DirectionType_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
 };
 bool DirectionType_IsValid(int value);
 constexpr DirectionType DirectionType_MIN = DIR_NONE;
-constexpr DirectionType DirectionType_MAX = DIR_DOWN;
+constexpr DirectionType DirectionType_MAX = DIR_DOWN_RIGHT;
 constexpr int DirectionType_ARRAYSIZE = DirectionType_MAX + 1;
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* DirectionType_descriptor();

@@ -38,6 +38,7 @@ message S_ENTER_ROOM
 	uint32 height = 3;
 	ObjectInfo myObject = 4;
 	repeated ObjectInfo objects = 5;	// 나를 제외한 룸 안의 기존 개체 전부
+	uint32 serverTick = 6;			// 접속 시점의 서버 틱. 클라 시계 기준점
 }
 
 message C_EXIT_ROOM
@@ -57,9 +58,35 @@ message S_EXIT_ROOM
 message S_SPAWN
 {
 	repeated ObjectInfo objects = 1;
+	uint32 serverTick = 2;
 }
 
 message S_DESPAWN
 {
 	repeated uint64 objectIds = 1;
+}
+
+// 플레이어 이동 입력. 방향 홀드 모델 - 누르는 동안 그 방향, 떼면 DIR_NONE.
+message C_MOVE
+{
+	uint32 inputSeq = 1;	// 클라가 증가시키는 입력 시퀀스. 서버가 마지막 처리분을 ack
+	uint32 clientTick = 2;	// 입력을 만든 시점의 클라 로컬 틱
+	DirectionType dir = 3;	// 원하는 이동 방향. DIR_NONE = 정지
+	// 4번 이후는 피드백 확장용 예약 : 클릭 이동 목표, 능력 입력, 바라보는 방향 등
+}
+
+// 이동 상태 브로드캐스트. 변경분 + 저빈도 키프레임을 틱당 한 번 배치로 싣는다.
+message S_MOVE
+{
+	uint32 serverTick = 1;
+	repeated MoveInfo moves = 2;
+}
+
+// 이동을 요청한 플레이어에게만 보내는 ack. 클라 재조정(reconciliation)의 앵커.
+message S_MOVE_ACK
+{
+	uint32 lastProcessedInputSeq = 1;
+	uint32 serverTick = 2;
+	Vector2 pos = 3;
+	DirectionType dir = 4;
 }

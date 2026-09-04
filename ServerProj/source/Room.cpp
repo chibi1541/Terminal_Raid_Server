@@ -28,14 +28,20 @@ void Room::BeginPlay()
 
 void Room::Tick()
 {
+	_tickCount++;
+
 	// 이번 틱에 쓸 공간 인덱스를 먼저 세운다.
 	// 이 아래에서 도는 이동 / 전투 로직은 전부 이 트리를 보게 된다.
 	RebuildCollisionTree();
 
 	// 붙어 있는 AI 를 돌린다. 공간 인덱스를 세운 뒤라 리프가 질의를 쓸 수 있다.
+	// AI 는 여기서 의도(방향 / 경로)만 액터에 기록한다.
 	TickBehaviors(GetTickDeltaTime());
 
-	// TODO : 이동 / 전투 갱신.
+	// 기록된 의도대로 위치를 적분하고, 바뀐 액터를 한 번에 브로드캐스트한다.
+	UpdateMovement();
+	BroadcastMoves();
+
 	// (jobs 명령의 reserved timers가 0이면 틱 루프가 끊긴 것)
 	DoTimer(TICK_INTERVAL_MS, &Room::Tick);
 }
@@ -66,6 +72,7 @@ void Room::Enter(GameObjectRef object, bool useRandomSpawnPos)
 	{
 		Protocol::S_SPAWN spawnPkt;
 		object->FillObjectInfo(spawnPkt.add_objects());
+		spawnPkt.set_servertick(static_cast<uint32>(_tickCount));
 		Broadcast(ClientPacketHandler::MakeSendBuffer(spawnPkt), 0);
 	}
 
@@ -132,6 +139,7 @@ void Room::SendEnterRoom(shared_ptr<Player> player)
 	enterPkt.set_success(true);
 	enterPkt.set_width(GetWidth());
 	enterPkt.set_height(GetHeight());
+	enterPkt.set_servertick(static_cast<uint32>(_tickCount));
 	player->FillObjectInfo(enterPkt.mutable_myobject());
 
 	for (auto& item : _objects)
@@ -272,6 +280,269 @@ bool Room::FindPathToObject(TilePos start, uint64 targetObjectId,
 		return false;
 
 	return _pathFinder.FindPath(grid, outStart, outGoal, OUT outPath);
+}
+
+/*---------------
+	이동 (Movement)
+----------------*/
+
+void Room::DirUnit(Protocol::DirectionType dir, OUT int32& ux, OUT int32& uy)
+{
+	// y 는 아래로 증가한다 (레벨 0행이 위). UP = -y.
+	switch (dir)
+	{
+	case Protocol::DIR_LEFT:		ux = -1; uy =  0; break;
+	case Protocol::DIR_RIGHT:		ux =  1; uy =  0; break;
+	case Protocol::DIR_UP:			ux =  0; uy = -1; break;
+	case Protocol::DIR_DOWN:		ux =  0; uy =  1; break;
+	case Protocol::DIR_UP_LEFT:		ux = -1; uy = -1; break;
+	case Protocol::DIR_UP_RIGHT:	ux =  1; uy = -1; break;
+	case Protocol::DIR_DOWN_LEFT:	ux = -1; uy =  1; break;
+	case Protocol::DIR_DOWN_RIGHT:	ux =  1; uy =  1; break;
+	default:						ux =  0; uy =  0; break;
+	}
+}
+
+Protocol::DirectionType Room::DirTo(const Protocol::Vector2& from, const Protocol::Vector2& to)
+{
+	const int32 dx = (to.x() > from.x()) - (to.x() < from.x());
+	const int32 dy = (to.y() > from.y()) - (to.y() < from.y());
+
+	if (dx < 0 && dy < 0) return Protocol::DIR_UP_LEFT;
+	if (dx < 0 && dy > 0) return Protocol::DIR_DOWN_LEFT;
+	if (dx < 0)           return Protocol::DIR_LEFT;
+	if (dx > 0 && dy < 0) return Protocol::DIR_UP_RIGHT;
+	if (dx > 0 && dy > 0) return Protocol::DIR_DOWN_RIGHT;
+	if (dx > 0)           return Protocol::DIR_RIGHT;
+	if (dy < 0)           return Protocol::DIR_UP;
+	if (dy > 0)           return Protocol::DIR_DOWN;
+	return Protocol::DIR_NONE;
+}
+
+bool Room::IntegrateActor(GameObject* object, int32 stepX, int32 stepY)
+{
+	MovementComponent& m = object->Movement();
+
+	const int32 cx = object->GetPosX();
+	const int32 cy = object->GetPosY();
+
+	int32 nx = m.fpX + stepX;
+	int32 ny = m.fpY + stepY;
+	int32 ncx = nx >> POS_SHIFT;
+	int32 ncy = ny >> POS_SHIFT;
+
+	// X축 이동이 벽에 막히면 X만 되돌리고 Y로 슬라이드시킨다.
+	if (ncx != cx && _level.IsCellBlocked(ncx, cy))
+	{
+		nx = m.fpX;
+		ncx = cx;
+	}
+
+	// Y축도 동일.
+	if (ncy != cy && _level.IsCellBlocked(cx, ncy))
+	{
+		ny = m.fpY;
+		ncy = cy;
+	}
+
+	// 두 축이 다 살아 대각으로 들어가는데 목적 칸이 막혔으면 코너컷이다. Y를 죽인다.
+	if (ncx != cx && ncy != cy && _level.IsCellBlocked(ncx, ncy))
+	{
+		ny = m.fpY;
+		ncy = cy;
+	}
+
+	m.fpX = nx;
+	m.fpY = ny;
+	object->SyncCellFromFixed();
+
+	return (object->GetPosX() != cx || object->GetPosY() != cy);
+}
+
+void Room::UpdateMovement()
+{
+	const bool keyframe =
+		(_tickCount - _lastKeyframeTick) >= static_cast<uint64>(MOVE_KEYFRAME_INTERVAL);
+
+	const NavGrid& grid = _level.GetNavGrid();
+
+	for (auto& item : _objects)
+	{
+		GameObject* object = item.second.get();
+		if (object == nullptr || object->IsAlive() == false)
+			continue;
+
+		MovementComponent& m = object->Movement();
+		if (m.state != MoveState::Moving)
+			continue;
+
+		// 경로 추종 : 현재 웨이포인트에 닿았으면 다음으로, dir 을 웨이포인트 방향에 맞춘다.
+		if (m.HasPath())
+		{
+			Protocol::Vector2 wp = grid.TileToCellCenter(m.path[m.pathIndex]);
+
+			if (object->GetPosX() == wp.x() && object->GetPosY() == wp.y())
+			{
+				m.pathIndex++;
+
+				if (m.HasPath() == false)
+				{
+					m.ClearPath();
+					m.dir = Protocol::DIR_NONE;
+					m.state = MoveState::Idle;
+					m.dirty = true;
+					continue;
+				}
+
+				wp = grid.TileToCellCenter(m.path[m.pathIndex]);
+			}
+
+			const Protocol::DirectionType want = DirTo(object->GetPos(), wp);
+			if (want != m.dir)
+			{
+				m.dir = want;
+				m.dirty = true;
+			}
+		}
+
+		int32 ux = 0;
+		int32 uy = 0;
+		DirUnit(m.dir, OUT ux, OUT uy);
+
+		if (ux == 0 && uy == 0)
+			continue;
+
+		int32 step = m.EffectiveSpeed() * TICK_INTERVAL_MS / 1000;	// 서브유닛/틱
+		if (ux != 0 && uy != 0)
+			step = step * 181 / 256;								// 대각 보정 (≈1/√2, 정수)
+
+		const bool cellChanged = IntegrateActor(object, ux * step, uy * step);
+
+		if (cellChanged || keyframe)
+			m.dirty = true;
+	}
+
+	if (keyframe)
+		_lastKeyframeTick = _tickCount;
+}
+
+void Room::BroadcastMoves()
+{
+	Protocol::S_MOVE pkt;
+
+	for (auto& item : _objects)
+	{
+		GameObject* object = item.second.get();
+		if (object == nullptr)
+			continue;
+
+		MovementComponent& m = object->Movement();
+		if (m.dirty == false)
+			continue;
+
+		Protocol::MoveInfo* info = pkt.add_moves();
+		info->set_objectid(object->GetObjId());
+		info->mutable_pos()->CopyFrom(object->GetPos());
+		info->set_dir(m.dir);
+		info->set_speed(m.EffectiveSpeed());
+		info->set_servertick(static_cast<uint32>(_tickCount));
+
+		m.dirty = false;
+	}
+
+	if (pkt.moves_size() == 0)
+		return;
+
+	pkt.set_servertick(static_cast<uint32>(_tickCount));
+	Broadcast(ClientPacketHandler::MakeSendBuffer(pkt), 0);
+}
+
+void Room::HandleMove(GameObjectRef object, uint32 inputSeq, uint32 clientTick, int32 dir)
+{
+	(void)clientTick;	// 지금은 로깅/재조정용으로만 의미. 서버 시뮬은 서버 틱 기준.
+
+	if (object == nullptr)
+		return;
+
+	MovementComponent& m = object->Movement();
+
+	// 순서 역전 방어. 늦게 도착한 오래된 입력은 버린다. (seq 0 = 디버그 호출은 그냥 통과)
+	if (inputSeq != 0 && inputSeq <= m.lastProcessedInputSeq)
+		return;
+
+	m.lastProcessedInputSeq = inputSeq;
+
+	// 범위 밖 dir 은 정지로 취급한다.
+	Protocol::DirectionType newDir = Protocol::DIR_NONE;
+	if (dir >= Protocol::DIR_NONE && dir <= Protocol::DIR_DOWN_RIGHT)
+		newDir = static_cast<Protocol::DirectionType>(dir);
+
+	// 방향 입력이 오면 진행 중이던 경로 추종은 취소한다.
+	m.ClearPath();
+	m.dir = newDir;
+	m.state = (newDir == Protocol::DIR_NONE) ? MoveState::Idle : MoveState::Moving;
+	m.dirty = true;
+
+	// 이동을 요청한 플레이어에게 ack. 클라 재조정의 앵커.
+	if (object->GetObjType() == Protocol::OBJECT_PLAYER)
+	{
+		Player* player = static_cast<Player*>(object.get());
+
+		if (GameSessionRef session = player->GetSession())
+		{
+			Protocol::S_MOVE_ACK ack;
+			ack.set_lastprocessedinputseq(m.lastProcessedInputSeq);
+			ack.set_servertick(static_cast<uint32>(_tickCount));
+			ack.mutable_pos()->CopyFrom(object->GetPos());
+			ack.set_dir(m.dir);
+			session->Send(ClientPacketHandler::MakeSendBuffer(ack));
+		}
+	}
+}
+
+bool Room::OrderMoveTo(uint64 objectId, int32 cellX, int32 cellY)
+{
+	GameObjectRef object = Find(objectId);
+	if (object == nullptr)
+		return false;
+
+	const NavGrid& grid = _level.GetNavGrid();
+
+	const TilePos startTile = grid.CellToTile(object->GetPosX(), object->GetPosY());
+	const TilePos goalTile  = grid.CellToTile(cellX, cellY);
+
+	TilePos snappedStart;
+	TilePos snappedGoal;
+	if (grid.FindNearestWalkable(startTile, SNAP_MAX_RADIUS, OUT snappedStart) == false)
+		return false;
+	if (grid.FindNearestWalkable(goalTile, SNAP_MAX_RADIUS, OUT snappedGoal) == false)
+		return false;
+
+	MovementComponent& m = object->Movement();
+	m.ClearPath();
+
+	if (_pathFinder.FindPath(grid, snappedStart, snappedGoal, OUT m.path) == false || m.path.empty())
+	{
+		m.state = MoveState::Idle;
+		m.dir = Protocol::DIR_NONE;
+		return false;
+	}
+
+	// path[0] 은 출발 타일이다. 이미 그 근처이니 다음 타일부터 향한다.
+	m.pathIndex = (m.path.size() > 1) ? 1 : 0;
+	m.state = MoveState::Moving;
+	m.dirty = true;
+	return true;
+}
+
+void Room::DebugStepMovement(int32 count)
+{
+	for (int32 i = 0; i < count; i++)
+	{
+		_tickCount++;
+		UpdateMovement();
+		BroadcastMoves();
+	}
 }
 
 /*---------------

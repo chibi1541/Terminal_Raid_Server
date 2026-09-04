@@ -1,8 +1,54 @@
 ﻿#pragma once
 #include "Protocol/Struct.pb.h"
 #include "Game/Bounds.h"
+#include "Game/NavGrid.h"	// TilePos
 
 class Room;
+
+/*---------------
+	이동 (Movement)
+
+	위치는 두 겹이다.
+	- GameObject::_pos       : 정수 셀. 충돌 / 쿼드트리 / 길찾기 / 직렬화가 보는 값.
+	- MovementComponent::fp* : 1/256 셀 고정소수점. 매 틱 등속 적분이 여기 쌓인다.
+	  셀은 항상 fp >> POS_SHIFT 로 파생하므로 두 값이 어긋나지 않는다.
+	  float를 안 쓰는 이유는 JpsPathFinder / OverlapsCircle 와 같다 - 결정성.
+----------------*/
+
+constexpr int32 POS_SHIFT = 8;
+constexpr int32 POS_SCALE = 1 << POS_SHIFT;			// 256 : 1셀 = 256 서브유닛
+constexpr int32 DEFAULT_MOVE_SPEED_CELLS = 6;		// 기본 이동 속도 (셀/초)
+
+enum class MoveState : uint8
+{
+	Idle,
+	Moving,
+};
+
+struct MovementComponent
+{
+	int32					fpX = 0;
+	int32					fpY = 0;
+	int32					speed = 0;					// 서브유닛/초. 0 이면 기본값.
+	Protocol::DirectionType	dir = Protocol::DIR_NONE;
+	MoveState				state = MoveState::Idle;
+
+	// AI 가 채우는 타일 경로. 플레이어 방향 이동은 비운 채로 둔다.
+	Vector<TilePos>			path;
+	int32					pathIndex = 0;
+
+	uint32					lastProcessedInputSeq = 0;	// 클라 예측 ack 훅
+	bool					dirty = false;				// 이번 틱에 복제할 값(셀/dir/state)이 바뀜
+
+	int32 EffectiveSpeed() const
+	{
+		return speed > 0 ? speed : DEFAULT_MOVE_SPEED_CELLS * POS_SCALE;
+	}
+
+	bool HasPath() const { return pathIndex < static_cast<int32>(path.size()); }
+
+	void ClearPath() { path.clear(); pathIndex = 0; }
+};
 
 /*---------------
 	GameObject
@@ -39,9 +85,24 @@ public:
 	shared_ptr<Room>			GetRoom() const		{ return _room.lock(); }
 
 	void SetObjId(uint64 objectId)				{ _objectId = objectId; }
-	void SetPos(const Protocol::Vector2& pos)	{ _pos.CopyFrom(pos); }
-	void SetPos(int32 x, int32 y)				{ _pos.set_x(x); _pos.set_y(y); }
+	// 셀을 직접 놓는다 (스폰 / 텔레포트). 고정소수점을 새 셀 중심으로 같이 시드해서
+	// 다음 틱 적분이 어긋난 상태에서 시작하지 않게 한다.
+	void SetPos(const Protocol::Vector2& pos)	{ SetPos(pos.x(), pos.y()); }
+	void SetPos(int32 x, int32 y)
+	{
+		_pos.set_x(x);
+		_pos.set_y(y);
+		_move.fpX = x * POS_SCALE + POS_SCALE / 2;
+		_move.fpY = y * POS_SCALE + POS_SCALE / 2;
+	}
 	void SetRoom(shared_ptr<Room> room)			{ _room = room; }
+
+	MovementComponent&			Movement()			{ return _move; }
+	const MovementComponent&	Movement() const	{ return _move; }
+
+	// 고정소수점 위치에서 셀 좌표를 다시 뽑는다. 적분 루프가 매 틱 부른다.
+	// SetPos 는 fp 를 셀 중심으로 되돌리므로 이동 중에는 쓰면 안 된다.
+	void SyncCellFromFixed();
 	// 반지름 0 = 자기가 선 셀 한 칸만 차지한다.
 	void SetRadius(int32 radius)				{ _radius = (radius >= 0) ? radius : 0; }
 	void ClearRoom()							{ _room.reset(); }
@@ -64,6 +125,7 @@ private:
 	uint64					_objectId = 0;
 	Protocol::ObjectType	_objectType = Protocol::OBJECT_NONE;
 	Protocol::Vector2		_pos;
+	MovementComponent		_move;
 	int32					_radius = 0;
 	int32					_hp = 100;
 	int32					_maxHp = 100;

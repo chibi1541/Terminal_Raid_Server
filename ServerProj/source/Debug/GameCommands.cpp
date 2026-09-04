@@ -2,6 +2,7 @@
 #include "Debug/GameCommands.h"
 #include "CommandRegistry.h"
 #include "Room.h"
+#include "Protocol/ClientPacketHandler.h"
 #include "Game/Player.h"
 #include "Game/NavGrid.h"
 #include "Game/QuadTree.h"
@@ -221,9 +222,133 @@ void GameCommands::Register()
 
 			object->SetPos(x, y);
 
-			// TODO : 이동 패킷이 생기면 여기서 브로드캐스트.
-			context.Reply(L"objectId=%llu moved to (%d, %d) (clients not notified yet)",
-				objectId, x, y);
+			// 텔레포트는 이동 상태를 끊는다. 진행 중이던 경로 추종도 취소.
+			MovementComponent& m = object->Movement();
+			m.ClearPath();
+			m.dir = Protocol::DIR_NONE;
+			m.state = MoveState::Idle;
+			m.dirty = false;
+
+			// 순간이동을 S_MOVE 한 건으로 알린다 (dir=DIR_NONE 이라 클라는 스냅).
+			Protocol::S_MOVE movePkt;
+			movePkt.set_servertick(static_cast<uint32>(GRoom->GetTickCount()));
+			Protocol::MoveInfo* info = movePkt.add_moves();
+			info->set_objectid(objectId);
+			info->mutable_pos()->CopyFrom(object->GetPos());
+			info->set_dir(Protocol::DIR_NONE);
+			info->set_speed(m.EffectiveSpeed());
+			info->set_servertick(static_cast<uint32>(GRoom->GetTickCount()));
+			GRoom->Broadcast(ClientPacketHandler::MakeSendBuffer(movePkt), 0);
+
+			context.Reply(L"objectId=%llu moved to (%d, %d)", objectId, x, y);
+		}, CommandRunMode::GameThread);
+
+	GCommandRegistry->Register(L"move",
+		L"move <objectId> <stop|left|right|up|down|ul|ur|dl|dr>",
+		L"drive an object with a held direction (server integrates it every tick)",
+		[](CommandContext& context)
+		{
+			if (GRoom == nullptr)
+			{
+				context.Reply(L"room not created");
+				return;
+			}
+
+			uint64 objectId = 0;
+
+			if (context.ArgCount() < 3 || ParseUint64(context.Arg(1), OUT objectId) == false)
+			{
+				context.Reply(L"usage : move <objectId> <stop|left|right|up|down|ul|ur|dl|dr>");
+				return;
+			}
+
+			const std::wstring dirText = context.Arg(2);
+			Protocol::DirectionType dir = Protocol::DIR_NONE;
+
+			if (dirText == L"stop" || dirText == L"none")	dir = Protocol::DIR_NONE;
+			else if (dirText == L"left")						dir = Protocol::DIR_LEFT;
+			else if (dirText == L"right")					dir = Protocol::DIR_RIGHT;
+			else if (dirText == L"up")						dir = Protocol::DIR_UP;
+			else if (dirText == L"down")						dir = Protocol::DIR_DOWN;
+			else if (dirText == L"ul")						dir = Protocol::DIR_UP_LEFT;
+			else if (dirText == L"ur")						dir = Protocol::DIR_UP_RIGHT;
+			else if (dirText == L"dl")						dir = Protocol::DIR_DOWN_LEFT;
+			else if (dirText == L"dr")						dir = Protocol::DIR_DOWN_RIGHT;
+			else
+			{
+				context.Reply(L"unknown direction : %s", dirText.c_str());
+				return;
+			}
+
+			GameObjectRef object = GRoom->Find(objectId);
+			if (object == nullptr)
+			{
+				context.Reply(L"no such object : %llu", objectId);
+				return;
+			}
+
+			// 이미 룸 잡 큐 안이므로 DoAsync 없이 바로. inputSeq 0 = 디버그 호출.
+			GRoom->HandleMove(object, 0, 0, static_cast<int32>(dir));
+			context.Reply(L"objectId=%llu dir=%s from (%d, %d)",
+				objectId, dirText.c_str(), object->GetPosX(), object->GetPosY());
+		}, CommandRunMode::GameThread);
+
+	GCommandRegistry->Register(L"goto", L"goto <objectId> <x> <y>",
+		L"path an object to a cell with JPS and follow it",
+		[](CommandContext& context)
+		{
+			if (GRoom == nullptr)
+			{
+				context.Reply(L"room not created");
+				return;
+			}
+
+			uint64 objectId = 0;
+			int32 x = 0;
+			int32 y = 0;
+
+			if (context.ArgCount() < 4 ||
+				ParseUint64(context.Arg(1), OUT objectId) == false ||
+				ParseInt32(context.Arg(2), OUT x) == false ||
+				ParseInt32(context.Arg(3), OUT y) == false)
+			{
+				context.Reply(L"usage : goto <objectId> <x> <y>");
+				return;
+			}
+
+			if (GRoom->OrderMoveTo(objectId, x, y))
+				context.Reply(L"objectId=%llu heading to (%d, %d)", objectId, x, y);
+			else
+				context.Reply(L"no path for objectId=%llu to (%d, %d)", objectId, x, y);
+		}, CommandRunMode::GameThread);
+
+	GCommandRegistry->Register(L"worldtick", L"worldtick [count]",
+		L"advance the movement loop manually (default 1). autotick still runs unless paused elsewhere",
+		[](CommandContext& context)
+		{
+			if (GRoom == nullptr)
+			{
+				context.Reply(L"room not created");
+				return;
+			}
+
+			int32 count = 1;
+
+			if (context.ArgCount() >= 2 && ParseInt32(context.Arg(1), OUT count) == false)
+			{
+				context.Reply(L"invalid count : %s", context.Arg(1).c_str());
+				return;
+			}
+
+			if (count <= 0 || count > 1000)
+			{
+				context.Reply(L"count must be in 1..1000");
+				return;
+			}
+
+			GRoom->DebugStepMovement(count);
+			context.Reply(L"stepped movement %d tick(s), tickCount=%llu",
+				count, GRoom->GetTickCount());
 		}, CommandRunMode::GameThread);
 
 	GCommandRegistry->Register(L"level", L"level", L"level info and tile map",

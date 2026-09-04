@@ -28,6 +28,11 @@ enum DirectionType
 	DIR_RIGHT = 2;
 	DIR_UP = 3;
 	DIR_DOWN = 4;
+	// 대각. 기존 값은 절대 바꾸지 말 것 (와이어 호환).
+	DIR_UP_LEFT = 5;
+	DIR_UP_RIGHT = 6;
+	DIR_DOWN_LEFT = 7;
+	DIR_DOWN_RIGHT = 8;
 }
 
 enum FieldType

@@ -20,6 +20,12 @@ void GameObject::SetMaxHp(int32 maxHp)
 		_hp = _maxHp;
 }
 
+void GameObject::SyncCellFromFixed()
+{
+	_pos.set_x(_move.fpX >> POS_SHIFT);
+	_pos.set_y(_move.fpY >> POS_SHIFT);
+}
+
 void GameObject::FillObjectInfo(Protocol::ObjectInfo* info)
 {
 	// 개체 타입은 objectId 상위 16비트에 들어 있으므로 따로 싣지 않는다.
@@ -29,6 +35,10 @@ void GameObject::FillObjectInfo(Protocol::ObjectInfo* info)
 	state->mutable_pos()->CopyFrom(_pos);
 	state->set_hp(_hp);
 	state->set_maxhp(_maxHp);
+
+	// 이동 상태도 스냅샷에 실어야 늦게 접속한 클라가 움직이는 액터를 바로 예측한다.
+	state->set_dir(_move.dir);
+	state->set_speed(_move.EffectiveSpeed());
 }
 
 Bounds GameObject::GetBounds() const

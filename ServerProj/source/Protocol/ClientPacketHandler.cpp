@@ -107,6 +107,22 @@ bool Handle_C_ENTER_ROOM(PacketSessionRef& session, Protocol::C_ENTER_ROOM& pkt)
 	return true;
 }
 
+bool Handle_C_MOVE(PacketSessionRef& session, Protocol::C_MOVE& pkt)
+{
+	GameSessionRef gameSession = static_pointer_cast<GameSession>(session);
+
+	PlayerRef player = gameSession->GetPlayer();
+
+	if (player == nullptr || GRoom == nullptr)
+		return true;
+
+	// 룸 상태를 IOCP 워커에서 만지지 않는다. 룸 잡 큐로 넘긴다.
+	GRoom->DoAsync(&Room::HandleMove, static_pointer_cast<GameObject>(player),
+		pkt.inputseq(), pkt.clienttick(), static_cast<int32>(pkt.dir()));
+
+	return true;
+}
+
 bool Handle_C_EXIT_ROOM(PacketSessionRef& session, Protocol::C_EXIT_ROOM& pkt)
 {
 	GameSessionRef gameSession = static_pointer_cast<GameSession>(session);
