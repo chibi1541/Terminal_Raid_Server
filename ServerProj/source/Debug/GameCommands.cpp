@@ -44,6 +44,22 @@ namespace
 		return true;
 	}
 
+	// 8방향 키워드 -> DirectionType. 실패하면 false.
+	bool ParseDir8(const std::wstring& text, OUT Protocol::DirectionType& out)
+	{
+		if      (text == L"stop" || text == L"none")	out = Protocol::DIR_NONE;
+		else if (text == L"left")					out = Protocol::DIR_LEFT;
+		else if (text == L"right")					out = Protocol::DIR_RIGHT;
+		else if (text == L"up")						out = Protocol::DIR_UP;
+		else if (text == L"down")					out = Protocol::DIR_DOWN;
+		else if (text == L"ul")						out = Protocol::DIR_UP_LEFT;
+		else if (text == L"ur")						out = Protocol::DIR_UP_RIGHT;
+		else if (text == L"dl")						out = Protocol::DIR_DOWN_LEFT;
+		else if (text == L"dr")						out = Protocol::DIR_DOWN_RIGHT;
+		else return false;
+		return true;
+	}
+
 	// 명령 인자는 wstring 이다. 트리 이름 같은 ASCII 값만 좁은 문자열로 옮긴다.
 	string ToNarrow(const std::wstring& text)
 	{
@@ -265,16 +281,7 @@ void GameCommands::Register()
 			const std::wstring dirText = context.Arg(2);
 			Protocol::DirectionType dir = Protocol::DIR_NONE;
 
-			if (dirText == L"stop" || dirText == L"none")	dir = Protocol::DIR_NONE;
-			else if (dirText == L"left")						dir = Protocol::DIR_LEFT;
-			else if (dirText == L"right")					dir = Protocol::DIR_RIGHT;
-			else if (dirText == L"up")						dir = Protocol::DIR_UP;
-			else if (dirText == L"down")						dir = Protocol::DIR_DOWN;
-			else if (dirText == L"ul")						dir = Protocol::DIR_UP_LEFT;
-			else if (dirText == L"ur")						dir = Protocol::DIR_UP_RIGHT;
-			else if (dirText == L"dl")						dir = Protocol::DIR_DOWN_LEFT;
-			else if (dirText == L"dr")						dir = Protocol::DIR_DOWN_RIGHT;
-			else
+			if (ParseDir8(dirText, OUT dir) == false)
 			{
 				context.Reply(L"unknown direction : %s", dirText.c_str());
 				return;
@@ -349,6 +356,69 @@ void GameCommands::Register()
 			GRoom->DebugStepMovement(count);
 			context.Reply(L"stepped movement %d tick(s), tickCount=%llu",
 				count, GRoom->GetTickCount());
+		}, CommandRunMode::GameThread);
+
+	GCommandRegistry->Register(L"proj",
+		L"proj <x> <y> <dir> [speedCellsPerSec] [lifetimeSec]",
+		L"spawn a straight-line projectile (dir : left/right/up/down/ul/ur/dl/dr)",
+		[](CommandContext& context)
+		{
+			if (GRoom == nullptr)
+			{
+				context.Reply(L"room not created");
+				return;
+			}
+
+			int32 x = 0;
+			int32 y = 0;
+
+			if (context.ArgCount() < 4 ||
+				ParseInt32(context.Arg(1), OUT x) == false ||
+				ParseInt32(context.Arg(2), OUT y) == false)
+			{
+				context.Reply(L"usage : proj <x> <y> <dir> [speedCellsPerSec] [lifetimeSec]");
+				return;
+			}
+
+			Protocol::DirectionType dir = Protocol::DIR_NONE;
+
+			if (ParseDir8(context.Arg(3), OUT dir) == false || dir == Protocol::DIR_NONE)
+			{
+				context.Reply(L"bad direction : %s (left/right/up/down/ul/ur/dl/dr)",
+					context.Arg(3).c_str());
+				return;
+			}
+
+			int32 speed = 0;	// 0 => 기본 속도
+
+			if (context.ArgCount() >= 5 && ParseInt32(context.Arg(4), OUT speed) == false)
+			{
+				context.Reply(L"bad speed : %s", context.Arg(4).c_str());
+				return;
+			}
+
+			int32 lifeSec = 0;
+
+			if (context.ArgCount() >= 6 && ParseInt32(context.Arg(5), OUT lifeSec) == false)
+			{
+				context.Reply(L"bad lifetime : %s", context.Arg(5).c_str());
+				return;
+			}
+
+			// 틱은 50ms 고정 = 초당 20틱. 0 이면 Room 이 기본 수명을 쓴다.
+			const int32 lifeTicks = (lifeSec > 0) ? lifeSec * 20 : 0;
+
+			GameObjectRef proj = GRoom->SpawnProjectile(x, y, dir, speed, lifeTicks);
+
+			if (proj == nullptr)
+			{
+				context.Reply(L"failed to spawn projectile");
+				return;
+			}
+
+			context.Reply(L"projectile objectId=%llu at (%d, %d) dir=%s speed=%d",
+				proj->GetObjId(), x, y, context.Arg(3).c_str(),
+				(speed > 0) ? speed : DEFAULT_MOVE_SPEED_CELLS);
 		}, CommandRunMode::GameThread);
 
 	GCommandRegistry->Register(L"level", L"level", L"level info and tile map",

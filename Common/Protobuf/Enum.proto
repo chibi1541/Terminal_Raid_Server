@@ -11,6 +11,7 @@ enum ObjectType
 	OBJECT_PLAYER = 2;
 	OBJECT_MONSTER = 3;
 	OBJECT_WALL = 4;
+	OBJECT_PROJECTILE = 5;	// 직진 투사체
 }
 
 enum CharacterType

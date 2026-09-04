@@ -29,25 +29,25 @@ static constexpr ::_pbi::MigrationSchema* schemas = nullptr;
 static constexpr ::_pb::Message* const* file_default_instances = nullptr;
 
 const char descriptor_table_protodef_Enum_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
-  "\n\nEnum.proto\022\010Protocol*g\n\nObjectType\022\017\n\013"
+  "\n\nEnum.proto\022\010Protocol*~\n\nObjectType\022\017\n\013"
   "OBJECT_NONE\020\000\022\020\n\014OBJECT_ACTOR\020\001\022\021\n\rOBJEC"
   "T_PLAYER\020\002\022\022\n\016OBJECT_MONSTER\020\003\022\017\n\013OBJECT"
-  "_WALL\020\004*b\n\rCharacterType\022\022\n\016CHARACTER_NO"
-  "NE\020\000\022\024\n\020CHARACTER_KNIGHT\020\001\022\023\n\017CHARACTER_"
-  "ACHER\020\002\022\022\n\016CHARACTER_MAGE\020\003*\236\001\n\rDirectio"
-  "nType\022\014\n\010DIR_NONE\020\000\022\014\n\010DIR_LEFT\020\001\022\r\n\tDIR"
-  "_RIGHT\020\002\022\n\n\006DIR_UP\020\003\022\014\n\010DIR_DOWN\020\004\022\017\n\013DI"
-  "R_UP_LEFT\020\005\022\020\n\014DIR_UP_RIGHT\020\006\022\021\n\rDIR_DOW"
-  "N_LEFT\020\007\022\022\n\016DIR_DOWN_RIGHT\020\010*A\n\tFieldTyp"
-  "e\022\020\n\014FIELD_GROUND\020\000\022\016\n\nFIELD_ITEM\020\001\022\022\n\016F"
-  "IELD_OBSTACLE\020\002*p\n\013PlayerColor\022\017\n\013COLOR_"
-  "WHITE\020\000\022\017\n\013COLOR_GREEN\020\001\022\r\n\tCOLOR_RED\020\002\022"
-  "\016\n\nCOLOR_BLUE\020\003\022\016\n\nCOLOR_CYAN\020\004\022\020\n\014COLOR"
-  "_PURPLE\020\005b\006proto3"
+  "_WALL\020\004\022\025\n\021OBJECT_PROJECTILE\020\005*b\n\rCharac"
+  "terType\022\022\n\016CHARACTER_NONE\020\000\022\024\n\020CHARACTER"
+  "_KNIGHT\020\001\022\023\n\017CHARACTER_ACHER\020\002\022\022\n\016CHARAC"
+  "TER_MAGE\020\003*\236\001\n\rDirectionType\022\014\n\010DIR_NONE"
+  "\020\000\022\014\n\010DIR_LEFT\020\001\022\r\n\tDIR_RIGHT\020\002\022\n\n\006DIR_U"
+  "P\020\003\022\014\n\010DIR_DOWN\020\004\022\017\n\013DIR_UP_LEFT\020\005\022\020\n\014DI"
+  "R_UP_RIGHT\020\006\022\021\n\rDIR_DOWN_LEFT\020\007\022\022\n\016DIR_D"
+  "OWN_RIGHT\020\010*A\n\tFieldType\022\020\n\014FIELD_GROUND"
+  "\020\000\022\016\n\nFIELD_ITEM\020\001\022\022\n\016FIELD_OBSTACLE\020\002*p"
+  "\n\013PlayerColor\022\017\n\013COLOR_WHITE\020\000\022\017\n\013COLOR_"
+  "GREEN\020\001\022\r\n\tCOLOR_RED\020\002\022\016\n\nCOLOR_BLUE\020\003\022\016"
+  "\n\nCOLOR_CYAN\020\004\022\020\n\014COLOR_PURPLE\020\005b\006proto3"
   ;
 static ::_pbi::once_flag descriptor_table_Enum_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_Enum_2eproto = {
-    false, false, 577, descriptor_table_protodef_Enum_2eproto,
+    false, false, 600, descriptor_table_protodef_Enum_2eproto,
     "Enum.proto",
     &descriptor_table_Enum_2eproto_once, nullptr, 0, 0,
     schemas, file_default_instances, TableStruct_Enum_2eproto::offsets,
@@ -72,6 +72,7 @@ bool ObjectType_IsValid(int value) {
     case 2:
     case 3:
     case 4:
+    case 5:
       return true;
     default:
       return false;

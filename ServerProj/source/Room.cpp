@@ -2,6 +2,7 @@
 #include "Room.h"
 #include "Protocol/ClientPacketHandler.h"
 #include "Game/Player.h"
+#include "Game/Projectile.h"
 #include "Game/ObjectIdGenerator.h"
 #include "GameSession.h"
 #include <chrono>
@@ -41,6 +42,9 @@ void Room::Tick()
 	// 기록된 의도대로 위치를 적분하고, 바뀐 액터를 한 번에 브로드캐스트한다.
 	UpdateMovement();
 	BroadcastMoves();
+
+	// 수명이 다했거나 벽에 박힌 투사체를 정리한다. (마지막 위치는 위에서 이미 보냈다)
+	SweepExpiredProjectiles();
 
 	// (jobs 명령의 reserved timers가 0이면 틱 루프가 끊긴 것)
 	DoTimer(TICK_INTERVAL_MS, &Room::Tick);
@@ -543,6 +547,58 @@ void Room::DebugStepMovement(int32 count)
 		UpdateMovement();
 		BroadcastMoves();
 	}
+}
+
+GameObjectRef Room::SpawnProjectile(int32 cellX, int32 cellY, Protocol::DirectionType dir,
+								   int32 cellsPerSec, int32 lifetimeTicks)
+{
+	ProjectileRef proj = MakeShared<Projectile>();
+
+	proj->SetPos(cellX, cellY);
+	proj->Launch(dir, cellsPerSec, _tickCount,
+		(lifetimeTicks > 0) ? lifetimeTicks : PROJECTILE_LIFETIME_TICKS);
+
+	// spawn 명령과 동일하게 좌표를 지정해서 넣는다 (랜덤 스폰 X).
+	Enter(static_pointer_cast<GameObject>(proj), false);
+
+	return proj;
+}
+
+void Room::SweepExpiredProjectiles()
+{
+	// Leave 가 _objects 를 건드리므로 대상을 먼저 추려두고 지운다.
+	Vector<GameObjectRef> dead;
+
+	for (auto& item : _objects)
+	{
+		GameObject* object = item.second.get();
+
+		if (object == nullptr || object->GetObjType() != Protocol::OBJECT_PROJECTILE)
+			continue;
+
+		Projectile* proj = static_cast<Projectile*>(object);
+
+		// 수명 초과.
+		if (_tickCount >= proj->GetExpireTick())
+		{
+			dead.push_back(item.second);
+			continue;
+		}
+
+		// 진행 방향의 다음 칸이 벽이면 (= 이 틱에 벽에 막혀 멈췄으면) 즉시 소멸.
+		int32 ux = 0;
+		int32 uy = 0;
+		DirUnit(proj->Movement().dir, OUT ux, OUT uy);
+
+		if ((ux != 0 || uy != 0) &&
+			_level.IsCellBlocked(object->GetPosX() + ux, object->GetPosY() + uy))
+		{
+			dead.push_back(item.second);
+		}
+	}
+
+	for (GameObjectRef& object : dead)
+		Leave(object);
 }
 
 /*---------------

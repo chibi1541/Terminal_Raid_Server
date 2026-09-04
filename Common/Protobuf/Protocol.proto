@@ -18,12 +18,14 @@ message S_LOGIN
 
 message C_PING
 {
-	
+	uint64 clientTime = 1;	// 클라 송신 시각(ms, 클라 단조 시계). 서버는 해석하지 않고 그대로 돌려준다.
 }
 
 message S_PONG
 {
-
+	uint64 clientTime = 1;	// C_PING 의 값 그대로. 클라가 RTT = 수신시각 - clientTime 로 계산.
+	uint64 serverTime = 2;	// 서버가 응답을 만든 시각(ms, 서버 단조 시계).
+	uint32 serverTick = 3;	// 응답 시점의 룸 틱. 클라 보간/예측 시계의 기준.
 }
 
 message C_ENTER_ROOM

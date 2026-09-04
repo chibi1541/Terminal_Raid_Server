@@ -28,6 +28,7 @@ class Room : public JobQueue
 		SPAWN_MAX_TRY			= 64,	// 통행 가능한 셀을 무작위로 찾을 때의 시도 횟수
 		SNAP_MAX_RADIUS			= 8,	// 막힌 타일을 통행 가능한 타일로 스냅할 때의 최대 반경
 		MOVE_KEYFRAME_INTERVAL	= 10,	// 이 틱마다 움직이는 액터를 강제로 브로드캐스트 (500ms 드리프트 보정)
+		PROJECTILE_LIFETIME_TICKS	= 100,	// 투사체 기본 수명 (5초 @ 20Hz)
 	};
 
 public:
@@ -66,6 +67,11 @@ public:
 
 	// 목표 셀까지 JPS 경로를 깔고 추종 시작. 디버그 goto / 향후 AI 리프가 공유한다.
 	bool	OrderMoveTo(uint64 objectId, int32 cellX, int32 cellY);
+
+	// 직진 투사체를 스폰해 룸에 넣는다. cellsPerSec <= 0 이면 기본 속도,
+	// lifetimeTicks <= 0 이면 기본 수명. 실패하면 nullptr.
+	GameObjectRef	SpawnProjectile(int32 cellX, int32 cellY, Protocol::DirectionType dir,
+									int32 cellsPerSec, int32 lifetimeTicks);
 
 	// 디버그 : 이동 루프만 count 틱 수동으로 굴린다. (bt step 과 같은 방식)
 	void	DebugStepMovement(int32 count);
@@ -170,6 +176,9 @@ private:
 	// dirty 표시된 액터를 S_MOVE 한 방에 묶어 브로드캐스트한다.
 	void	BroadcastMoves();
 
+	// 수명이 다했거나 벽에 막힌 투사체를 걷어낸다. Tick() 이 이동 브로드캐스트 뒤에 부른다.
+	void	SweepExpiredProjectiles();
+
 	// 고정소수점 위치에 step 을 더하되 벽을 뚫지 않는다. 축을 분리해 슬라이드하고
 	// 코너컷은 막는다. 액터-액터 충돌은 이번 범위 밖.
 	// 반환값 : 복제 셀(_pos)이 바뀌었으면 true.
@@ -194,7 +203,8 @@ private:
 	JpsPathFinder	_pathFinder;
 	QuadTree		_collisionTree;
 
-	uint64			_tickCount = 0;
+	// Tick() 에서만 증가하지만 C_PING 핸들러(IOCP 워커)가 읽으므로 atomic.
+	Atomic<uint64>	_tickCount = 0;
 	uint64			_lastKeyframeTick = 0;
 };
 

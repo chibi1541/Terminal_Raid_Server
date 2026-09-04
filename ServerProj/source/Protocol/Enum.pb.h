@@ -53,12 +53,13 @@ enum ObjectType : int {
   OBJECT_PLAYER = 2,
   OBJECT_MONSTER = 3,
   OBJECT_WALL = 4,
+  OBJECT_PROJECTILE = 5,
   ObjectType_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
   ObjectType_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
 };
 bool ObjectType_IsValid(int value);
 constexpr ObjectType ObjectType_MIN = OBJECT_NONE;
-constexpr ObjectType ObjectType_MAX = OBJECT_WALL;
+constexpr ObjectType ObjectType_MAX = OBJECT_PROJECTILE;
 constexpr int ObjectType_ARRAYSIZE = ObjectType_MAX + 1;
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* ObjectType_descriptor();

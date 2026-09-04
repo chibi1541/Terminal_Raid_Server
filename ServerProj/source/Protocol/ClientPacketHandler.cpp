@@ -77,7 +77,12 @@ bool Handle_C_LOGIN(PacketSessionRef& session, Protocol::C_LOGIN& pkt)
 
 bool Handle_C_PING(PacketSessionRef& session, Protocol::C_PING& pkt)
 {
+	// IOCP 워커에서 즉시 응답한다. 룸 잡 큐를 태우면 그 대기시간이 RTT에 섞인다.
 	Protocol::S_PONG pongPkt;
+	pongPkt.set_clienttime(pkt.clienttime());					// 그대로 반향
+	pongPkt.set_servertime(::GetTickCount64());					// 서버 단조 시계(ms)
+	pongPkt.set_servertick(GRoom != nullptr ? GRoom->GetTickCount() : 0);	// atomic 읽기
+
 	session->Send(ClientPacketHandler::MakeSendBuffer(pongPkt));
 
 	return true;

@@ -126,6 +126,7 @@
     <ClCompile Include="source\Game\NavGrid.cpp" />
     <ClCompile Include="source\Game\ObjectIdGenerator.cpp" />
     <ClCompile Include="source\Game\Player.cpp" />
+    <ClCompile Include="source\Game\Projectile.cpp" />
     <ClCompile Include="source\Game\QuadTree.cpp" />
     <ClCompile Include="source\GameSession.cpp" />
     <ClCompile Include="source\GameSessionManager.cpp" />
@@ -171,6 +172,7 @@
     <ClInclude Include="source\Game\NavGrid.h" />
     <ClInclude Include="source\Game\ObjectIdGenerator.h" />
     <ClInclude Include="source\Game\Player.h" />
+    <ClInclude Include="source\Game\Projectile.h" />
     <ClInclude Include="source\Game\QuadTree.h" />
     <ClInclude Include="source\GameSession.h" />
     <ClInclude Include="source\GameSessionManager.h" />
