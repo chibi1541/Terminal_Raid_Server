@@ -4,6 +4,7 @@
 #include "Room.h"
 #include "Protocol/ClientPacketHandler.h"
 #include "Game/Player.h"
+#include "Game/Monster.h"
 #include "Game/NavGrid.h"
 #include "Game/QuadTree.h"
 #include "AI/BehaviorTreeManager.h"
@@ -176,6 +177,69 @@ void GameCommands::Register()
 
 			context.Reply(L"spawned objectId=%llu at (%d, %d) r=%d",
 				player->GetObjId(), player->GetPosX(), player->GetPosY(), player->GetRadius());
+		}, CommandRunMode::GameThread);
+
+	GCommandRegistry->Register(L"spawnmonster", L"spawnmonster <name> [x] [y] [radius]",
+		L"add a monster to the room (connected clients get S_SPAWN)",
+		[](CommandContext& context)
+		{
+			if (GRoom == nullptr)
+			{
+				context.Reply(L"room not created");
+				return;
+			}
+
+			if (context.ArgCount() < 2)
+			{
+				context.Reply(L"usage : spawnmonster <name> [x] [y] [radius]");
+				return;
+			}
+
+			MonsterRef monster = MakeShared<Monster>();
+
+			// 명령 인자는 wstring이라 이름을 좁은 문자열로 옮긴다.
+			// 디버그용이므로 ASCII가 아닌 글자는 '?'로 떨군다.
+			monster->SetMonsterTypeName(ToNarrow(context.Arg(1)));
+
+			bool useRandomSpawnPos = true;
+
+			if (context.ArgCount() >= 4)
+			{
+				int32 x = 0;
+				int32 y = 0;
+
+				if (ParseInt32(context.Arg(2), OUT x) == false ||
+					ParseInt32(context.Arg(3), OUT y) == false)
+				{
+					context.Reply(L"invalid coordinates : %s %s",
+						context.Arg(2).c_str(), context.Arg(3).c_str());
+					return;
+				}
+
+				monster->SetPos(x, y);
+				useRandomSpawnPos = false;
+			}
+
+			// 반지름을 주면 분할선에 걸치는 개체를 만들 수 있다. 쿼드트리 검증에 필요하다.
+			if (context.ArgCount() >= 5)
+			{
+				int32 radius = 0;
+
+				if (ParseInt32(context.Arg(4), OUT radius) == false)
+				{
+					context.Reply(L"invalid radius : %s", context.Arg(4).c_str());
+					return;
+				}
+
+				monster->SetRadius(radius);
+			}
+
+			// 이미 룸 잡 큐 안이므로 DoAsync 없이 바로 부른다.
+			GRoom->Enter(static_pointer_cast<GameObject>(monster), useRandomSpawnPos);
+
+			context.Reply(L"spawned monster objectId=%llu type=%hs at (%d, %d) r=%d",
+				monster->GetObjId(), monster->GetMonsterTypeName().c_str(),
+				monster->GetPosX(), monster->GetPosY(), monster->GetRadius());
 		}, CommandRunMode::GameThread);
 
 	GCommandRegistry->Register(L"despawn", L"despawn <objectId>",

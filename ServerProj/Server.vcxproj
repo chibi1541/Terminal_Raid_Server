@@ -124,6 +124,7 @@
     <ClCompile Include="source\Game\JpsPathFinder.cpp" />
     <ClCompile Include="source\Game\Level.cpp" />
     <ClCompile Include="source\Game\NavGrid.cpp" />
+    <ClCompile Include="source\Game\Monster.cpp" />
     <ClCompile Include="source\Game\ObjectIdGenerator.cpp" />
     <ClCompile Include="source\Game\Player.cpp" />
     <ClCompile Include="source\Game\Projectile.cpp" />
@@ -169,6 +170,7 @@
     <ClInclude Include="source\Game\GameObject.h" />
     <ClInclude Include="source\Game\JpsPathFinder.h" />
     <ClInclude Include="source\Game\Level.h" />
+    <ClInclude Include="source\Game\Monster.h" />
     <ClInclude Include="source\Game\NavGrid.h" />
     <ClInclude Include="source\Game\ObjectIdGenerator.h" />
     <ClInclude Include="source\Game\Player.h" />

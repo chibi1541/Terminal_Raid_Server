@@ -2,6 +2,7 @@
 #include "Room.h"
 #include "Protocol/ClientPacketHandler.h"
 #include "Game/Player.h"
+#include "Game/Monster.h"
 #include "Game/Projectile.h"
 #include "Game/ObjectIdGenerator.h"
 #include "GameSession.h"
@@ -222,11 +223,15 @@ std::wstring Room::DescribeObjects()
 		const bool isPlayer = (object->GetObjType() == Protocol::OBJECT_PLAYER);
 		Player* player = isPlayer ? static_cast<Player*>(object.get()) : nullptr;
 
-		::swprintf_s(buffer, L"\n  id=%llu type=%d pos=(%d, %d) hp=%d/%d %hs%hs",
+		const bool isMonster = (object->GetObjType() == Protocol::OBJECT_MONSTER);
+		Monster* monster = isMonster ? static_cast<Monster*>(object.get()) : nullptr;
+
+		::swprintf_s(buffer, L"\n  id=%llu type=%d pos=(%d, %d) hp=%d/%d %hs%hs%hs",
 			object->GetObjId(), static_cast<int32>(object->GetObjType()),
 			object->GetPosX(), object->GetPosY(), object->GetHp(), object->GetMaxHp(),
 			(player != nullptr) ? player->GetName().c_str() : "",
-			(player != nullptr && player->IsDummy()) ? " [dummy]" : "");
+			(player != nullptr && player->IsDummy()) ? " [dummy]" : "",
+			(monster != nullptr) ? monster->GetMonsterTypeName().c_str() : "");
 
 		result += buffer;
 	}
