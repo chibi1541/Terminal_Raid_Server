@@ -107,6 +107,17 @@ public:
 	void SetRadius(int32 radius)				{ _radius = (radius >= 0) ? radius : 0; }
 	void ClearRoom()							{ _room.reset(); }
 
+	// 길찾기용 풋프린트. "맵 타일" 단위 (Level::_tileSize 가 정의하는 그 타일).
+	// 원형 충돌/쿼드트리에 쓰는 _radius 와는 별개 - 길찾기 샘플링 단위만 바꾼다.
+	// 기본 1x1 = Level 이 원래 굽는 기본 NavGrid 그대로.
+	int32 GetFootprintTilesWide() const	{ return _footprintTilesWide; }
+	int32 GetFootprintTilesHigh() const	{ return _footprintTilesHigh; }
+	void SetFootprint(int32 tilesWide, int32 tilesHigh)
+	{
+		_footprintTilesWide = (tilesWide > 0) ? tilesWide : 1;
+		_footprintTilesHigh = (tilesHigh > 0) ? tilesHigh : 1;
+	}
+
 	// hp는 항상 [0, maxHp] 안으로 잘린다. 음수 체력이나 과회복이 새어나가지 않게.
 	void SetHp(int32 hp);
 	void SetMaxHp(int32 maxHp);
@@ -133,6 +144,8 @@ private:
 	int32					_radius = 0;
 	int32					_hp = 100;
 	int32					_maxHp = 100;
+	int32					_footprintTilesWide = 1;
+	int32					_footprintTilesHigh = 1;
 
 	weak_ptr<Room>			_room;
 };

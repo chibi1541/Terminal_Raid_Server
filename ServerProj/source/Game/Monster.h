@@ -16,7 +16,9 @@ public:
 
 public:
 	const string&	GetMonsterTypeName() const		{ return _monsterTypeName; }
-	void			SetMonsterTypeName(const string& name)	{ _monsterTypeName = name; }
+
+	// 타입명과 함께 길찾기 풋프린트도 같이 정해진다 (임시 타입별 고정값 테이블 참고).
+	void			SetMonsterTypeName(const string& name);
 
 private:
 	string	_monsterTypeName;	// 디버그 표시 / 향후 몬스터 종류 식별용

@@ -29,11 +29,13 @@ struct TilePos
 class NavGrid
 {
 public:
-	void Build(const Vector<uint8>& cells, int32 cellWidth, int32 cellHeight, int32 tileSize);
+	void Build(const Vector<uint8>& cells, int32 cellWidth, int32 cellHeight,
+			   int32 tileWidth, int32 tileHeight);
 
 	int32	GetWidth() const	{ return _width; }		// 타일 개수
 	int32	GetHeight() const	{ return _height; }
-	int32	GetTileSize() const	{ return _tileSize; }
+	int32	GetTileWidth() const	{ return _tileWidth; }
+	int32	GetTileHeight() const	{ return _tileHeight; }
 
 	// 범위 밖은 항상 false.
 	// 경계 검사를 호출부에 흩뿌리지 않으려고 여기서 삼킨다. JPS가 사방을 마음 놓고 물어볼 수 있다.
@@ -52,6 +54,7 @@ public:
 private:
 	int32			_width = 0;
 	int32			_height = 0;
-	int32			_tileSize = 3;
+	int32			_tileWidth = 3;
+	int32			_tileHeight = 3;
 	Vector<uint8>	_walkable;	// 1 = 통행 가능
 };

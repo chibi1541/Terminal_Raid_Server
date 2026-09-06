@@ -1,13 +1,15 @@
 ﻿#include "pch.h"
 #include "Game/NavGrid.h"
 
-void NavGrid::Build(const Vector<uint8>& cells, int32 cellWidth, int32 cellHeight, int32 tileSize)
+void NavGrid::Build(const Vector<uint8>& cells, int32 cellWidth, int32 cellHeight,
+					 int32 tileWidth, int32 tileHeight)
 {
-	_tileSize = (tileSize > 0) ? tileSize : 1;
+	_tileWidth = (tileWidth > 0) ? tileWidth : 1;
+	_tileHeight = (tileHeight > 0) ? tileHeight : 1;
 
 	// 나머지 셀이 남으면 그 타일도 하나로 친다. 어차피 잘린 타일은 아래에서 막힌 것으로 판정된다.
-	_width = (cellWidth + _tileSize - 1) / _tileSize;
-	_height = (cellHeight + _tileSize - 1) / _tileSize;
+	_width = (cellWidth + _tileWidth - 1) / _tileWidth;
+	_height = (cellHeight + _tileHeight - 1) / _tileHeight;
 
 	_walkable.clear();
 	_walkable.resize(static_cast<size_t>(_width) * _height, 0);
@@ -18,12 +20,12 @@ void NavGrid::Build(const Vector<uint8>& cells, int32 cellWidth, int32 cellHeigh
 		{
 			bool walkable = true;
 
-			for (int32 oy = 0; oy < _tileSize && walkable; oy++)
+			for (int32 oy = 0; oy < _tileHeight && walkable; oy++)
 			{
-				for (int32 ox = 0; ox < _tileSize; ox++)
+				for (int32 ox = 0; ox < _tileWidth; ox++)
 				{
-					const int32 cellX = tx * _tileSize + ox;
-					const int32 cellY = ty * _tileSize + oy;
+					const int32 cellX = tx * _tileWidth + ox;
+					const int32 cellY = ty * _tileHeight + oy;
 
 					// 레벨 범위 밖 = 장애물
 					const bool blocked = (cellX >= cellWidth || cellY >= cellHeight)
@@ -66,8 +68,8 @@ TilePos NavGrid::FromIndex(int32 index) const
 TilePos NavGrid::CellToTile(int32 cellX, int32 cellY) const
 {
 	TilePos pos;
-	pos.x = cellX / _tileSize;
-	pos.y = cellY / _tileSize;
+	pos.x = cellX / _tileWidth;
+	pos.y = cellY / _tileHeight;
 
 	return pos;
 }
@@ -75,8 +77,8 @@ TilePos NavGrid::CellToTile(int32 cellX, int32 cellY) const
 Protocol::Vector2 NavGrid::TileToCellCenter(TilePos tile) const
 {
 	Protocol::Vector2 pos;
-	pos.set_x(tile.x * _tileSize + _tileSize / 2);
-	pos.set_y(tile.y * _tileSize + _tileSize / 2);
+	pos.set_x(tile.x * _tileWidth + _tileWidth / 2);
+	pos.set_y(tile.y * _tileHeight + _tileHeight / 2);
 
 	return pos;
 }

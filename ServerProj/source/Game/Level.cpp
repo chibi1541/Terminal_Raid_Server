@@ -58,7 +58,7 @@ bool Level::LoadFromFile(const WCHAR* path)
 	_height = height;
 	_tileSize = tileSize;
 	_cells = std::move(cells);
-	_navGrid.Build(_cells, _width, _height, _tileSize);
+	_navGrid.Build(_cells, _width, _height, _tileSize, _tileSize);
 
 	LOG_INFO(L"[level] loaded %s (id=%s) : %d x %d cells, tileSize %d -> %d x %d tiles",
 		path, _levelId.empty() ? L"(none)" : _levelId.c_str(),
@@ -90,7 +90,7 @@ void Level::BuildEmpty(int32 width, int32 height, int32 tileSize)
 		_cells[static_cast<size_t>(y) * _width + (_width - 1)] = 1;
 	}
 
-	_navGrid.Build(_cells, _width, _height, _tileSize);
+	_navGrid.Build(_cells, _width, _height, _tileSize, _tileSize);
 
 	LOG_WARN(L"[level] built empty fallback : %d x %d cells -> %d x %d tiles",
 		_width, _height, _navGrid.GetWidth(), _navGrid.GetHeight());
@@ -102,4 +102,26 @@ bool Level::IsCellBlocked(int32 x, int32 y) const
 		return true;
 
 	return _cells[static_cast<size_t>(y) * _width + x] != 0;
+}
+
+const NavGrid& Level::GetNavGridForFootprint(int32 footprintTilesWide, int32 footprintTilesHigh)
+{
+	footprintTilesWide = (footprintTilesWide > 0) ? footprintTilesWide : 1;
+	footprintTilesHigh = (footprintTilesHigh > 0) ? footprintTilesHigh : 1;
+
+	if (footprintTilesWide == 1 && footprintTilesHigh == 1)
+		return _navGrid;
+
+	const uint64 key = (static_cast<uint64>(footprintTilesWide) << 32)
+		| static_cast<uint32>(footprintTilesHigh);
+
+	auto it = _footprintNavGrids.find(key);
+	if (it != _footprintNavGrids.end())
+		return it->second;
+
+	NavGrid grid;
+	grid.Build(_cells, _width, _height,
+		_tileSize * footprintTilesWide, _tileSize * footprintTilesHigh);
+
+	return _footprintNavGrids.emplace(key, std::move(grid)).first->second;
 }

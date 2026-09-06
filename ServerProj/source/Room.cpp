@@ -373,8 +373,6 @@ void Room::UpdateMovement()
 	const bool keyframe =
 		(_tickCount - _lastKeyframeTick) >= static_cast<uint64>(MOVE_KEYFRAME_INTERVAL);
 
-	const NavGrid& grid = _level.GetNavGrid();
-
 	for (auto& item : _objects)
 	{
 		GameObject* object = item.second.get();
@@ -388,6 +386,11 @@ void Room::UpdateMovement()
 		// 경로 추종 : 현재 웨이포인트에 닿았으면 다음으로, dir 을 웨이포인트 방향에 맞춘다.
 		if (m.HasPath())
 		{
+			// 이 경로는 이 액터의 풋프린트로 구운 NavGrid 기준으로 짜였다.
+			// 웨이포인트 중심 좌표도 반드시 같은 grid 로 뽑아야 어긋나지 않는다.
+			const NavGrid& grid = _level.GetNavGridForFootprint(
+				object->GetFootprintTilesWide(), object->GetFootprintTilesHigh());
+
 			Protocol::Vector2 wp = grid.TileToCellCenter(m.path[m.pathIndex]);
 
 			if (object->GetPosX() == wp.x() && object->GetPosY() == wp.y())
@@ -515,7 +518,8 @@ bool Room::OrderMoveTo(uint64 objectId, int32 cellX, int32 cellY)
 	if (object == nullptr)
 		return false;
 
-	const NavGrid& grid = _level.GetNavGrid();
+	const NavGrid& grid = _level.GetNavGridForFootprint(
+		object->GetFootprintTilesWide(), object->GetFootprintTilesHigh());
 
 	const TilePos startTile = grid.CellToTile(object->GetPosX(), object->GetPosY());
 	const TilePos goalTile  = grid.CellToTile(cellX, cellY);
