@@ -92,3 +92,29 @@ message S_MOVE_ACK
 	Vector2 pos = 3;
 	DirectionType dir = 4;
 }
+
+// 피격 통지. 위치처럼 매 틱 바뀌는 게 아니라 "이 순간 한 번" 일어나는 것이라 S_MOVE와 분리한다.
+message S_HIT
+{
+	uint64 targetId = 1;
+	uint64 attackerId = 2;	// 없으면 0 (환경 데미지 등)
+	int32 damage = 3;
+	int32 newHp = 4;
+	uint32 serverTick = 5;
+}
+
+// 사망 통지. hp가 0이 된 순간 한 번. 이 직후 곧바로 S_DESPAWN이 나간다 (Room::Leave 경로).
+message S_DEATH
+{
+	uint64 objectId = 1;
+	uint64 killerId = 2;	// 없으면 0
+	uint32 serverTick = 3;
+}
+
+// 공격 모션 시작 통지. 데미지 판정과 무관하게 "이 순간 공격 모션을 재생하라"는 트리거만 알린다.
+message S_ATTACK_START
+{
+	uint64 objectId = 1;
+	DirectionType dir = 2;	// 바라보는 방향 (모션 방향)
+	uint32 serverTick = 3;
+}

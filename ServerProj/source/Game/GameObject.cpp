@@ -20,6 +20,15 @@ void GameObject::SetMaxHp(int32 maxHp)
 		_hp = _maxHp;
 }
 
+bool GameObject::ApplyDamage(int32 damage)
+{
+	if (damage <= 0 || IsAlive() == false)
+		return false;
+
+	SetHp(GetHp() - damage);
+	return IsAlive() == false;
+}
+
 void GameObject::SyncCellFromFixed()
 {
 	_pos.set_x(_move.fpX >> POS_SHIFT);

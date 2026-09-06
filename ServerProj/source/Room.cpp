@@ -554,6 +554,49 @@ void Room::DebugStepMovement(int32 count)
 	}
 }
 
+/*---------------
+	이벤트성 상태 (Hit / Death / Attack)
+----------------*/
+
+bool Room::DealDamage(uint64 attackerId, uint64 targetId, int32 damage)
+{
+	GameObjectRef target = Find(targetId);
+	if (target == nullptr || target->IsAlive() == false)
+		return false;
+
+	const bool died = target->ApplyDamage(damage);
+
+	Protocol::S_HIT hitPkt;
+	hitPkt.set_targetid(targetId);
+	hitPkt.set_attackerid(attackerId);
+	hitPkt.set_damage(damage);
+	hitPkt.set_newhp(target->GetHp());
+	hitPkt.set_servertick(static_cast<uint32>(_tickCount));
+	Broadcast(ClientPacketHandler::MakeSendBuffer(hitPkt), 0);
+
+	if (died)
+	{
+		Protocol::S_DEATH deathPkt;
+		deathPkt.set_objectid(targetId);
+		deathPkt.set_killerid(attackerId);
+		deathPkt.set_servertick(static_cast<uint32>(_tickCount));
+		Broadcast(ClientPacketHandler::MakeSendBuffer(deathPkt), 0);
+
+		Leave(target);	// 기존 S_DESPAWN 브로드캐스트 경로 재사용
+	}
+
+	return true;
+}
+
+void Room::NotifyAttackStart(uint64 objectId, Protocol::DirectionType dir)
+{
+	Protocol::S_ATTACK_START pkt;
+	pkt.set_objectid(objectId);
+	pkt.set_dir(dir);
+	pkt.set_servertick(static_cast<uint32>(_tickCount));
+	Broadcast(ClientPacketHandler::MakeSendBuffer(pkt), 0);
+}
+
 GameObjectRef Room::SpawnProjectile(int32 cellX, int32 cellY, Protocol::DirectionType dir,
 								   int32 cellsPerSec, int32 lifetimeTicks)
 {

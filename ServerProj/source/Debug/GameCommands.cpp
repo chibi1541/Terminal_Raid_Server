@@ -242,6 +242,68 @@ void GameCommands::Register()
 				monster->GetPosX(), monster->GetPosY(), monster->GetRadius());
 		}, CommandRunMode::GameThread);
 
+	GCommandRegistry->Register(L"hit", L"hit <objectId> <damage>",
+		L"deal damage to an object (broadcasts S_HIT / S_DEATH, despawns on death)",
+		[](CommandContext& context)
+		{
+			if (GRoom == nullptr)
+			{
+				context.Reply(L"room not created");
+				return;
+			}
+
+			if (context.ArgCount() < 3)
+			{
+				context.Reply(L"usage : hit <objectId> <damage>");
+				return;
+			}
+
+			uint64 targetId = 0;
+			int32 damage = 0;
+
+			if (ParseUint64(context.Arg(1), OUT targetId) == false ||
+				ParseInt32(context.Arg(2), OUT damage) == false)
+			{
+				context.Reply(L"invalid args : %s %s", context.Arg(1).c_str(), context.Arg(2).c_str());
+				return;
+			}
+
+			if (GRoom->DealDamage(0, targetId, damage) == false)
+				context.Reply(L"failed : no such object, or already dead");
+			else
+				context.Reply(L"dealt %d damage to objectId=%llu", damage, targetId);
+		}, CommandRunMode::GameThread);
+
+	GCommandRegistry->Register(L"attackstart", L"attackstart <objectId> <dir>",
+		L"broadcast an attack-motion-start state event (no damage)",
+		[](CommandContext& context)
+		{
+			if (GRoom == nullptr)
+			{
+				context.Reply(L"room not created");
+				return;
+			}
+
+			if (context.ArgCount() < 3)
+			{
+				context.Reply(L"usage : attackstart <objectId> <dir>");
+				return;
+			}
+
+			uint64 objectId = 0;
+			Protocol::DirectionType dir = Protocol::DIR_NONE;
+
+			if (ParseUint64(context.Arg(1), OUT objectId) == false ||
+				ParseDir8(context.Arg(2), OUT dir) == false)
+			{
+				context.Reply(L"invalid args : %s %s", context.Arg(1).c_str(), context.Arg(2).c_str());
+				return;
+			}
+
+			GRoom->NotifyAttackStart(objectId, dir);
+			context.Reply(L"attack-start broadcast for objectId=%llu", objectId);
+		}, CommandRunMode::GameThread);
+
 	GCommandRegistry->Register(L"despawn", L"despawn <objectId>",
 		L"remove an object from the room (connected clients get S_DESPAWN)",
 		[](CommandContext& context)

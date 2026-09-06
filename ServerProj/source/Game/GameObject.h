@@ -111,6 +111,10 @@ public:
 	void SetHp(int32 hp);
 	void SetMaxHp(int32 maxHp);
 
+	// hp 를 깎는다. 브로드캐스트는 하지 않는 순수 상태 변경 - Room::DealDamage 가 그 몫이다.
+	// damage <= 0 이거나 이미 죽었으면 아무 일도 안 하고 false. 이 호출로 사망했으면(hp==0) true.
+	bool ApplyDamage(int32 damage);
+
 	// 쿼드트리 삽입에 쓰는 경계. 원의 바운딩 박스다.
 	Bounds GetBounds() const;
 

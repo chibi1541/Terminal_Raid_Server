@@ -22,6 +22,9 @@ enum : uint16
 	PKT_C_MOVE = 1010,
 	PKT_S_MOVE = 1011,
 	PKT_S_MOVE_ACK = 1012,
+	PKT_S_HIT = 1013,
+	PKT_S_DEATH = 1014,
+	PKT_S_ATTACK_START = 1015,
 };
 
 bool Handle_INVALID(PacketSessionRef& session, BYTE* buffer, int32 len);
@@ -66,6 +69,9 @@ public:
 	static SendBufferRef MakeSendBuffer(Protocol::S_DESPAWN& pkt) {return MakeSendBuffer(pkt, PKT_S_DESPAWN); }
 	static SendBufferRef MakeSendBuffer(Protocol::S_MOVE& pkt) {return MakeSendBuffer(pkt, PKT_S_MOVE); }
 	static SendBufferRef MakeSendBuffer(Protocol::S_MOVE_ACK& pkt) {return MakeSendBuffer(pkt, PKT_S_MOVE_ACK); }
+	static SendBufferRef MakeSendBuffer(Protocol::S_HIT& pkt) {return MakeSendBuffer(pkt, PKT_S_HIT); }
+	static SendBufferRef MakeSendBuffer(Protocol::S_DEATH& pkt) {return MakeSendBuffer(pkt, PKT_S_DEATH); }
+	static SendBufferRef MakeSendBuffer(Protocol::S_ATTACK_START& pkt) {return MakeSendBuffer(pkt, PKT_S_ATTACK_START); }
 
 
 private:

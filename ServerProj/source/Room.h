@@ -76,6 +76,20 @@ public:
 	// 디버그 : 이동 루프만 count 틱 수동으로 굴린다. (bt step 과 같은 방식)
 	void	DebugStepMovement(int32 count);
 
+	/*----------
+		이벤트성 상태 (Hit / Death / Attack)
+
+		위치처럼 매 틱 바뀌는 게 아니라 "이 순간 한 번" 일어나는 것들.
+		S_MOVE 배치에 얹지 않고 별도 패킷으로 즉시 브로드캐스트한다.
+	-----------*/
+
+	// 데미지를 적용하고 S_HIT 브로드캐스트. 죽었으면 S_DEATH 도 이어서 브로드캐스트하고
+	// 룸에서 내보낸다 (기존 S_DESPAWN 경로 재사용). 대상이 없거나 이미 죽었으면 false.
+	bool	DealDamage(uint64 attackerId, uint64 targetId, int32 damage);
+
+	// 데미지 판정과 무관하게 "공격 모션이 시작됐다"만 알린다.
+	void	NotifyAttackStart(uint64 objectId, Protocol::DirectionType dir);
+
 	uint32	GetWidth() const	{ return static_cast<uint32>(_level.GetWidth()); }
 	uint32	GetHeight() const	{ return static_cast<uint32>(_level.GetHeight()); }
 
