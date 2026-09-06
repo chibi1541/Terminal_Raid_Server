@@ -341,21 +341,21 @@ bool Room::IntegrateActor(GameObject* object, int32 stepX, int32 stepY)
 	int32 ncy = ny >> POS_SHIFT;
 
 	// X축 이동이 벽에 막히면 X만 되돌리고 Y로 슬라이드시킨다.
-	if (ncx != cx && _level.IsCellBlocked(ncx, cy))
+	if (ncx != cx && IsFootprintBlocked(object, ncx, cy))
 	{
 		nx = m.fpX;
 		ncx = cx;
 	}
 
 	// Y축도 동일.
-	if (ncy != cy && _level.IsCellBlocked(cx, ncy))
+	if (ncy != cy && IsFootprintBlocked(object, cx, ncy))
 	{
 		ny = m.fpY;
 		ncy = cy;
 	}
 
 	// 두 축이 다 살아 대각으로 들어가는데 목적 칸이 막혔으면 코너컷이다. Y를 죽인다.
-	if (ncx != cx && ncy != cy && _level.IsCellBlocked(ncx, ncy))
+	if (ncx != cx && ncy != cy && IsFootprintBlocked(object, ncx, ncy))
 	{
 		ny = m.fpY;
 		ncy = cy;
@@ -366,6 +366,36 @@ bool Room::IntegrateActor(GameObject* object, int32 stepX, int32 stepY)
 	object->SyncCellFromFixed();
 
 	return (object->GetPosX() != cx || object->GetPosY() != cy);
+}
+
+bool Room::IsFootprintBlocked(const GameObject* object, int32 centerX, int32 centerY) const
+{
+	const int32 tilesWide = object->GetFootprintTilesWide();
+	const int32 tilesHigh = object->GetFootprintTilesHigh();
+
+	if (tilesWide <= 1 && tilesHigh <= 1)
+		return _level.IsCellBlocked(centerX, centerY);
+
+	const int32 tileSize = _level.GetTileSize();
+	const int32 cellsWide = tilesWide * tileSize;
+	const int32 cellsHigh = tilesHigh * tileSize;
+
+	// _pos 를 중심으로 대칭 - 짝수라 안 나뉘면 오른쪽/아래쪽에 한 칸 더.
+	const int32 minX = centerX - cellsWide / 2;
+	const int32 maxX = minX + cellsWide - 1;
+	const int32 minY = centerY - cellsHigh / 2;
+	const int32 maxY = minY + cellsHigh - 1;
+
+	for (int32 y = minY; y <= maxY; y++)
+	{
+		for (int32 x = minX; x <= maxX; x++)
+		{
+			if (_level.IsCellBlocked(x, y))
+				return true;
+		}
+	}
+
+	return false;
 }
 
 void Room::UpdateMovement()

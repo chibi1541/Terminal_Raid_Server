@@ -198,6 +198,10 @@ private:
 	// 반환값 : 복제 셀(_pos)이 바뀌었으면 true.
 	bool	IntegrateActor(GameObject* object, int32 stepX, int32 stepY);
 
+	// centerX/Y 를 중심으로 object 의 풋프린트 박스 전체가 벽에 막혔는지 검사.
+	// 풋프린트 미설정(1x1) 객체는 지금처럼 셀 1칸만 본다 - 기존 동작 그대로.
+	bool	IsFootprintBlocked(const GameObject* object, int32 centerX, int32 centerY) const;
+
 	// 8방향 enum -> 정수 단위 벡터.
 	static void					DirUnit(Protocol::DirectionType dir, OUT int32& ux, OUT int32& uy);
 	// 두 셀의 부호 차이 -> 8방향 enum.
