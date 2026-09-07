@@ -1,0 +1,94 @@
+{
+	"nodes": [
+		{
+			"id": "bb",
+			"type": "text",
+			"x": -1100,
+			"y": -520,
+			"width": 320,
+			"height": 220,
+			"text": "# Blackboard\n\n- targetId: 0\n- targetDist: 0.0\n- repathTimer: 0.0\n- atkTimer: 0.0\n- idleTimer: 0.0"
+		},
+		{
+			"id": "root",
+			"type": "text",
+			"x": -200,
+			"y": -520,
+			"width": 320,
+			"height": 110,
+			"text": "# Selector [root] monster basic AI"
+		},
+		{
+			"id": "seqAtk",
+			"type": "text",
+			"x": -640,
+			"y": -320,
+			"width": 300,
+			"height": 110,
+			"text": "# Sequence attack branch"
+		},
+		{
+			"id": "seqChase",
+			"type": "text",
+			"x": -200,
+			"y": -320,
+			"width": 300,
+			"height": 110,
+			"text": "# Sequence chase branch"
+		},
+		{
+			"id": "wait",
+			"type": "text",
+			"x": 240,
+			"y": -320,
+			"width": 300,
+			"height": 140,
+			"text": "# Wait\nduration: 0.4\ntimer: idleTimer"
+		},
+		{
+			"id": "inRange",
+			"type": "text",
+			"x": -800,
+			"y": -100,
+			"width": 300,
+			"height": 140,
+			"text": "# TargetInRange\ntargetKey: targetId\nrange: 6"
+		},
+		{
+			"id": "attack",
+			"type": "text",
+			"x": -460,
+			"y": -100,
+			"width": 320,
+			"height": 180,
+			"text": "# AttackTarget\ntargetKey: targetId\ncooldown: 1.2\ncooldownTimer: atkTimer\ndamage: 0"
+		},
+		{
+			"id": "find",
+			"type": "text",
+			"x": -360,
+			"y": -100,
+			"width": 320,
+			"height": 160,
+			"text": "# FindTargetInRadius\nradius: 80\ntargetKey: targetId\ndistKey: targetDist"
+		},
+		{
+			"id": "move",
+			"type": "text",
+			"x": 0,
+			"y": -100,
+			"width": 340,
+			"height": 200,
+			"text": "# MoveToTarget\ntargetKey: targetId\nrepathTimer: repathTimer\nrepathInterval: 0.35\narriveRange: 5\ngiveUpRange: 110"
+		}
+	],
+	"edges": [
+		{ "id": "e0", "fromNode": "root", "fromSide": "bottom", "toNode": "seqAtk", "toSide": "top", "label": "[0]" },
+		{ "id": "e1", "fromNode": "root", "fromSide": "bottom", "toNode": "seqChase", "toSide": "top", "label": "[1]" },
+		{ "id": "e2", "fromNode": "root", "fromSide": "bottom", "toNode": "wait", "toSide": "top", "label": "[2]" },
+		{ "id": "e3", "fromNode": "seqAtk", "fromSide": "bottom", "toNode": "inRange", "toSide": "top", "label": "[0]" },
+		{ "id": "e4", "fromNode": "seqAtk", "fromSide": "bottom", "toNode": "attack", "toSide": "top", "label": "[1]" },
+		{ "id": "e5", "fromNode": "seqChase", "fromSide": "bottom", "toNode": "find", "toSide": "top", "label": "[0]" },
+		{ "id": "e6", "fromNode": "seqChase", "fromSide": "bottom", "toNode": "move", "toSide": "top", "label": "[1]" }
+	]
+}

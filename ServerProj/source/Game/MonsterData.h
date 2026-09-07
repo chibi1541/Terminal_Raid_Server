@@ -19,7 +19,8 @@ struct MonsterDef
 {
 	Protocol::MonsterType	type = Protocol::Monster_None;
 
-	std::string	animClip = "Zombie";	// 서버는 안 쓴다 (클라 재생용). 로그/디버그에만.
+	std::string	animClip = "Zombie";	// 클라 재생용 (AnimationData.xml 키).
+	std::string	aiTree = "monster_basic";	// Data/AI/<이름>.canvas. 스폰 시 자동 부착. 빈 문자열이면 AI 없음.
 
 	int32	footprintTiles = 2;		// 길찾기 NavGrid 번들링 (타일). 세로는 1 고정.
 	int32	collisionCells = 8;		// 벽 충돌 박스 한 변 (셀, 위치 중심).

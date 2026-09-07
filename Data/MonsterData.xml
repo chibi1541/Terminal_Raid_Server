@@ -3,15 +3,16 @@
 
 	<!-- id             : Enum.proto 의 MonsterType 값 이름 (MonsterType_Parse 로 변환).
 	     animClip       : AnimationData.xml 의 Clip / StateMachine name (클라 재생용).
+	     aiTree         : Data/AI/<이름>.canvas. spawnmonster 가 자동 부착. 빈 값이면 AI 없음.
 	     footprintTiles : 길찾기 NavGrid 번들링 단위 (타일). 세로는 1 고정.
 	     collisionCells : 벽 충돌 박스 한 변 (셀, 위치 중심 정사각). 스프라이트 전체를 덮게.
 	     radius         : 원형 충돌 반경 (셀). 투사체 명중 판정 / 쿼드트리.
 	     maxHp          : 최대 체력.
 	     attackPower    : 공격력 (몬스터 투사체 / 근접 피해).
 	     moveSpeedCells : 이동 속도 (셀/초). -->
-	<Monster id="Monster_Zombie"      animClip="Zombie"
+	<Monster id="Monster_Zombie"      animClip="Zombie"      aiTree="monster_basic"
 	         footprintTiles="2" collisionCells="8"  radius="4" maxHp="60"  attackPower="8"  moveSpeedCells="8" />
-	<Monster id="Monster_Necromancer" animClip="Necromancer"
+	<Monster id="Monster_Necromancer" animClip="Necromancer" aiTree="monster_basic"
 	         footprintTiles="3" collisionCells="12" radius="6" maxHp="140" attackPower="16" moveSpeedCells="6" />
 
 </MonsterData>

@@ -1,15 +1,25 @@
 ﻿#include "pch.h"
 #include "AI/BtNodeRegistry.h"
 #include "AI/BehaviorTree.h"
+#include "Room.h"
 #include "Game/GameObject.h"
+#include "Game/ObjectIdGenerator.h"
+
+#include <cmath>
 
 /*-----------------
 	BtLeafLibrary
 
-	검증용 더미 리프들. 실제 게임 로직 리프(FindTarget / MoveToTarget / Attack)는 다음 단계다.
+	두 묶음이 있다.
+	  1. 유틸 리프 : Wait / Log / AlwaysSucceed / AlwaysFail / SetBlackboard / CheckBlackboard.
+	  2. 게임 로직 리프 : FindTargetInRadius / MoveToTarget / TargetInRange / AttackTarget.
+	     몬스터의 대기 -> 추적 -> 공격 AI (Data/AI/monster_basic.canvas) 가 쓴다.
+	     전부 context.room / context.self 만 얇게 감싼다 (Room::QueryCircle / OrderMoveTo /
+	     DealDamage / NotifyAttackStart).
 
 	전부 Execute 가 const 다. 리프는 공유물이라 자기 안에 진행 상태를 쌓을 수 없고,
 	생성자에서 받은 값(슬롯 인덱스, 상수)만 불변으로 들고 있다.
+	타이머 / 타겟 id 같은 개체별 상태는 전부 블랙보드 슬롯에 둔다.
 ------------------*/
 
 namespace
@@ -178,6 +188,248 @@ namespace
 		const Op	_op;
 		const float	_value;
 	};
+
+	/*================ 게임 로직 리프 (몬스터 AI) ================*/
+
+	// 두 셀 사이 거리 제곱 (정수). sqrt 안 쓰고 range*range 와 비교한다.
+	int64 CellDistSq(const GameObject& a, const GameObject& b)
+	{
+		const int64 dx = static_cast<int64>(a.GetPosX()) - b.GetPosX();
+		const int64 dy = static_cast<int64>(a.GetPosY()) - b.GetPosY();
+		return dx * dx + dy * dy;
+	}
+
+	// self -> target 방향을 8방향 enum 으로. 콘솔 y 는 아래로 증가 → dy<0 이 화면상 위(UP).
+	Protocol::DirectionType DirTo8(const GameObject& self, const GameObject& target)
+	{
+		const int32 dx = target.GetPosX() - self.GetPosX();
+		const int32 dy = target.GetPosY() - self.GetPosY();
+		const int sx = (dx > 0) - (dx < 0);
+		const int sy = (dy > 0) - (dy < 0);
+
+		if (sx == 0 && sy == 0)	return Protocol::DIR_NONE;
+		if (sx == 0)	return (sy < 0) ? Protocol::DIR_UP : Protocol::DIR_DOWN;
+		if (sy == 0)	return (sx < 0) ? Protocol::DIR_LEFT : Protocol::DIR_RIGHT;
+		if (sx < 0)		return (sy < 0) ? Protocol::DIR_UP_LEFT : Protocol::DIR_DOWN_LEFT;
+		return (sy < 0) ? Protocol::DIR_UP_RIGHT : Protocol::DIR_DOWN_RIGHT;
+	}
+
+	// 블랙보드에 담긴 targetId 로 살아있는 대상을 잠근다. 없으면 nullptr.
+	GameObject* ResolveTarget(BtContext& context, int32 targetSlot)
+	{
+		if (context.room == nullptr || targetSlot < 0)
+			return nullptr;
+
+		const uint64 targetId = static_cast<uint64>(context.blackboard->GetInt(targetSlot));
+		if (targetId == 0)
+			return nullptr;
+
+		GameObjectRef target = context.room->Find(targetId);
+		if (target == nullptr || target->IsAlive() == false)
+			return nullptr;
+
+		return target.get();
+	}
+
+	/*--- FindTargetInRadius : 반경 안의 가장 가까운 플레이어를 targetId 슬롯에 기록 ---*/
+	//
+	// 찾으면 Success (+ distKey 에 거리), 못 찾으면 targetId=0 으로 지우고 Failure.
+	// 몬스터 -> 플레이어 고정 (진영 개념이 생기면 파라미터로).
+	class FindTargetInRadiusLeaf : public BtLeaf
+	{
+	public:
+		FindTargetInRadiusLeaf(int32 radius, int32 targetSlot, int32 distSlot)
+			: _radius(radius), _targetSlot(targetSlot), _distSlot(distSlot) {}
+
+		virtual BtStatus Execute(BtContext& context) const override
+		{
+			if (context.room == nullptr || context.self == nullptr)
+				return BtStatus::Failure;
+
+			Vector<GameObject*> hits;
+			context.room->QueryCircle(context.self->GetPosX(), context.self->GetPosY(), _radius, OUT hits);
+
+			GameObject* best = nullptr;
+			int64 bestDistSq = 0;
+
+			for (GameObject* obj : hits)
+			{
+				if (obj == nullptr || obj == context.self)
+					continue;
+				if (obj->GetObjType() != Protocol::OBJECT_PLAYER || obj->IsAlive() == false)
+					continue;
+
+				const int64 distSq = CellDistSq(*context.self, *obj);
+				if (best == nullptr || distSq < bestDistSq)
+				{
+					best = obj;
+					bestDistSq = distSq;
+				}
+			}
+
+			if (best == nullptr)
+			{
+				context.blackboard->SetInt(_targetSlot, 0);
+				return BtStatus::Failure;
+			}
+
+			context.blackboard->SetInt(_targetSlot, static_cast<int64>(best->GetObjId()));
+			if (_distSlot >= 0)
+				context.blackboard->SetFloat(_distSlot, ::sqrtf(static_cast<float>(bestDistSq)));
+
+			return BtStatus::Success;
+		}
+
+		virtual std::wstring Describe() const override
+		{
+			WCHAR buffer[128];
+			::swprintf_s(buffer, L"(radius=%d targetSlot=%d distSlot=%d)", _radius, _targetSlot, _distSlot);
+			return buffer;
+		}
+
+	private:
+		const int32 _radius;
+		const int32 _targetSlot;
+		const int32 _distSlot;
+	};
+
+	/*--- MoveToTarget : targetId 로 JPS 경로를 깔고 추종. 도착하면 Success ---*/
+	//
+	// repathInterval 마다 (또는 경로가 없으면 즉시) 대상의 현재 셀로 다시 경로를 짠다.
+	// arriveRange 안에 들면 Success, giveUpRange 밖으로 벌어지면 Failure, 그 외 Running.
+	class MoveToTargetLeaf : public BtLeaf
+	{
+	public:
+		MoveToTargetLeaf(int32 targetSlot, int32 timerSlot, float repathInterval,
+						 int32 arriveRange, int32 giveUpRange)
+			: _targetSlot(targetSlot), _timerSlot(timerSlot), _repathInterval(repathInterval)
+			, _arriveRangeSq(static_cast<int64>(arriveRange) * arriveRange)
+			, _giveUpRangeSq(static_cast<int64>(giveUpRange) * giveUpRange) {}
+
+		virtual BtStatus Execute(BtContext& context) const override
+		{
+			GameObject* target = ResolveTarget(context, _targetSlot);
+			if (target == nullptr || context.self == nullptr)
+				return BtStatus::Failure;
+
+			const int64 distSq = CellDistSq(*context.self, *target);
+
+			if (distSq <= _arriveRangeSq)
+				return BtStatus::Success;	// 도착 - 상위 셀렉터가 공격 분기를 다시 본다
+
+			if (_giveUpRangeSq > 0 && distSq > _giveUpRangeSq)
+				return BtStatus::Failure;	// 너무 멀어짐 - 추적 포기
+
+			const float timer = context.blackboard->GetFloat(_timerSlot) + context.deltaTime;
+			const bool noPath = (context.self->Movement().HasPath() == false);
+
+			if (timer >= _repathInterval || noPath)
+			{
+				context.room->OrderMoveTo(context.self->GetObjId(), target->GetPosX(), target->GetPosY());
+				context.blackboard->SetFloat(_timerSlot, 0.0f);
+			}
+			else
+			{
+				context.blackboard->SetFloat(_timerSlot, timer);
+			}
+
+			return BtStatus::Running;
+		}
+
+		virtual std::wstring Describe() const override
+		{
+			WCHAR buffer[128];
+			::swprintf_s(buffer, L"(targetSlot=%d timerSlot=%d repath=%.2f)",
+				_targetSlot, _timerSlot, _repathInterval);
+			return buffer;
+		}
+
+	private:
+		const int32 _targetSlot;
+		const int32 _timerSlot;
+		const float _repathInterval;
+		const int64 _arriveRangeSq;
+		const int64 _giveUpRangeSq;
+	};
+
+	/*--- TargetInRange : targetId 대상이 range 셀 안에 있으면 Success ---*/
+	class TargetInRangeLeaf : public BtLeaf
+	{
+	public:
+		TargetInRangeLeaf(int32 targetSlot, int32 range)
+			: _targetSlot(targetSlot), _rangeSq(static_cast<int64>(range) * range) {}
+
+		virtual BtStatus Execute(BtContext& context) const override
+		{
+			GameObject* target = ResolveTarget(context, _targetSlot);
+			if (target == nullptr || context.self == nullptr)
+				return BtStatus::Failure;
+
+			return (CellDistSq(*context.self, *target) <= _rangeSq)
+				? BtStatus::Success : BtStatus::Failure;
+		}
+
+		virtual std::wstring Describe() const override
+		{
+			WCHAR buffer[96];
+			::swprintf_s(buffer, L"(targetSlot=%d)", _targetSlot);
+			return buffer;
+		}
+
+	private:
+		const int32 _targetSlot;
+		const int64 _rangeSq;
+	};
+
+	/*--- AttackTarget : 쿨다운이 차면 S_ATTACK_START + DealDamage. 항상 Success (대상 유효 시) ---*/
+	//
+	// damage <= 0 이면 self 의 공격력(GameObject::GetAttackPower)을 쓴다.
+	// 쿨다운 경과는 timerSlot 에 쌓는다 (Wait 와 같은 방식).
+	class AttackTargetLeaf : public BtLeaf
+	{
+	public:
+		AttackTargetLeaf(int32 targetSlot, int32 timerSlot, float cooldown, int32 damage)
+			: _targetSlot(targetSlot), _timerSlot(timerSlot), _cooldown(cooldown), _damage(damage) {}
+
+		virtual BtStatus Execute(BtContext& context) const override
+		{
+			GameObject* target = ResolveTarget(context, _targetSlot);
+			if (target == nullptr || context.self == nullptr)
+				return BtStatus::Failure;
+
+			const float timer = context.blackboard->GetFloat(_timerSlot) + context.deltaTime;
+
+			if (timer >= _cooldown)
+			{
+				const int32 dmg = (_damage > 0) ? _damage : context.self->GetAttackPower();
+
+				context.room->NotifyAttackStart(context.self->GetObjId(), DirTo8(*context.self, *target));
+				context.room->DealDamage(context.self->GetObjId(), target->GetObjId(), dmg);
+
+				context.blackboard->SetFloat(_timerSlot, 0.0f);
+			}
+			else
+			{
+				context.blackboard->SetFloat(_timerSlot, timer);
+			}
+
+			return BtStatus::Success;
+		}
+
+		virtual std::wstring Describe() const override
+		{
+			WCHAR buffer[128];
+			::swprintf_s(buffer, L"(targetSlot=%d timerSlot=%d cooldown=%.2f damage=%d)",
+				_targetSlot, _timerSlot, _cooldown, _damage);
+			return buffer;
+		}
+
+	private:
+		const int32 _targetSlot;
+		const int32 _timerSlot;
+		const float _cooldown;
+		const int32 _damage;
+	};
 }
 
 void BtNodeRegistry::RegisterBuiltins()
@@ -250,5 +502,60 @@ void BtNodeRegistry::RegisterBuiltins()
 				return nullptr;
 
 			return new CheckBlackboardLeaf(slot, op, params.GetFloat("value", 0.0f));
+		});
+
+	/*--- 게임 로직 리프 (monster_basic.canvas) ---*/
+
+	Register("FindTargetInRadius",
+		[](const BtParams& params, const BehaviorTree& tree) -> BtLeaf*
+		{
+			const int32 targetSlot = ResolveSlot(params, tree, "targetKey");
+			if (targetSlot < 0)
+				return nullptr;	// targetKey 미선언
+
+			const int32 distSlot = ResolveSlot(params, tree, "distKey");	// 선택 (-1 허용)
+
+			return new FindTargetInRadiusLeaf(
+				static_cast<int32>(params.GetFloat("radius", 60.0f)), targetSlot, distSlot);
+		});
+
+	Register("MoveToTarget",
+		[](const BtParams& params, const BehaviorTree& tree) -> BtLeaf*
+		{
+			const int32 targetSlot = ResolveSlot(params, tree, "targetKey");
+			const int32 timerSlot = ResolveSlot(params, tree, "repathTimer");
+			if (targetSlot < 0 || timerSlot < 0)
+				return nullptr;
+
+			return new MoveToTargetLeaf(
+				targetSlot, timerSlot,
+				params.GetFloat("repathInterval", 0.4f),
+				static_cast<int32>(params.GetFloat("arriveRange", 5.0f)),
+				static_cast<int32>(params.GetFloat("giveUpRange", 0.0f)));
+		});
+
+	Register("TargetInRange",
+		[](const BtParams& params, const BehaviorTree& tree) -> BtLeaf*
+		{
+			const int32 targetSlot = ResolveSlot(params, tree, "targetKey");
+			if (targetSlot < 0)
+				return nullptr;
+
+			return new TargetInRangeLeaf(
+				targetSlot, static_cast<int32>(params.GetFloat("range", 6.0f)));
+		});
+
+	Register("AttackTarget",
+		[](const BtParams& params, const BehaviorTree& tree) -> BtLeaf*
+		{
+			const int32 targetSlot = ResolveSlot(params, tree, "targetKey");
+			const int32 timerSlot = ResolveSlot(params, tree, "cooldownTimer");
+			if (targetSlot < 0 || timerSlot < 0)
+				return nullptr;
+
+			return new AttackTargetLeaf(
+				targetSlot, timerSlot,
+				params.GetFloat("cooldown", 1.0f),
+				static_cast<int32>(params.GetInt("damage", 0)));
 		});
 }

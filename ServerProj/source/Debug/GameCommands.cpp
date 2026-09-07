@@ -5,6 +5,7 @@
 #include "Protocol/ClientPacketHandler.h"
 #include "Game/Player.h"
 #include "Game/Monster.h"
+#include "Game/MonsterData.h"
 #include "Game/ProjectileData.h"
 #include "Game/NavGrid.h"
 #include "Game/QuadTree.h"
@@ -289,9 +290,22 @@ void GameCommands::Register()
 			// 이미 룸 잡 큐 안이므로 DoAsync 없이 바로 부른다.
 			GRoom->Enter(static_pointer_cast<GameObject>(monster), useRandomSpawnPos);
 
-			context.Reply(L"spawned monster objectId=%llu type=%hs at (%d, %d) r=%d",
+			// MonsterData 의 aiTree 를 자동 부착한다 (대기/추적/공격). 빈 값이면 건너뛴다.
+			const string& aiTree = MonsterData::Get().Find(monsterType).aiTree;
+			bool aiAttached = false;
+
+			if (aiTree.empty() == false)
+			{
+				aiAttached = GRoom->AttachBehavior(monster->GetObjId(), aiTree);
+				if (aiAttached == false)
+					context.Reply(L"  warning : failed to attach AI tree '%hs' (check Data/AI/%hs.canvas)",
+						aiTree.c_str(), aiTree.c_str());
+			}
+
+			context.Reply(L"spawned monster objectId=%llu type=%hs at (%d, %d) r=%d ai=%hs",
 				monster->GetObjId(), monster->GetMonsterTypeName().c_str(),
-				monster->GetPosX(), monster->GetPosY(), monster->GetRadius());
+				monster->GetPosX(), monster->GetPosY(), monster->GetRadius(),
+				aiAttached ? aiTree.c_str() : "none");
 		}, CommandRunMode::GameThread);
 
 	GCommandRegistry->Register(L"hit", L"hit <objectId> <damage>",
