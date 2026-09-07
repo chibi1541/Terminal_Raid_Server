@@ -211,6 +211,7 @@ PROTOBUF_CONSTEXPR S_HIT::S_HIT(
   , /*decltype(_impl_.damage_)*/0
   , /*decltype(_impl_.newhp_)*/0
   , /*decltype(_impl_.servertick_)*/0u
+  , /*decltype(_impl_.stunms_)*/0u
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct S_HITDefaultTypeInternal {
   PROTOBUF_CONSTEXPR S_HITDefaultTypeInternal()
@@ -486,6 +487,7 @@ const uint32_t TableStruct_Protocol_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE
   PROTOBUF_FIELD_OFFSET(::Protocol::S_HIT, _impl_.damage_),
   PROTOBUF_FIELD_OFFSET(::Protocol::S_HIT, _impl_.newhp_),
   PROTOBUF_FIELD_OFFSET(::Protocol::S_HIT, _impl_.servertick_),
+  PROTOBUF_FIELD_OFFSET(::Protocol::S_HIT, _impl_.stunms_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::Protocol::S_DEATH, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -589,15 +591,15 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 85, -1, -1, sizeof(::Protocol::S_MOVE)},
   { 95, -1, -1, sizeof(::Protocol::S_MOVE_ACK)},
   { 107, -1, -1, sizeof(::Protocol::S_HIT)},
-  { 118, -1, -1, sizeof(::Protocol::S_DEATH)},
-  { 127, -1, -1, sizeof(::Protocol::S_ATTACK_START)},
-  { 136, -1, -1, sizeof(::Protocol::C_DEBUG_CONFIG)},
-  { 145, -1, -1, sizeof(::Protocol::S_DEBUG_LEVEL)},
-  { 157, -1, -1, sizeof(::Protocol::DebugPathNode)},
-  { 164, -1, -1, sizeof(::Protocol::S_DEBUG_PATH)},
-  { 175, -1, -1, sizeof(::Protocol::C_ATTACK)},
-  { 184, -1, -1, sizeof(::Protocol::DebugRect)},
-  { 194, -1, -1, sizeof(::Protocol::S_DEBUG_QUADTREE)},
+  { 119, -1, -1, sizeof(::Protocol::S_DEATH)},
+  { 128, -1, -1, sizeof(::Protocol::S_ATTACK_START)},
+  { 137, -1, -1, sizeof(::Protocol::C_DEBUG_CONFIG)},
+  { 146, -1, -1, sizeof(::Protocol::S_DEBUG_LEVEL)},
+  { 158, -1, -1, sizeof(::Protocol::DebugPathNode)},
+  { 165, -1, -1, sizeof(::Protocol::S_DEBUG_PATH)},
+  { 176, -1, -1, sizeof(::Protocol::C_ATTACK)},
+  { 185, -1, -1, sizeof(::Protocol::DebugRect)},
+  { 195, -1, -1, sizeof(::Protocol::S_DEBUG_QUADTREE)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -649,32 +651,33 @@ const char descriptor_table_protodef_Protocol_2eproto[] PROTOBUF_SECTION_VARIABL
   "ocessedInputSeq\030\001 \001(\r\022\022\n\nserverTick\030\002 \001("
   "\r\022\036\n\003pos\030\003 \001(\0132\021.Protocol.Vector2\022$\n\003dir"
   "\030\004 \001(\0162\027.Protocol.DirectionType\022\017\n\007posSu"
-  "bX\030\005 \001(\005\022\017\n\007posSubY\030\006 \001(\005\"`\n\005S_HIT\022\020\n\010ta"
+  "bX\030\005 \001(\005\022\017\n\007posSubY\030\006 \001(\005\"p\n\005S_HIT\022\020\n\010ta"
   "rgetId\030\001 \001(\004\022\022\n\nattackerId\030\002 \001(\004\022\016\n\006dama"
   "ge\030\003 \001(\005\022\r\n\005newHp\030\004 \001(\005\022\022\n\nserverTick\030\005 "
-  "\001(\r\"A\n\007S_DEATH\022\020\n\010objectId\030\001 \001(\004\022\020\n\010kill"
-  "erId\030\002 \001(\004\022\022\n\nserverTick\030\003 \001(\r\"\\\n\016S_ATTA"
-  "CK_START\022\020\n\010objectId\030\001 \001(\004\022$\n\003dir\030\002 \001(\0162"
-  "\027.Protocol.DirectionType\022\022\n\nserverTick\030\003"
-  " \001(\r\"P\n\016C_DEBUG_CONFIG\022\025\n\rwantLevelGrid\030"
-  "\001 \001(\010\022\021\n\twantPaths\030\002 \001(\010\022\024\n\014wantQuadtree"
-  "\030\003 \001(\010\"y\n\rS_DEBUG_LEVEL\022\r\n\005width\030\001 \001(\r\022\016"
-  "\n\006height\030\002 \001(\r\022\020\n\010tileSize\030\003 \001(\r\022\020\n\010star"
-  "tRow\030\004 \001(\r\022\020\n\010rowCount\030\005 \001(\r\022\023\n\013blockedB"
-  "its\030\006 \001(\014\"0\n\rDebugPathNode\022\037\n\004cell\030\001 \001(\013"
-  "2\021.Protocol.Vector2\"\241\001\n\014S_DEBUG_PATH\022\020\n\010"
-  "objectId\030\001 \001(\004\022*\n\twaypoints\030\002 \003(\0132\027.Prot"
-  "ocol.DebugPathNode\022\024\n\014currentIndex\030\003 \001(\r"
-  "\022,\n\013searchNodes\030\004 \003(\0132\027.Protocol.DebugPa"
-  "thNode\022\017\n\007cleared\030\005 \001(\010\"k\n\010C_ATTACK\022\"\n\007a"
-  "imCell\030\001 \001(\0132\021.Protocol.Vector2\022%\n\nmuzzl"
-  "eCell\030\002 \001(\0132\021.Protocol.Vector2\022\024\n\014client"
-  "TimeMs\030\003 \001(\r\"C\n\tDebugRect\022\014\n\004minX\030\001 \001(\005\022"
-  "\014\n\004minY\030\002 \001(\005\022\014\n\004maxX\030\003 \001(\005\022\014\n\004maxY\030\004 \001("
-  "\005\"\215\001\n\020S_DEBUG_QUADTREE\022\"\n\005nodes\030\001 \003(\0132\023."
-  "Protocol.DebugRect\022\023\n\013objectCount\030\002 \001(\r\022"
-  "\023\n\013buildMicros\030\003 \001(\r\022\027\n\017collisionMicros\030"
-  "\004 \001(\r\022\022\n\nserverTick\030\005 \001(\rb\006proto3"
+  "\001(\r\022\016\n\006stunMs\030\006 \001(\r\"A\n\007S_DEATH\022\020\n\010object"
+  "Id\030\001 \001(\004\022\020\n\010killerId\030\002 \001(\004\022\022\n\nserverTick"
+  "\030\003 \001(\r\"\\\n\016S_ATTACK_START\022\020\n\010objectId\030\001 \001"
+  "(\004\022$\n\003dir\030\002 \001(\0162\027.Protocol.DirectionType"
+  "\022\022\n\nserverTick\030\003 \001(\r\"P\n\016C_DEBUG_CONFIG\022\025"
+  "\n\rwantLevelGrid\030\001 \001(\010\022\021\n\twantPaths\030\002 \001(\010"
+  "\022\024\n\014wantQuadtree\030\003 \001(\010\"y\n\rS_DEBUG_LEVEL\022"
+  "\r\n\005width\030\001 \001(\r\022\016\n\006height\030\002 \001(\r\022\020\n\010tileSi"
+  "ze\030\003 \001(\r\022\020\n\010startRow\030\004 \001(\r\022\020\n\010rowCount\030\005"
+  " \001(\r\022\023\n\013blockedBits\030\006 \001(\014\"0\n\rDebugPathNo"
+  "de\022\037\n\004cell\030\001 \001(\0132\021.Protocol.Vector2\"\241\001\n\014"
+  "S_DEBUG_PATH\022\020\n\010objectId\030\001 \001(\004\022*\n\twaypoi"
+  "nts\030\002 \003(\0132\027.Protocol.DebugPathNode\022\024\n\014cu"
+  "rrentIndex\030\003 \001(\r\022,\n\013searchNodes\030\004 \003(\0132\027."
+  "Protocol.DebugPathNode\022\017\n\007cleared\030\005 \001(\010\""
+  "k\n\010C_ATTACK\022\"\n\007aimCell\030\001 \001(\0132\021.Protocol."
+  "Vector2\022%\n\nmuzzleCell\030\002 \001(\0132\021.Protocol.V"
+  "ector2\022\024\n\014clientTimeMs\030\003 \001(\r\"C\n\tDebugRec"
+  "t\022\014\n\004minX\030\001 \001(\005\022\014\n\004minY\030\002 \001(\005\022\014\n\004maxX\030\003 "
+  "\001(\005\022\014\n\004maxY\030\004 \001(\005\"\215\001\n\020S_DEBUG_QUADTREE\022\""
+  "\n\005nodes\030\001 \003(\0132\023.Protocol.DebugRect\022\023\n\013ob"
+  "jectCount\030\002 \001(\r\022\023\n\013buildMicros\030\003 \001(\r\022\027\n\017"
+  "collisionMicros\030\004 \001(\r\022\022\n\nserverTick\030\005 \001("
+  "\rb\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_Protocol_2eproto_deps[2] = {
   &::descriptor_table_Enum_2eproto,
@@ -682,7 +685,7 @@ static const ::_pbi::DescriptorTable* const descriptor_table_Protocol_2eproto_de
 };
 static ::_pbi::once_flag descriptor_table_Protocol_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_Protocol_2eproto = {
-    false, false, 1913, descriptor_table_protodef_Protocol_2eproto,
+    false, false, 1929, descriptor_table_protodef_Protocol_2eproto,
     "Protocol.proto",
     &descriptor_table_Protocol_2eproto_once, descriptor_table_Protocol_2eproto_deps, 2, 23,
     schemas, file_default_instances, TableStruct_Protocol_2eproto::offsets,
@@ -3278,12 +3281,13 @@ S_HIT::S_HIT(const S_HIT& from)
     , decltype(_impl_.damage_){}
     , decltype(_impl_.newhp_){}
     , decltype(_impl_.servertick_){}
+    , decltype(_impl_.stunms_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   ::memcpy(&_impl_.targetid_, &from._impl_.targetid_,
-    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.servertick_) -
-    reinterpret_cast<char*>(&_impl_.targetid_)) + sizeof(_impl_.servertick_));
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.stunms_) -
+    reinterpret_cast<char*>(&_impl_.targetid_)) + sizeof(_impl_.stunms_));
   // @@protoc_insertion_point(copy_constructor:Protocol.S_HIT)
 }
 
@@ -3297,6 +3301,7 @@ inline void S_HIT::SharedCtor(
     , decltype(_impl_.damage_){0}
     , decltype(_impl_.newhp_){0}
     , decltype(_impl_.servertick_){0u}
+    , decltype(_impl_.stunms_){0u}
     , /*decltype(_impl_._cached_size_)*/{}
   };
 }
@@ -3325,8 +3330,8 @@ void S_HIT::Clear() {
   (void) cached_has_bits;
 
   ::memset(&_impl_.targetid_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&_impl_.servertick_) -
-      reinterpret_cast<char*>(&_impl_.targetid_)) + sizeof(_impl_.servertick_));
+      reinterpret_cast<char*>(&_impl_.stunms_) -
+      reinterpret_cast<char*>(&_impl_.targetid_)) + sizeof(_impl_.stunms_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -3372,6 +3377,14 @@ const char* S_HIT::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
       case 5:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 40)) {
           _impl_.servertick_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // uint32 stunMs = 6;
+      case 6:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 48)) {
+          _impl_.stunms_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -3435,6 +3448,12 @@ uint8_t* S_HIT::_InternalSerialize(
     target = ::_pbi::WireFormatLite::WriteUInt32ToArray(5, this->_internal_servertick(), target);
   }
 
+  // uint32 stunMs = 6;
+  if (this->_internal_stunms() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(6, this->_internal_stunms(), target);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -3476,6 +3495,11 @@ size_t S_HIT::ByteSizeLong() const {
     total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_servertick());
   }
 
+  // uint32 stunMs = 6;
+  if (this->_internal_stunms() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_stunms());
+  }
+
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
@@ -3509,6 +3533,9 @@ void S_HIT::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF
   if (from._internal_servertick() != 0) {
     _this->_internal_set_servertick(from._internal_servertick());
   }
+  if (from._internal_stunms() != 0) {
+    _this->_internal_set_stunms(from._internal_stunms());
+  }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
@@ -3527,8 +3554,8 @@ void S_HIT::InternalSwap(S_HIT* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(S_HIT, _impl_.servertick_)
-      + sizeof(S_HIT::_impl_.servertick_)
+      PROTOBUF_FIELD_OFFSET(S_HIT, _impl_.stunms_)
+      + sizeof(S_HIT::_impl_.stunms_)
       - PROTOBUF_FIELD_OFFSET(S_HIT, _impl_.targetid_)>(
           reinterpret_cast<char*>(&_impl_.targetid_),
           reinterpret_cast<char*>(&other->_impl_.targetid_));

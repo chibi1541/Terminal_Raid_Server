@@ -28,6 +28,9 @@ struct MonsterDef
 	int32	maxHp = 60;
 	int32	attackPower = 8;
 	int32	moveSpeedCells = 8;		// 이동 속도 (셀/초).
+
+	int32	hitStunMs = 0;			// 피격 경직 시간(ms). 0 = 경직 면역(보스). 클라 Hit 클립 길이에 맞춘다.
+	int32	deathFadeMs = 0;		// 사망 후 디스폰까지 지연(ms) - Death 클립 재생 시간. 0 = 즉시 디스폰.
 };
 
 class MonsterData

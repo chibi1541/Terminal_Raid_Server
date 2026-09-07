@@ -27,6 +27,7 @@ struct CharacterDef
 	int32	maxHp = 100;
 	int32	attackPower = 10;
 	int32	moveSpeedCells = 20;	// 이동 속도 (셀/초). ★ 클라 예측(MoveMath)과 아직 분리 - 스폰 리팩터 때 통합.
+	int32	hitStunMs = 300;		// 피격 경직 시간(ms). 이 동안 이동 입력 무시. 클라 Hit 클립 길이에 맞춘다.
 };
 
 class CharacterData

@@ -181,6 +181,11 @@ public:
 	// damage <= 0 이거나 이미 죽었으면 아무 일도 안 하고 false. 이 호출로 사망했으면(hp==0) true.
 	bool ApplyDamage(int32 damage);
 
+	// 피격 경직. 이 틱까지는 이동 적분 / AI 틱 / 입력을 무시한다. Room::DealDamage 가 세팅.
+	uint64 GetStunUntilTick() const				{ return _stunUntilTick; }
+	void   SetStunUntilTick(uint64 tick)		{ _stunUntilTick = tick; }
+	bool   IsStunned(uint64 currentTick) const	{ return currentTick < _stunUntilTick; }
+
 	// 쿼드트리 삽입에 쓰는 경계. 원의 바운딩 박스다.
 	Bounds GetBounds() const;
 
@@ -204,6 +209,7 @@ private:
 	int32					_footprintTilesHigh = 1;
 	int32					_collisionCellsWide = 1;
 	int32					_collisionCellsHigh = 1;
+	uint64					_stunUntilTick = 0;
 
 	weak_ptr<Room>			_room;
 };

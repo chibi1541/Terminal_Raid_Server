@@ -2389,6 +2389,7 @@ class S_HIT final :
     kDamageFieldNumber = 3,
     kNewHpFieldNumber = 4,
     kServerTickFieldNumber = 5,
+    kStunMsFieldNumber = 6,
   };
   // uint64 targetId = 1;
   void clear_targetid();
@@ -2435,6 +2436,15 @@ class S_HIT final :
   void _internal_set_servertick(uint32_t value);
   public:
 
+  // uint32 stunMs = 6;
+  void clear_stunms();
+  uint32_t stunms() const;
+  void set_stunms(uint32_t value);
+  private:
+  uint32_t _internal_stunms() const;
+  void _internal_set_stunms(uint32_t value);
+  public:
+
   // @@protoc_insertion_point(class_scope:Protocol.S_HIT)
  private:
   class _Internal;
@@ -2448,6 +2458,7 @@ class S_HIT final :
     int32_t damage_;
     int32_t newhp_;
     uint32_t servertick_;
+    uint32_t stunms_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -5152,6 +5163,26 @@ inline void S_HIT::_internal_set_servertick(uint32_t value) {
 inline void S_HIT::set_servertick(uint32_t value) {
   _internal_set_servertick(value);
   // @@protoc_insertion_point(field_set:Protocol.S_HIT.serverTick)
+}
+
+// uint32 stunMs = 6;
+inline void S_HIT::clear_stunms() {
+  _impl_.stunms_ = 0u;
+}
+inline uint32_t S_HIT::_internal_stunms() const {
+  return _impl_.stunms_;
+}
+inline uint32_t S_HIT::stunms() const {
+  // @@protoc_insertion_point(field_get:Protocol.S_HIT.stunMs)
+  return _internal_stunms();
+}
+inline void S_HIT::_internal_set_stunms(uint32_t value) {
+  
+  _impl_.stunms_ = value;
+}
+inline void S_HIT::set_stunms(uint32_t value) {
+  _internal_set_stunms(value);
+  // @@protoc_insertion_point(field_set:Protocol.S_HIT.stunMs)
 }
 
 // -------------------------------------------------------------------

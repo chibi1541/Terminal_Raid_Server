@@ -232,6 +232,9 @@ private:
 	// 수명이 다했거나 벽에 막힌 투사체를 걷어낸다. Tick() 이 이동 브로드캐스트 뒤에 부른다.
 	void	SweepExpiredProjectiles();
 
+	// Death 클립 재생을 마친(_deathDespawnTick 도달) 몬스터 시체를 룸에서 뺀다.
+	void	SweepDeadMonsters();
+
 	// 살아있는 투사체마다 발사자 진영 반대편(플레이어<->몬스터)을 쿼드트리로 찾아 명중 판정.
 	// 명중 시 DealDamage + 투사체 MarkExpired. Tick() 이 UpdateMovement 뒤(2차 트리 재구축 후) 부른다.
 	void	ResolveProjectileHits();

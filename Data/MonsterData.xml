@@ -9,10 +9,14 @@
 	     radius         : 원형 충돌 반경 (셀). 투사체 명중 판정 / 쿼드트리.
 	     maxHp          : 최대 체력.
 	     attackPower    : 공격력 (몬스터 투사체 / 근접 피해).
-	     moveSpeedCells : 이동 속도 (셀/초). -->
+	     moveSpeedCells : 이동 속도 (셀/초).
+	     hitStunMs      : 피격 경직 시간(ms). 0 = 경직 면역(보스). 클라 Hit 클립 길이에 맞춘다.
+	     deathFadeMs    : 사망 후 디스폰 지연(ms). Death 클립 재생 시간. 0 = 즉시 디스폰. -->
 	<Monster id="Monster_Zombie"      animClip="Zombie"      aiTree="monster_basic"
-	         footprintTiles="4" collisionCells="16"  radius="8" maxHp="60"  attackPower="8"  moveSpeedCells="30" />
+	         footprintTiles="4" collisionCells="16"  radius="8" maxHp="60"  attackPower="8"  moveSpeedCells="30"
+	         hitStunMs="350" deathFadeMs="600" />
 	<Monster id="Monster_Necromancer" animClip="Necromancer" aiTree="necromancer_boss"
-	         footprintTiles="6" collisionCells="24" radius="12" maxHp="140" attackPower="16" moveSpeedCells="25" />
+	         footprintTiles="6" collisionCells="24" radius="12" maxHp="140" attackPower="16" moveSpeedCells="25"
+	         hitStunMs="0" deathFadeMs="0" />
 
 </MonsterData>

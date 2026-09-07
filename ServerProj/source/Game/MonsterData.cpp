@@ -61,6 +61,8 @@ bool MonsterData::LoadFromFile(const WCHAR* path)
 		def.maxHp = node.GetInt32Attr(L"maxHp", 60);
 		def.attackPower = node.GetInt32Attr(L"attackPower", 8);
 		def.moveSpeedCells = node.GetInt32Attr(L"moveSpeedCells", 8);
+		def.hitStunMs = node.GetInt32Attr(L"hitStunMs", 0);
+		def.deathFadeMs = node.GetInt32Attr(L"deathFadeMs", 0);
 
 		_defs[static_cast<int>(def.type)] = def;
 	}

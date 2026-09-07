@@ -106,6 +106,7 @@ message S_HIT
 	int32 damage = 3;
 	int32 newHp = 4;
 	uint32 serverTick = 5;
+	uint32 stunMs = 6;		// 피격 경직 시간(ms). 0 = 경직 없음(보스 등). 클라가 이 값으로 피격 상태를 유지.
 }
 
 // 사망 통지. hp가 0이 된 순간 한 번. 이 직후 곧바로 S_DESPAWN이 나간다 (Room::Leave 경로).

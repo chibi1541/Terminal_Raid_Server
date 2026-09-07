@@ -60,6 +60,7 @@ bool CharacterData::LoadFromFile(const WCHAR* path)
 		def.maxHp = node.GetInt32Attr(L"maxHp", 100);
 		def.attackPower = node.GetInt32Attr(L"attackPower", 10);
 		def.moveSpeedCells = node.GetInt32Attr(L"moveSpeedCells", 20);
+		def.hitStunMs = node.GetInt32Attr(L"hitStunMs", 300);
 
 		_defs[static_cast<int>(def.type)] = def;
 	}

@@ -7,6 +7,8 @@
 #include "Game/ObjectIdGenerator.h"
 #include "GameSession.h"
 #include "Game/ProjectileData.h"
+#include "Game/MonsterData.h"
+#include "Game/CharacterData.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -86,6 +88,9 @@ void Room::Tick()
 
 	// 수명이 다했거나 벽에 박힌(또는 이번 틱에 명중한) 투사체를 정리한다. (마지막 위치는 위에서 이미 보냈다)
 	SweepExpiredProjectiles();
+
+	// Death 클립 재생을 마친 몬스터 시체를 룸에서 뺀다.
+	SweepDeadMonsters();
 
 	// 쿼드트리 디버그 오버레이 (~5Hz, 구독 세션 없으면 비용 0).
 	BroadcastDebugQuadtree();
@@ -447,6 +452,18 @@ void Room::UpdateMovement()
 		if (object == nullptr || object->IsAlive() == false)
 			continue;
 
+		// 피격 경직 중이면 적분 정지. dir 을 한 번 NONE 으로 알려 클라 보간이 외삽을 멈추게 한다.
+		// state/path 는 유지 - 경직이 풀리면 경로 추종을 그대로 이어간다.
+		if (object->IsStunned(_tickCount))
+		{
+			if (object->Movement().dir != Protocol::DIR_NONE)
+			{
+				object->Movement().dir = Protocol::DIR_NONE;
+				object->Movement().dirty = true;
+			}
+			continue;
+		}
+
 		MovementComponent& m = object->Movement();
 		if (m.state != MoveState::Moving)
 			continue;
@@ -604,6 +621,12 @@ void Room::HandleMove(GameObjectRef object, uint32 inputSeq, uint32 clientTimeMs
 	if (dir >= Protocol::DIR_NONE && dir <= Protocol::DIR_DOWN_RIGHT)
 		newDir = static_cast<Protocol::DirectionType>(dir);
 
+	// 피격 경직 / 사망 중에는 입력을 무시하고 그 자리에 고정한다.
+	// (catch-up 적분도 건너뛴다. 클라도 이 창 동안 예측을 멈추므로 위치가 일치한다.)
+	const bool suppressed = (object->IsAlive() == false) || object->IsStunned(_tickCount);
+	if (suppressed)
+		newDir = Protocol::DIR_NONE;
+
 	// --- 이동량 검증 + 정확 catch-up (reconciliation 앵커) ---
 	//
 	// 방향-홀드 모델에서 "직전 방향이 유지된 시간"을 두 관점으로 잰다.
@@ -659,7 +682,9 @@ void Room::HandleMove(GameObjectRef object, uint32 inputSeq, uint32 clientTimeMs
 			}
 
 			// 직전 방향(m.dir)을 anchor 에서 heldMs 만큼 정확히 적분 -> 권위 위치 확정.
-			IntegrateHeld(object.get(), m.dir, heldMs);
+			// 경직/사망 중이면 적분을 건너뛰어 그 자리에 고정.
+			if (suppressed == false)
+				IntegrateHeld(object.get(), m.dir, heldMs);
 		}
 
 		m.lastInputClientTimeMs = clientTimeMs;
@@ -878,12 +903,32 @@ bool Room::DealDamage(uint64 attackerId, uint64 targetId, int32 damage)
 
 	const bool died = target->ApplyDamage(damage);
 
+	// 피격 경직 시간 (타입별 데이터). 죽었으면 경직 대신 사망 처리로 넘어간다.
+	int32 stunMs = 0;
+	if (died == false)
+	{
+		if (target->GetObjType() == Protocol::OBJECT_MONSTER)
+			stunMs = MonsterData::Get().Find(
+				static_cast<Monster*>(target.get())->GetMonsterType()).hitStunMs;
+		else if (target->GetObjType() == Protocol::OBJECT_PLAYER)
+			stunMs = CharacterData::Get().Find(
+				static_cast<Player*>(target.get())->GetCharacterType()).hitStunMs;
+
+		if (stunMs > 0)
+		{
+			const uint64 stunTicks =
+				(static_cast<uint64>(stunMs) + TICK_INTERVAL_MS - 1) / TICK_INTERVAL_MS;
+			target->SetStunUntilTick(_tickCount + stunTicks);
+		}
+	}
+
 	Protocol::S_HIT hitPkt;
 	hitPkt.set_targetid(targetId);
 	hitPkt.set_attackerid(attackerId);
 	hitPkt.set_damage(damage);
 	hitPkt.set_newhp(target->GetHp());
 	hitPkt.set_servertick(static_cast<uint32>(_tickCount));
+	hitPkt.set_stunms(static_cast<uint32>(stunMs));
 	Broadcast(ClientPacketHandler::MakeSendBuffer(hitPkt), 0);
 
 	if (died)
@@ -894,7 +939,31 @@ bool Room::DealDamage(uint64 attackerId, uint64 targetId, int32 damage)
 		deathPkt.set_servertick(static_cast<uint32>(_tickCount));
 		Broadcast(ClientPacketHandler::MakeSendBuffer(deathPkt), 0);
 
-		Leave(target);	// 기존 S_DESPAWN 브로드캐스트 경로 재사용
+		if (target->GetObjType() == Protocol::OBJECT_PLAYER)
+		{
+			// 게임 오버는 나중. 룸에 시체로 남긴다 (IsAlive()==false 라 판정/트리 제외, 입력은 클라가 막음).
+		}
+		else if (target->GetObjType() == Protocol::OBJECT_MONSTER)
+		{
+			Monster* monster = static_cast<Monster*>(target.get());
+			const int32 fadeMs = MonsterData::Get().Find(monster->GetMonsterType()).deathFadeMs;
+
+			if (fadeMs > 0)
+			{
+				// Death 클립 재생을 기다렸다 Tick 이 SweepDeadMonsters 로 뺀다.
+				const uint64 fadeTicks =
+					(static_cast<uint64>(fadeMs) + TICK_INTERVAL_MS - 1) / TICK_INTERVAL_MS;
+				monster->SetDeathDespawnTick(_tickCount + fadeTicks);
+			}
+			else
+			{
+				Leave(target);	// 보스 / 즉시 디스폰
+			}
+		}
+		else
+		{
+			Leave(target);
+		}
 	}
 
 	return true;
@@ -982,6 +1051,10 @@ void Room::HandleAttack(GameObjectRef object, Protocol::Vector2 aimCell,
 	(void)clientTimeMs;
 
 	if (object == nullptr || object->GetObjType() != Protocol::OBJECT_PLAYER)
+		return;
+
+	// 피격 경직 / 사망 중에는 공격도 막는다.
+	if (object->IsAlive() == false || object->IsStunned(_tickCount))
 		return;
 
 	Player* player = static_cast<Player*>(object.get());
@@ -1188,6 +1261,28 @@ void Room::SweepExpiredProjectiles()
 
 	for (GameObjectRef& object : dead)
 		Leave(object);
+}
+
+void Room::SweepDeadMonsters()
+{
+	Vector<GameObjectRef> dead;
+
+	for (auto& item : _objects)
+	{
+		GameObject* object = item.second.get();
+
+		if (object == nullptr || object->GetObjType() != Protocol::OBJECT_MONSTER)
+			continue;
+
+		Monster* monster = static_cast<Monster*>(object);
+		const uint64 despawnTick = monster->GetDeathDespawnTick();
+
+		if (despawnTick != 0 && _tickCount >= despawnTick)
+			dead.push_back(item.second);
+	}
+
+	for (GameObjectRef& object : dead)
+		Leave(object);	// S_DESPAWN 브로드캐스트
 }
 
 /*---------------
@@ -1470,6 +1565,10 @@ void Room::TickBehaviors(float deltaTime)
 			stale.push_back(item.first);
 			continue;
 		}
+
+		// 죽었거나 피격 경직 중이면 AI 를 멈춘다 (경직이 풀리면 컴포짓 재개 지점에서 이어감).
+		if (object->IsAlive() == false || object->IsStunned(_tickCount))
+			continue;
 
 		BtContext context;
 		context.room = this;

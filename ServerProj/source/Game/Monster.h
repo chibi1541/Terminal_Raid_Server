@@ -22,9 +22,14 @@ public:
 	// MonsterData 테이블을 조회해 풋프린트 / 충돌 박스 / 반경 / 체력 / 공격력 / 이동속도를 정한다.
 	void					SetMonsterType(Protocol::MonsterType type);
 
+	// 사망 후 Death 클립 재생을 기다렸다 이 틱에 룸에서 뺀다. 0 = 예약 없음.
+	uint64	GetDeathDespawnTick() const			{ return _deathDespawnTick; }
+	void	SetDeathDespawnTick(uint64 tick)	{ _deathDespawnTick = tick; }
+
 private:
 	Protocol::MonsterType	_monsterType = Protocol::Monster_None;
 	string					_monsterTypeName;	// MonsterType_Name(type) 캐시 (디버그 표시)
+	uint64					_deathDespawnTick = 0;
 };
 
 using MonsterRef = shared_ptr<Monster>;
