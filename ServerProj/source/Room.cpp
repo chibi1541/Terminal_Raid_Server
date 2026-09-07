@@ -6,6 +6,7 @@
 #include "Game/Projectile.h"
 #include "Game/ObjectIdGenerator.h"
 #include "GameSession.h"
+#include <algorithm>
 #include <chrono>
 
 // 생성은 main()에서 한다. Room.h의 주석 참고.
@@ -515,10 +516,14 @@ void Room::UpdateMovement()
 					m.dir = Protocol::DIR_NONE;
 					m.state = MoveState::Idle;
 					m.dirty = true;
+					BroadcastDebugPath(object, /*cleared*/ true, /*includeSearchNodes*/ false);
 					continue;
 				}
 
 				wp = grid.TileToCellCenter(m.path[m.pathIndex]);
+
+				// 웨이포인트 전진 - 디버그 오버레이의 "현재 목표"를 갱신한다. (매 틱이 아님)
+				BroadcastDebugPath(object, /*cleared*/ false, /*includeSearchNodes*/ false);
 			}
 
 			const Protocol::DirectionType want = DirTo(object->GetPos(), wp);
@@ -672,10 +677,14 @@ void Room::HandleMove(GameObjectRef object, uint32 inputSeq, uint32 clientTimeMs
 	m.anchorFpY = m.fpY;
 
 	// 방향 입력이 오면 진행 중이던 경로 추종은 취소한다.
+	const bool hadPath = m.HasPath();
 	m.ClearPath();
 	m.dir = newDir;
 	m.state = (newDir == Protocol::DIR_NONE) ? MoveState::Idle : MoveState::Moving;
 	m.dirty = true;
+
+	if (hadPath)
+		BroadcastDebugPath(object.get(), /*cleared*/ true, /*includeSearchNodes*/ false);
 
 	// 이동을 요청한 플레이어에게 ack. 클라 재조정의 앵커.
 	if (object->GetObjType() == Protocol::OBJECT_PLAYER)
@@ -729,7 +738,127 @@ bool Room::OrderMoveTo(uint64 objectId, int32 cellX, int32 cellY)
 	m.pathIndex = (m.path.size() > 1) ? 1 : 0;
 	m.state = MoveState::Moving;
 	m.dirty = true;
+
+	// 방금 확정된 경로 + 이 탐색의 JPS open 노드를 디버그 오버레이로 보낸다.
+	BroadcastDebugPath(object.get(), /*cleared*/ false, /*includeSearchNodes*/ true);
 	return true;
+}
+
+void Room::SendDebugLevelTo(shared_ptr<GameSession> session)
+{
+	if (session == nullptr)
+		return;
+
+	const int32 width = _level.GetWidth();
+	const int32 height = _level.GetHeight();
+	const Vector<uint8>& cells = _level.GetCells();
+
+	if (width <= 0 || height <= 0 ||
+		static_cast<size_t>(width) * height != cells.size())
+		return;
+
+	// 서버 SendBuffer 청크(6000) / 클라 RecvBuffer(4096) 안에 들어가도록 행 밴드로 쪼갠다.
+	// width=380 이면 행당 48바이트, 48행 = 2304바이트 (+ 헤더/프로토버프 오버헤드) < 4KB.
+	const int32 bytesPerRow = (width + 7) / 8;
+	const int32 rowsPerChunk = (bytesPerRow > 0) ? (std::max)(1, 3000 / bytesPerRow) : height;
+
+	for (int32 startRow = 0; startRow < height; startRow += rowsPerChunk)
+	{
+		const int32 rowCount = (std::min)(rowsPerChunk, height - startRow);
+
+		Protocol::S_DEBUG_LEVEL pkt;
+		pkt.set_width(static_cast<uint32>(width));
+		pkt.set_height(static_cast<uint32>(height));
+		pkt.set_tilesize(static_cast<uint32>(_level.GetTileSize()));
+		pkt.set_startrow(static_cast<uint32>(startRow));
+		pkt.set_rowcount(static_cast<uint32>(rowCount));
+
+		// 이 청크 로컬 비트. bit i = 셀 (startRow + i/width, i%width).
+		const int64 chunkCells = static_cast<int64>(width) * rowCount;
+		std::string bits(static_cast<size_t>((chunkCells + 7) / 8), '\0');
+		for (int64 i = 0; i < chunkCells; ++i)
+		{
+			const size_t globalIndex = static_cast<size_t>(startRow) * width + i;
+			if (cells[globalIndex] != 0)
+				bits[i >> 3] |= static_cast<char>(1 << (i & 7));
+		}
+		pkt.set_blockedbits(std::move(bits));
+
+		session->Send(ClientPacketHandler::MakeSendBuffer(pkt));
+	}
+}
+
+void Room::BroadcastDebugPath(GameObject* object, bool cleared, bool includeSearchNodes)
+{
+	if (object == nullptr)
+		return;
+
+	// 구독 세션이 하나도 없으면 조립 비용조차 아낀다.
+	bool anySubscriber = false;
+	for (auto& item : _objects)
+	{
+		GameObject* o = item.second.get();
+		if (o == nullptr || o->GetObjType() != Protocol::OBJECT_PLAYER)
+			continue;
+		if (GameSessionRef s = static_cast<Player*>(o)->GetSession())
+		{
+			if (s->WantsPaths())
+			{
+				anySubscriber = true;
+				break;
+			}
+		}
+	}
+	if (anySubscriber == false)
+		return;
+
+	const MovementComponent& m = object->Movement();
+	const NavGrid& grid = _level.GetNavGridForFootprint(
+		object->GetFootprintTilesWide(), object->GetFootprintTilesHigh());
+
+	Protocol::S_DEBUG_PATH pkt;
+	pkt.set_objectid(object->GetObjId());
+	pkt.set_cleared(cleared);
+	pkt.set_currentindex(static_cast<uint32>(m.pathIndex));
+
+	if (cleared == false)
+	{
+		for (const TilePos& tile : m.path)
+		{
+			const Protocol::Vector2 c = grid.TileToCellCenter(tile);
+			Protocol::Vector2* out = pkt.add_waypoints()->mutable_cell();
+			out->set_x(c.x());
+			out->set_y(c.y());
+		}
+	}
+
+	if (includeSearchNodes)
+	{
+		// 청크 제한(클라 RecvBuffer 4096) 안에 들어가도록 상한을 둔다.
+		int32 emitted = 0;
+		for (const TilePos& tile : _pathFinder.GetLastOpenedJumpPoints())
+		{
+			if (emitted++ >= 400)
+				break;
+			const Protocol::Vector2 c = grid.TileToCellCenter(tile);
+			Protocol::Vector2* out = pkt.add_searchnodes()->mutable_cell();
+			out->set_x(c.x());
+			out->set_y(c.y());
+		}
+	}
+
+	const SendBufferRef buffer = ClientPacketHandler::MakeSendBuffer(pkt);
+	for (auto& item : _objects)
+	{
+		GameObject* o = item.second.get();
+		if (o == nullptr || o->GetObjType() != Protocol::OBJECT_PLAYER)
+			continue;
+		if (GameSessionRef s = static_cast<Player*>(o)->GetSession())
+		{
+			if (s->WantsPaths())
+				s->Send(buffer);
+		}
+	}
 }
 
 void Room::DebugStepMovement(int32 count)

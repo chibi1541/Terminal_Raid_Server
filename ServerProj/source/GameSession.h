@@ -22,8 +22,20 @@ public:
 	void		SetPlayer(PlayerRef player)	{ _player = player; }
 	bool		IsLoggedIn() const			{ return _player != nullptr; }
 
+	// 디버그 오버레이 구독 상태. C_DEBUG_CONFIG로 갱신된다.
+	// IOCP 워커에서 쓰고 룸 스레드에서 읽는다 - bool 원자성에 기댄다(디버그 전용, 정확할 필요 없음).
+	bool		WantsLevelGrid() const		{ return _wantLevelGrid; }
+	bool		WantsPaths() const			{ return _wantPaths; }
+	void		SetDebugConfig(bool wantLevelGrid, bool wantPaths)
+	{
+		_wantLevelGrid = wantLevelGrid;
+		_wantPaths = wantPaths;
+	}
+
 private:
 	PlayerRef _player;
+	bool _wantLevelGrid = false;
+	bool _wantPaths = false;
 };
 
 using GameSessionRef = shared_ptr<GameSession>;

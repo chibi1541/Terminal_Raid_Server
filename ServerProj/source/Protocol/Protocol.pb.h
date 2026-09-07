@@ -48,6 +48,9 @@ struct TableStruct_Protocol_2eproto {
 };
 extern const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_Protocol_2eproto;
 namespace Protocol {
+class C_DEBUG_CONFIG;
+struct C_DEBUG_CONFIGDefaultTypeInternal;
+extern C_DEBUG_CONFIGDefaultTypeInternal _C_DEBUG_CONFIG_default_instance_;
 class C_ENTER_ROOM;
 struct C_ENTER_ROOMDefaultTypeInternal;
 extern C_ENTER_ROOMDefaultTypeInternal _C_ENTER_ROOM_default_instance_;
@@ -63,12 +66,21 @@ extern C_MOVEDefaultTypeInternal _C_MOVE_default_instance_;
 class C_PING;
 struct C_PINGDefaultTypeInternal;
 extern C_PINGDefaultTypeInternal _C_PING_default_instance_;
+class DebugPathNode;
+struct DebugPathNodeDefaultTypeInternal;
+extern DebugPathNodeDefaultTypeInternal _DebugPathNode_default_instance_;
 class S_ATTACK_START;
 struct S_ATTACK_STARTDefaultTypeInternal;
 extern S_ATTACK_STARTDefaultTypeInternal _S_ATTACK_START_default_instance_;
 class S_DEATH;
 struct S_DEATHDefaultTypeInternal;
 extern S_DEATHDefaultTypeInternal _S_DEATH_default_instance_;
+class S_DEBUG_LEVEL;
+struct S_DEBUG_LEVELDefaultTypeInternal;
+extern S_DEBUG_LEVELDefaultTypeInternal _S_DEBUG_LEVEL_default_instance_;
+class S_DEBUG_PATH;
+struct S_DEBUG_PATHDefaultTypeInternal;
+extern S_DEBUG_PATHDefaultTypeInternal _S_DEBUG_PATH_default_instance_;
 class S_DESPAWN;
 struct S_DESPAWNDefaultTypeInternal;
 extern S_DESPAWNDefaultTypeInternal _S_DESPAWN_default_instance_;
@@ -98,13 +110,17 @@ struct S_SPAWNDefaultTypeInternal;
 extern S_SPAWNDefaultTypeInternal _S_SPAWN_default_instance_;
 }  // namespace Protocol
 PROTOBUF_NAMESPACE_OPEN
+template<> ::Protocol::C_DEBUG_CONFIG* Arena::CreateMaybeMessage<::Protocol::C_DEBUG_CONFIG>(Arena*);
 template<> ::Protocol::C_ENTER_ROOM* Arena::CreateMaybeMessage<::Protocol::C_ENTER_ROOM>(Arena*);
 template<> ::Protocol::C_EXIT_ROOM* Arena::CreateMaybeMessage<::Protocol::C_EXIT_ROOM>(Arena*);
 template<> ::Protocol::C_LOGIN* Arena::CreateMaybeMessage<::Protocol::C_LOGIN>(Arena*);
 template<> ::Protocol::C_MOVE* Arena::CreateMaybeMessage<::Protocol::C_MOVE>(Arena*);
 template<> ::Protocol::C_PING* Arena::CreateMaybeMessage<::Protocol::C_PING>(Arena*);
+template<> ::Protocol::DebugPathNode* Arena::CreateMaybeMessage<::Protocol::DebugPathNode>(Arena*);
 template<> ::Protocol::S_ATTACK_START* Arena::CreateMaybeMessage<::Protocol::S_ATTACK_START>(Arena*);
 template<> ::Protocol::S_DEATH* Arena::CreateMaybeMessage<::Protocol::S_DEATH>(Arena*);
+template<> ::Protocol::S_DEBUG_LEVEL* Arena::CreateMaybeMessage<::Protocol::S_DEBUG_LEVEL>(Arena*);
+template<> ::Protocol::S_DEBUG_PATH* Arena::CreateMaybeMessage<::Protocol::S_DEBUG_PATH>(Arena*);
 template<> ::Protocol::S_DESPAWN* Arena::CreateMaybeMessage<::Protocol::S_DESPAWN>(Arena*);
 template<> ::Protocol::S_ENTER_ROOM* Arena::CreateMaybeMessage<::Protocol::S_ENTER_ROOM>(Arena*);
 template<> ::Protocol::S_EXIT_ROOM* Arena::CreateMaybeMessage<::Protocol::S_EXIT_ROOM>(Arena*);
@@ -2765,6 +2781,740 @@ class S_ATTACK_START final :
   union { Impl_ _impl_; };
   friend struct ::TableStruct_Protocol_2eproto;
 };
+// -------------------------------------------------------------------
+
+class C_DEBUG_CONFIG final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:Protocol.C_DEBUG_CONFIG) */ {
+ public:
+  inline C_DEBUG_CONFIG() : C_DEBUG_CONFIG(nullptr) {}
+  ~C_DEBUG_CONFIG() override;
+  explicit PROTOBUF_CONSTEXPR C_DEBUG_CONFIG(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  C_DEBUG_CONFIG(const C_DEBUG_CONFIG& from);
+  C_DEBUG_CONFIG(C_DEBUG_CONFIG&& from) noexcept
+    : C_DEBUG_CONFIG() {
+    *this = ::std::move(from);
+  }
+
+  inline C_DEBUG_CONFIG& operator=(const C_DEBUG_CONFIG& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline C_DEBUG_CONFIG& operator=(C_DEBUG_CONFIG&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const C_DEBUG_CONFIG& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const C_DEBUG_CONFIG* internal_default_instance() {
+    return reinterpret_cast<const C_DEBUG_CONFIG*>(
+               &_C_DEBUG_CONFIG_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    16;
+
+  friend void swap(C_DEBUG_CONFIG& a, C_DEBUG_CONFIG& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(C_DEBUG_CONFIG* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(C_DEBUG_CONFIG* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  C_DEBUG_CONFIG* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<C_DEBUG_CONFIG>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const C_DEBUG_CONFIG& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const C_DEBUG_CONFIG& from) {
+    C_DEBUG_CONFIG::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(C_DEBUG_CONFIG* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "Protocol.C_DEBUG_CONFIG";
+  }
+  protected:
+  explicit C_DEBUG_CONFIG(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kWantLevelGridFieldNumber = 1,
+    kWantPathsFieldNumber = 2,
+  };
+  // bool wantLevelGrid = 1;
+  void clear_wantlevelgrid();
+  bool wantlevelgrid() const;
+  void set_wantlevelgrid(bool value);
+  private:
+  bool _internal_wantlevelgrid() const;
+  void _internal_set_wantlevelgrid(bool value);
+  public:
+
+  // bool wantPaths = 2;
+  void clear_wantpaths();
+  bool wantpaths() const;
+  void set_wantpaths(bool value);
+  private:
+  bool _internal_wantpaths() const;
+  void _internal_set_wantpaths(bool value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:Protocol.C_DEBUG_CONFIG)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    bool wantlevelgrid_;
+    bool wantpaths_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_Protocol_2eproto;
+};
+// -------------------------------------------------------------------
+
+class S_DEBUG_LEVEL final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:Protocol.S_DEBUG_LEVEL) */ {
+ public:
+  inline S_DEBUG_LEVEL() : S_DEBUG_LEVEL(nullptr) {}
+  ~S_DEBUG_LEVEL() override;
+  explicit PROTOBUF_CONSTEXPR S_DEBUG_LEVEL(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  S_DEBUG_LEVEL(const S_DEBUG_LEVEL& from);
+  S_DEBUG_LEVEL(S_DEBUG_LEVEL&& from) noexcept
+    : S_DEBUG_LEVEL() {
+    *this = ::std::move(from);
+  }
+
+  inline S_DEBUG_LEVEL& operator=(const S_DEBUG_LEVEL& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline S_DEBUG_LEVEL& operator=(S_DEBUG_LEVEL&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const S_DEBUG_LEVEL& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const S_DEBUG_LEVEL* internal_default_instance() {
+    return reinterpret_cast<const S_DEBUG_LEVEL*>(
+               &_S_DEBUG_LEVEL_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    17;
+
+  friend void swap(S_DEBUG_LEVEL& a, S_DEBUG_LEVEL& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(S_DEBUG_LEVEL* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(S_DEBUG_LEVEL* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  S_DEBUG_LEVEL* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<S_DEBUG_LEVEL>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const S_DEBUG_LEVEL& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const S_DEBUG_LEVEL& from) {
+    S_DEBUG_LEVEL::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(S_DEBUG_LEVEL* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "Protocol.S_DEBUG_LEVEL";
+  }
+  protected:
+  explicit S_DEBUG_LEVEL(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kBlockedBitsFieldNumber = 6,
+    kWidthFieldNumber = 1,
+    kHeightFieldNumber = 2,
+    kTileSizeFieldNumber = 3,
+    kStartRowFieldNumber = 4,
+    kRowCountFieldNumber = 5,
+  };
+  // bytes blockedBits = 6;
+  void clear_blockedbits();
+  const std::string& blockedbits() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_blockedbits(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_blockedbits();
+  PROTOBUF_NODISCARD std::string* release_blockedbits();
+  void set_allocated_blockedbits(std::string* blockedbits);
+  private:
+  const std::string& _internal_blockedbits() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_blockedbits(const std::string& value);
+  std::string* _internal_mutable_blockedbits();
+  public:
+
+  // uint32 width = 1;
+  void clear_width();
+  uint32_t width() const;
+  void set_width(uint32_t value);
+  private:
+  uint32_t _internal_width() const;
+  void _internal_set_width(uint32_t value);
+  public:
+
+  // uint32 height = 2;
+  void clear_height();
+  uint32_t height() const;
+  void set_height(uint32_t value);
+  private:
+  uint32_t _internal_height() const;
+  void _internal_set_height(uint32_t value);
+  public:
+
+  // uint32 tileSize = 3;
+  void clear_tilesize();
+  uint32_t tilesize() const;
+  void set_tilesize(uint32_t value);
+  private:
+  uint32_t _internal_tilesize() const;
+  void _internal_set_tilesize(uint32_t value);
+  public:
+
+  // uint32 startRow = 4;
+  void clear_startrow();
+  uint32_t startrow() const;
+  void set_startrow(uint32_t value);
+  private:
+  uint32_t _internal_startrow() const;
+  void _internal_set_startrow(uint32_t value);
+  public:
+
+  // uint32 rowCount = 5;
+  void clear_rowcount();
+  uint32_t rowcount() const;
+  void set_rowcount(uint32_t value);
+  private:
+  uint32_t _internal_rowcount() const;
+  void _internal_set_rowcount(uint32_t value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:Protocol.S_DEBUG_LEVEL)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr blockedbits_;
+    uint32_t width_;
+    uint32_t height_;
+    uint32_t tilesize_;
+    uint32_t startrow_;
+    uint32_t rowcount_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_Protocol_2eproto;
+};
+// -------------------------------------------------------------------
+
+class DebugPathNode final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:Protocol.DebugPathNode) */ {
+ public:
+  inline DebugPathNode() : DebugPathNode(nullptr) {}
+  ~DebugPathNode() override;
+  explicit PROTOBUF_CONSTEXPR DebugPathNode(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  DebugPathNode(const DebugPathNode& from);
+  DebugPathNode(DebugPathNode&& from) noexcept
+    : DebugPathNode() {
+    *this = ::std::move(from);
+  }
+
+  inline DebugPathNode& operator=(const DebugPathNode& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline DebugPathNode& operator=(DebugPathNode&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const DebugPathNode& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const DebugPathNode* internal_default_instance() {
+    return reinterpret_cast<const DebugPathNode*>(
+               &_DebugPathNode_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    18;
+
+  friend void swap(DebugPathNode& a, DebugPathNode& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(DebugPathNode* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(DebugPathNode* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  DebugPathNode* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<DebugPathNode>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const DebugPathNode& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const DebugPathNode& from) {
+    DebugPathNode::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(DebugPathNode* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "Protocol.DebugPathNode";
+  }
+  protected:
+  explicit DebugPathNode(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kCellFieldNumber = 1,
+  };
+  // .Protocol.Vector2 cell = 1;
+  bool has_cell() const;
+  private:
+  bool _internal_has_cell() const;
+  public:
+  void clear_cell();
+  const ::Protocol::Vector2& cell() const;
+  PROTOBUF_NODISCARD ::Protocol::Vector2* release_cell();
+  ::Protocol::Vector2* mutable_cell();
+  void set_allocated_cell(::Protocol::Vector2* cell);
+  private:
+  const ::Protocol::Vector2& _internal_cell() const;
+  ::Protocol::Vector2* _internal_mutable_cell();
+  public:
+  void unsafe_arena_set_allocated_cell(
+      ::Protocol::Vector2* cell);
+  ::Protocol::Vector2* unsafe_arena_release_cell();
+
+  // @@protoc_insertion_point(class_scope:Protocol.DebugPathNode)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::Protocol::Vector2* cell_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_Protocol_2eproto;
+};
+// -------------------------------------------------------------------
+
+class S_DEBUG_PATH final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:Protocol.S_DEBUG_PATH) */ {
+ public:
+  inline S_DEBUG_PATH() : S_DEBUG_PATH(nullptr) {}
+  ~S_DEBUG_PATH() override;
+  explicit PROTOBUF_CONSTEXPR S_DEBUG_PATH(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  S_DEBUG_PATH(const S_DEBUG_PATH& from);
+  S_DEBUG_PATH(S_DEBUG_PATH&& from) noexcept
+    : S_DEBUG_PATH() {
+    *this = ::std::move(from);
+  }
+
+  inline S_DEBUG_PATH& operator=(const S_DEBUG_PATH& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline S_DEBUG_PATH& operator=(S_DEBUG_PATH&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const S_DEBUG_PATH& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const S_DEBUG_PATH* internal_default_instance() {
+    return reinterpret_cast<const S_DEBUG_PATH*>(
+               &_S_DEBUG_PATH_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    19;
+
+  friend void swap(S_DEBUG_PATH& a, S_DEBUG_PATH& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(S_DEBUG_PATH* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(S_DEBUG_PATH* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  S_DEBUG_PATH* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<S_DEBUG_PATH>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const S_DEBUG_PATH& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const S_DEBUG_PATH& from) {
+    S_DEBUG_PATH::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(S_DEBUG_PATH* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "Protocol.S_DEBUG_PATH";
+  }
+  protected:
+  explicit S_DEBUG_PATH(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kWaypointsFieldNumber = 2,
+    kSearchNodesFieldNumber = 4,
+    kObjectIdFieldNumber = 1,
+    kCurrentIndexFieldNumber = 3,
+    kClearedFieldNumber = 5,
+  };
+  // repeated .Protocol.DebugPathNode waypoints = 2;
+  int waypoints_size() const;
+  private:
+  int _internal_waypoints_size() const;
+  public:
+  void clear_waypoints();
+  ::Protocol::DebugPathNode* mutable_waypoints(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Protocol::DebugPathNode >*
+      mutable_waypoints();
+  private:
+  const ::Protocol::DebugPathNode& _internal_waypoints(int index) const;
+  ::Protocol::DebugPathNode* _internal_add_waypoints();
+  public:
+  const ::Protocol::DebugPathNode& waypoints(int index) const;
+  ::Protocol::DebugPathNode* add_waypoints();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Protocol::DebugPathNode >&
+      waypoints() const;
+
+  // repeated .Protocol.DebugPathNode searchNodes = 4;
+  int searchnodes_size() const;
+  private:
+  int _internal_searchnodes_size() const;
+  public:
+  void clear_searchnodes();
+  ::Protocol::DebugPathNode* mutable_searchnodes(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Protocol::DebugPathNode >*
+      mutable_searchnodes();
+  private:
+  const ::Protocol::DebugPathNode& _internal_searchnodes(int index) const;
+  ::Protocol::DebugPathNode* _internal_add_searchnodes();
+  public:
+  const ::Protocol::DebugPathNode& searchnodes(int index) const;
+  ::Protocol::DebugPathNode* add_searchnodes();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Protocol::DebugPathNode >&
+      searchnodes() const;
+
+  // uint64 objectId = 1;
+  void clear_objectid();
+  uint64_t objectid() const;
+  void set_objectid(uint64_t value);
+  private:
+  uint64_t _internal_objectid() const;
+  void _internal_set_objectid(uint64_t value);
+  public:
+
+  // uint32 currentIndex = 3;
+  void clear_currentindex();
+  uint32_t currentindex() const;
+  void set_currentindex(uint32_t value);
+  private:
+  uint32_t _internal_currentindex() const;
+  void _internal_set_currentindex(uint32_t value);
+  public:
+
+  // bool cleared = 5;
+  void clear_cleared();
+  bool cleared() const;
+  void set_cleared(bool value);
+  private:
+  bool _internal_cleared() const;
+  void _internal_set_cleared(bool value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:Protocol.S_DEBUG_PATH)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Protocol::DebugPathNode > waypoints_;
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Protocol::DebugPathNode > searchnodes_;
+    uint64_t objectid_;
+    uint32_t currentindex_;
+    bool cleared_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_Protocol_2eproto;
+};
 // ===================================================================
 
 
@@ -3939,9 +4689,448 @@ inline void S_ATTACK_START::set_servertick(uint32_t value) {
   // @@protoc_insertion_point(field_set:Protocol.S_ATTACK_START.serverTick)
 }
 
+// -------------------------------------------------------------------
+
+// C_DEBUG_CONFIG
+
+// bool wantLevelGrid = 1;
+inline void C_DEBUG_CONFIG::clear_wantlevelgrid() {
+  _impl_.wantlevelgrid_ = false;
+}
+inline bool C_DEBUG_CONFIG::_internal_wantlevelgrid() const {
+  return _impl_.wantlevelgrid_;
+}
+inline bool C_DEBUG_CONFIG::wantlevelgrid() const {
+  // @@protoc_insertion_point(field_get:Protocol.C_DEBUG_CONFIG.wantLevelGrid)
+  return _internal_wantlevelgrid();
+}
+inline void C_DEBUG_CONFIG::_internal_set_wantlevelgrid(bool value) {
+  
+  _impl_.wantlevelgrid_ = value;
+}
+inline void C_DEBUG_CONFIG::set_wantlevelgrid(bool value) {
+  _internal_set_wantlevelgrid(value);
+  // @@protoc_insertion_point(field_set:Protocol.C_DEBUG_CONFIG.wantLevelGrid)
+}
+
+// bool wantPaths = 2;
+inline void C_DEBUG_CONFIG::clear_wantpaths() {
+  _impl_.wantpaths_ = false;
+}
+inline bool C_DEBUG_CONFIG::_internal_wantpaths() const {
+  return _impl_.wantpaths_;
+}
+inline bool C_DEBUG_CONFIG::wantpaths() const {
+  // @@protoc_insertion_point(field_get:Protocol.C_DEBUG_CONFIG.wantPaths)
+  return _internal_wantpaths();
+}
+inline void C_DEBUG_CONFIG::_internal_set_wantpaths(bool value) {
+  
+  _impl_.wantpaths_ = value;
+}
+inline void C_DEBUG_CONFIG::set_wantpaths(bool value) {
+  _internal_set_wantpaths(value);
+  // @@protoc_insertion_point(field_set:Protocol.C_DEBUG_CONFIG.wantPaths)
+}
+
+// -------------------------------------------------------------------
+
+// S_DEBUG_LEVEL
+
+// uint32 width = 1;
+inline void S_DEBUG_LEVEL::clear_width() {
+  _impl_.width_ = 0u;
+}
+inline uint32_t S_DEBUG_LEVEL::_internal_width() const {
+  return _impl_.width_;
+}
+inline uint32_t S_DEBUG_LEVEL::width() const {
+  // @@protoc_insertion_point(field_get:Protocol.S_DEBUG_LEVEL.width)
+  return _internal_width();
+}
+inline void S_DEBUG_LEVEL::_internal_set_width(uint32_t value) {
+  
+  _impl_.width_ = value;
+}
+inline void S_DEBUG_LEVEL::set_width(uint32_t value) {
+  _internal_set_width(value);
+  // @@protoc_insertion_point(field_set:Protocol.S_DEBUG_LEVEL.width)
+}
+
+// uint32 height = 2;
+inline void S_DEBUG_LEVEL::clear_height() {
+  _impl_.height_ = 0u;
+}
+inline uint32_t S_DEBUG_LEVEL::_internal_height() const {
+  return _impl_.height_;
+}
+inline uint32_t S_DEBUG_LEVEL::height() const {
+  // @@protoc_insertion_point(field_get:Protocol.S_DEBUG_LEVEL.height)
+  return _internal_height();
+}
+inline void S_DEBUG_LEVEL::_internal_set_height(uint32_t value) {
+  
+  _impl_.height_ = value;
+}
+inline void S_DEBUG_LEVEL::set_height(uint32_t value) {
+  _internal_set_height(value);
+  // @@protoc_insertion_point(field_set:Protocol.S_DEBUG_LEVEL.height)
+}
+
+// uint32 tileSize = 3;
+inline void S_DEBUG_LEVEL::clear_tilesize() {
+  _impl_.tilesize_ = 0u;
+}
+inline uint32_t S_DEBUG_LEVEL::_internal_tilesize() const {
+  return _impl_.tilesize_;
+}
+inline uint32_t S_DEBUG_LEVEL::tilesize() const {
+  // @@protoc_insertion_point(field_get:Protocol.S_DEBUG_LEVEL.tileSize)
+  return _internal_tilesize();
+}
+inline void S_DEBUG_LEVEL::_internal_set_tilesize(uint32_t value) {
+  
+  _impl_.tilesize_ = value;
+}
+inline void S_DEBUG_LEVEL::set_tilesize(uint32_t value) {
+  _internal_set_tilesize(value);
+  // @@protoc_insertion_point(field_set:Protocol.S_DEBUG_LEVEL.tileSize)
+}
+
+// uint32 startRow = 4;
+inline void S_DEBUG_LEVEL::clear_startrow() {
+  _impl_.startrow_ = 0u;
+}
+inline uint32_t S_DEBUG_LEVEL::_internal_startrow() const {
+  return _impl_.startrow_;
+}
+inline uint32_t S_DEBUG_LEVEL::startrow() const {
+  // @@protoc_insertion_point(field_get:Protocol.S_DEBUG_LEVEL.startRow)
+  return _internal_startrow();
+}
+inline void S_DEBUG_LEVEL::_internal_set_startrow(uint32_t value) {
+  
+  _impl_.startrow_ = value;
+}
+inline void S_DEBUG_LEVEL::set_startrow(uint32_t value) {
+  _internal_set_startrow(value);
+  // @@protoc_insertion_point(field_set:Protocol.S_DEBUG_LEVEL.startRow)
+}
+
+// uint32 rowCount = 5;
+inline void S_DEBUG_LEVEL::clear_rowcount() {
+  _impl_.rowcount_ = 0u;
+}
+inline uint32_t S_DEBUG_LEVEL::_internal_rowcount() const {
+  return _impl_.rowcount_;
+}
+inline uint32_t S_DEBUG_LEVEL::rowcount() const {
+  // @@protoc_insertion_point(field_get:Protocol.S_DEBUG_LEVEL.rowCount)
+  return _internal_rowcount();
+}
+inline void S_DEBUG_LEVEL::_internal_set_rowcount(uint32_t value) {
+  
+  _impl_.rowcount_ = value;
+}
+inline void S_DEBUG_LEVEL::set_rowcount(uint32_t value) {
+  _internal_set_rowcount(value);
+  // @@protoc_insertion_point(field_set:Protocol.S_DEBUG_LEVEL.rowCount)
+}
+
+// bytes blockedBits = 6;
+inline void S_DEBUG_LEVEL::clear_blockedbits() {
+  _impl_.blockedbits_.ClearToEmpty();
+}
+inline const std::string& S_DEBUG_LEVEL::blockedbits() const {
+  // @@protoc_insertion_point(field_get:Protocol.S_DEBUG_LEVEL.blockedBits)
+  return _internal_blockedbits();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void S_DEBUG_LEVEL::set_blockedbits(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.blockedbits_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:Protocol.S_DEBUG_LEVEL.blockedBits)
+}
+inline std::string* S_DEBUG_LEVEL::mutable_blockedbits() {
+  std::string* _s = _internal_mutable_blockedbits();
+  // @@protoc_insertion_point(field_mutable:Protocol.S_DEBUG_LEVEL.blockedBits)
+  return _s;
+}
+inline const std::string& S_DEBUG_LEVEL::_internal_blockedbits() const {
+  return _impl_.blockedbits_.Get();
+}
+inline void S_DEBUG_LEVEL::_internal_set_blockedbits(const std::string& value) {
+  
+  _impl_.blockedbits_.Set(value, GetArenaForAllocation());
+}
+inline std::string* S_DEBUG_LEVEL::_internal_mutable_blockedbits() {
+  
+  return _impl_.blockedbits_.Mutable(GetArenaForAllocation());
+}
+inline std::string* S_DEBUG_LEVEL::release_blockedbits() {
+  // @@protoc_insertion_point(field_release:Protocol.S_DEBUG_LEVEL.blockedBits)
+  return _impl_.blockedbits_.Release();
+}
+inline void S_DEBUG_LEVEL::set_allocated_blockedbits(std::string* blockedbits) {
+  if (blockedbits != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.blockedbits_.SetAllocated(blockedbits, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.blockedbits_.IsDefault()) {
+    _impl_.blockedbits_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:Protocol.S_DEBUG_LEVEL.blockedBits)
+}
+
+// -------------------------------------------------------------------
+
+// DebugPathNode
+
+// .Protocol.Vector2 cell = 1;
+inline bool DebugPathNode::_internal_has_cell() const {
+  return this != internal_default_instance() && _impl_.cell_ != nullptr;
+}
+inline bool DebugPathNode::has_cell() const {
+  return _internal_has_cell();
+}
+inline const ::Protocol::Vector2& DebugPathNode::_internal_cell() const {
+  const ::Protocol::Vector2* p = _impl_.cell_;
+  return p != nullptr ? *p : reinterpret_cast<const ::Protocol::Vector2&>(
+      ::Protocol::_Vector2_default_instance_);
+}
+inline const ::Protocol::Vector2& DebugPathNode::cell() const {
+  // @@protoc_insertion_point(field_get:Protocol.DebugPathNode.cell)
+  return _internal_cell();
+}
+inline void DebugPathNode::unsafe_arena_set_allocated_cell(
+    ::Protocol::Vector2* cell) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.cell_);
+  }
+  _impl_.cell_ = cell;
+  if (cell) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:Protocol.DebugPathNode.cell)
+}
+inline ::Protocol::Vector2* DebugPathNode::release_cell() {
+  
+  ::Protocol::Vector2* temp = _impl_.cell_;
+  _impl_.cell_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::Protocol::Vector2* DebugPathNode::unsafe_arena_release_cell() {
+  // @@protoc_insertion_point(field_release:Protocol.DebugPathNode.cell)
+  
+  ::Protocol::Vector2* temp = _impl_.cell_;
+  _impl_.cell_ = nullptr;
+  return temp;
+}
+inline ::Protocol::Vector2* DebugPathNode::_internal_mutable_cell() {
+  
+  if (_impl_.cell_ == nullptr) {
+    auto* p = CreateMaybeMessage<::Protocol::Vector2>(GetArenaForAllocation());
+    _impl_.cell_ = p;
+  }
+  return _impl_.cell_;
+}
+inline ::Protocol::Vector2* DebugPathNode::mutable_cell() {
+  ::Protocol::Vector2* _msg = _internal_mutable_cell();
+  // @@protoc_insertion_point(field_mutable:Protocol.DebugPathNode.cell)
+  return _msg;
+}
+inline void DebugPathNode::set_allocated_cell(::Protocol::Vector2* cell) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.cell_);
+  }
+  if (cell) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(cell));
+    if (message_arena != submessage_arena) {
+      cell = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, cell, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.cell_ = cell;
+  // @@protoc_insertion_point(field_set_allocated:Protocol.DebugPathNode.cell)
+}
+
+// -------------------------------------------------------------------
+
+// S_DEBUG_PATH
+
+// uint64 objectId = 1;
+inline void S_DEBUG_PATH::clear_objectid() {
+  _impl_.objectid_ = uint64_t{0u};
+}
+inline uint64_t S_DEBUG_PATH::_internal_objectid() const {
+  return _impl_.objectid_;
+}
+inline uint64_t S_DEBUG_PATH::objectid() const {
+  // @@protoc_insertion_point(field_get:Protocol.S_DEBUG_PATH.objectId)
+  return _internal_objectid();
+}
+inline void S_DEBUG_PATH::_internal_set_objectid(uint64_t value) {
+  
+  _impl_.objectid_ = value;
+}
+inline void S_DEBUG_PATH::set_objectid(uint64_t value) {
+  _internal_set_objectid(value);
+  // @@protoc_insertion_point(field_set:Protocol.S_DEBUG_PATH.objectId)
+}
+
+// repeated .Protocol.DebugPathNode waypoints = 2;
+inline int S_DEBUG_PATH::_internal_waypoints_size() const {
+  return _impl_.waypoints_.size();
+}
+inline int S_DEBUG_PATH::waypoints_size() const {
+  return _internal_waypoints_size();
+}
+inline void S_DEBUG_PATH::clear_waypoints() {
+  _impl_.waypoints_.Clear();
+}
+inline ::Protocol::DebugPathNode* S_DEBUG_PATH::mutable_waypoints(int index) {
+  // @@protoc_insertion_point(field_mutable:Protocol.S_DEBUG_PATH.waypoints)
+  return _impl_.waypoints_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Protocol::DebugPathNode >*
+S_DEBUG_PATH::mutable_waypoints() {
+  // @@protoc_insertion_point(field_mutable_list:Protocol.S_DEBUG_PATH.waypoints)
+  return &_impl_.waypoints_;
+}
+inline const ::Protocol::DebugPathNode& S_DEBUG_PATH::_internal_waypoints(int index) const {
+  return _impl_.waypoints_.Get(index);
+}
+inline const ::Protocol::DebugPathNode& S_DEBUG_PATH::waypoints(int index) const {
+  // @@protoc_insertion_point(field_get:Protocol.S_DEBUG_PATH.waypoints)
+  return _internal_waypoints(index);
+}
+inline ::Protocol::DebugPathNode* S_DEBUG_PATH::_internal_add_waypoints() {
+  return _impl_.waypoints_.Add();
+}
+inline ::Protocol::DebugPathNode* S_DEBUG_PATH::add_waypoints() {
+  ::Protocol::DebugPathNode* _add = _internal_add_waypoints();
+  // @@protoc_insertion_point(field_add:Protocol.S_DEBUG_PATH.waypoints)
+  return _add;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Protocol::DebugPathNode >&
+S_DEBUG_PATH::waypoints() const {
+  // @@protoc_insertion_point(field_list:Protocol.S_DEBUG_PATH.waypoints)
+  return _impl_.waypoints_;
+}
+
+// uint32 currentIndex = 3;
+inline void S_DEBUG_PATH::clear_currentindex() {
+  _impl_.currentindex_ = 0u;
+}
+inline uint32_t S_DEBUG_PATH::_internal_currentindex() const {
+  return _impl_.currentindex_;
+}
+inline uint32_t S_DEBUG_PATH::currentindex() const {
+  // @@protoc_insertion_point(field_get:Protocol.S_DEBUG_PATH.currentIndex)
+  return _internal_currentindex();
+}
+inline void S_DEBUG_PATH::_internal_set_currentindex(uint32_t value) {
+  
+  _impl_.currentindex_ = value;
+}
+inline void S_DEBUG_PATH::set_currentindex(uint32_t value) {
+  _internal_set_currentindex(value);
+  // @@protoc_insertion_point(field_set:Protocol.S_DEBUG_PATH.currentIndex)
+}
+
+// repeated .Protocol.DebugPathNode searchNodes = 4;
+inline int S_DEBUG_PATH::_internal_searchnodes_size() const {
+  return _impl_.searchnodes_.size();
+}
+inline int S_DEBUG_PATH::searchnodes_size() const {
+  return _internal_searchnodes_size();
+}
+inline void S_DEBUG_PATH::clear_searchnodes() {
+  _impl_.searchnodes_.Clear();
+}
+inline ::Protocol::DebugPathNode* S_DEBUG_PATH::mutable_searchnodes(int index) {
+  // @@protoc_insertion_point(field_mutable:Protocol.S_DEBUG_PATH.searchNodes)
+  return _impl_.searchnodes_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Protocol::DebugPathNode >*
+S_DEBUG_PATH::mutable_searchnodes() {
+  // @@protoc_insertion_point(field_mutable_list:Protocol.S_DEBUG_PATH.searchNodes)
+  return &_impl_.searchnodes_;
+}
+inline const ::Protocol::DebugPathNode& S_DEBUG_PATH::_internal_searchnodes(int index) const {
+  return _impl_.searchnodes_.Get(index);
+}
+inline const ::Protocol::DebugPathNode& S_DEBUG_PATH::searchnodes(int index) const {
+  // @@protoc_insertion_point(field_get:Protocol.S_DEBUG_PATH.searchNodes)
+  return _internal_searchnodes(index);
+}
+inline ::Protocol::DebugPathNode* S_DEBUG_PATH::_internal_add_searchnodes() {
+  return _impl_.searchnodes_.Add();
+}
+inline ::Protocol::DebugPathNode* S_DEBUG_PATH::add_searchnodes() {
+  ::Protocol::DebugPathNode* _add = _internal_add_searchnodes();
+  // @@protoc_insertion_point(field_add:Protocol.S_DEBUG_PATH.searchNodes)
+  return _add;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Protocol::DebugPathNode >&
+S_DEBUG_PATH::searchnodes() const {
+  // @@protoc_insertion_point(field_list:Protocol.S_DEBUG_PATH.searchNodes)
+  return _impl_.searchnodes_;
+}
+
+// bool cleared = 5;
+inline void S_DEBUG_PATH::clear_cleared() {
+  _impl_.cleared_ = false;
+}
+inline bool S_DEBUG_PATH::_internal_cleared() const {
+  return _impl_.cleared_;
+}
+inline bool S_DEBUG_PATH::cleared() const {
+  // @@protoc_insertion_point(field_get:Protocol.S_DEBUG_PATH.cleared)
+  return _internal_cleared();
+}
+inline void S_DEBUG_PATH::_internal_set_cleared(bool value) {
+  
+  _impl_.cleared_ = value;
+}
+inline void S_DEBUG_PATH::set_cleared(bool value) {
+  _internal_set_cleared(value);
+  // @@protoc_insertion_point(field_set:Protocol.S_DEBUG_PATH.cleared)
+}
+
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

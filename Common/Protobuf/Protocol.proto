@@ -123,3 +123,40 @@ message S_ATTACK_START
 	DirectionType dir = 2;	// 바라보는 방향 (모션 방향)
 	uint32 serverTick = 3;
 }
+
+// --- 디버그 오버레이 채널 ---
+// 디버그를 켤 때만 트래픽이 흐른다. 개발/포트폴리오 시연용.
+
+// 클라 → 서버 : 디버그 오버레이 on/off. 켜고 끌 때만 보낸다. 서버가 세션별로 기억한다.
+message C_DEBUG_CONFIG
+{
+	bool wantLevelGrid = 1;	// 서버 충돌 격자 오버레이
+	bool wantPaths = 2;		// 길찾기 경로/노드 오버레이
+}
+
+// 서버 → 클라 : 서버가 보는 충돌 권위 격자. wantLevelGrid 를 켜는 순간, 행 밴드로 쪼개
+// 여러 개가 온다 (서버 SendBuffer 청크 6000 / 클라 RecvBuffer 4096 제한).
+message S_DEBUG_LEVEL
+{
+	uint32 width = 1;		// 셀 개수 (전체)
+	uint32 height = 2;		// 셀 개수 (전체)
+	uint32 tileSize = 3;	// 길찾기 타일 = tileSize × tileSize 셀
+	uint32 startRow = 4;	// 이 청크가 담는 첫 행 (0 = 첫 청크 → 클라가 버퍼 재할당)
+	uint32 rowCount = 5;	// 이 청크의 행 수
+	bytes blockedBits = 6;	// 이 청크 로컬 비트. bit i = 셀 (startRow + i/width, i%width). 1 = 장애물
+}
+
+// 서버 → 클라 : 한 오브젝트의 길찾기 상태. 경로 설정 / 웨이포인트 전진 / 해제 시 전송.
+message DebugPathNode
+{
+	Vector2 cell = 1;
+}
+
+message S_DEBUG_PATH
+{
+	uint64 objectId = 1;
+	repeated DebugPathNode waypoints = 2;	// m.path 타일들의 셀 중심. 비어 있으면 경로 없음
+	uint32 currentIndex = 3;					// m.pathIndex (지금 향하는 웨이포인트)
+	repeated DebugPathNode searchNodes = 4;	// JPS 가 open 에 넣은 점프 포인트 (goto·path 명령 때만)
+	bool cleared = 5;						// 경로 종료 통지
+}

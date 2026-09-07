@@ -128,6 +128,20 @@ bool Handle_C_MOVE(PacketSessionRef& session, Protocol::C_MOVE& pkt)
 	return true;
 }
 
+bool Handle_C_DEBUG_CONFIG(PacketSessionRef& session, Protocol::C_DEBUG_CONFIG& pkt)
+{
+	GameSessionRef gameSession = static_pointer_cast<GameSession>(session);
+
+	const bool wasWantingGrid = gameSession->WantsLevelGrid();
+	gameSession->SetDebugConfig(pkt.wantlevelgrid(), pkt.wantpaths());
+
+	// 격자를 새로 켰으면 지금 상태를 1회 보낸다. 룸 스레드에서 조립한다.
+	if (pkt.wantlevelgrid() && wasWantingGrid == false && GRoom != nullptr)
+		GRoom->DoAsync(&Room::SendDebugLevelTo, gameSession);
+
+	return true;
+}
+
 bool Handle_C_EXIT_ROOM(PacketSessionRef& session, Protocol::C_EXIT_ROOM& pkt)
 {
 	GameSessionRef gameSession = static_pointer_cast<GameSession>(session);

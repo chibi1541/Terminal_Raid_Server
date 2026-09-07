@@ -8,6 +8,7 @@
 #include "AI/BtInstance.h"
 
 class Player;
+class GameSession;
 
 /*---------
 	Room
@@ -81,6 +82,15 @@ public:
 
 	// 디버그 : 이동 루프만 count 틱 수동으로 굴린다. (bt step 과 같은 방식)
 	void	DebugStepMovement(int32 count);
+
+	/*----------
+		디버그 오버레이 (충돌 격자 + 길찾기)
+
+		C_DEBUG_CONFIG 로 켠 세션에게만 흐른다. 안 켜면 비용 0.
+	-----------*/
+
+	// wantLevelGrid 를 켠 세션에게 현재 충돌 격자를 1회 보낸다. IOCP 워커가 DoAsync 로 넘긴다.
+	void	SendDebugLevelTo(shared_ptr<GameSession> session);
 
 	/*----------
 		이벤트성 상태 (Hit / Death / Attack)
@@ -213,6 +223,11 @@ private:
 	// centerX/Y 를 중심으로 object 의 풋프린트 박스 전체가 벽에 막혔는지 검사.
 	// 풋프린트 미설정(1x1) 객체는 지금처럼 셀 1칸만 본다 - 기존 동작 그대로.
 	bool	IsFootprintBlocked(const GameObject* object, int32 centerX, int32 centerY) const;
+
+	// 길찾기 경로가 바뀐 오브젝트의 상태를 wantPaths 세션들에게 보낸다.
+	// cleared = true 면 경로 종료 통지(waypoints 비움). includeSearchNodes 면 직전 JPS
+	// 탐색의 open 점프 포인트를 함께 싣는다(goto/path 명령 직후에만 의미 있음).
+	void	BroadcastDebugPath(GameObject* object, bool cleared, bool includeSearchNodes);
 
 	// 8방향 enum -> 정수 단위 벡터.
 	static void					DirUnit(Protocol::DirectionType dir, OUT int32& ux, OUT int32& uy);

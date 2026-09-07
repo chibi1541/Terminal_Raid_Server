@@ -38,6 +38,10 @@ public:
 	// 범위 밖은 항상 막힌 것으로 취급한다. (레벨의 끝 = 장애물)
 	bool	IsCellBlocked(int32 x, int32 y) const;
 
+	// row-major 셀 배열 (0 = 통행 가능, 1 = 장애물). 크기 = width * height.
+	// 디버그 오버레이가 서버 충돌 격자를 그대로 클라에 실어 보낼 때 쓴다.
+	const Vector<uint8>&	GetCells() const { return _cells; }
+
 	const NavGrid&	GetNavGrid() const { return _navGrid; }
 
 	// footprintTilesWide/High : 액터가 차지하는 맵 타일 개수 (1,1 = 기본 grid 그대로 반환).
