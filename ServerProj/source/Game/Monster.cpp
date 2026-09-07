@@ -15,8 +15,8 @@ void Monster::FillObjectInfo(Protocol::ObjectInfo* info)
 {
 	GameObject::FillObjectInfo(info);
 
-	// 몬스터 전용 직렬화 필드 없음 - objectType(OBJECT_MONSTER)으로 클라가 이미 구분 가능.
-	// (스폰 리팩터 후 MonsterType 을 여기 실어 보낼 예정)
+	// 클라가 이 타입으로 MonsterData 를 조회해 스프라이트/반경을 정한다.
+	info->mutable_monster()->set_monstertype(_monsterType);
 }
 
 void Monster::SetMonsterType(Protocol::MonsterType type)

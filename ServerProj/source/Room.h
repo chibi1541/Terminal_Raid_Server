@@ -84,12 +84,13 @@ public:
 	// ownerId 를 몬스터 id 로 주면 "몬스터 투사체"가 되어 플레이어를 맞힌다 (proj [ownerId]).
 	GameObjectRef	SpawnProjectile(int32 cellX, int32 cellY, Protocol::DirectionType dir,
 									int32 cellsPerSec, int32 lifetimeTicks,
-									uint64 ownerId, int32 damage);
+									uint64 ownerId, int32 damage, Protocol::ProjectileType type);
 
 	// 임의 각도 투사체. spawnFp = 고정소수점 스폰 위치, velSub = 서브유닛/초 속도 벡터.
 	GameObjectRef	SpawnProjectileVec(int32 spawnFpX, int32 spawnFpY,
 									   int32 velSubX, int32 velSubY, uint64 ownerId,
-									   int32 rangeCells, int32 lifetimeTicks, int32 damage);
+									   int32 rangeCells, int32 lifetimeTicks, int32 damage,
+									   Protocol::ProjectileType type);
 
 	// 디버그 : 이동 루프만 count 틱 수동으로 굴린다. (bt step 과 같은 방식)
 	void	DebugStepMovement(int32 count);

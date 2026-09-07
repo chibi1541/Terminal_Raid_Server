@@ -5,6 +5,7 @@
 #include "Protocol/ClientPacketHandler.h"
 #include "Game/Player.h"
 #include "Game/Monster.h"
+#include "Game/ProjectileData.h"
 #include "Game/NavGrid.h"
 #include "Game/QuadTree.h"
 #include "AI/BehaviorTreeManager.h"
@@ -43,6 +44,28 @@ namespace
 
 		outValue = static_cast<uint64>(value);
 		return true;
+	}
+
+	// 캐릭터 종류 키워드 -> CharacterType. "knight" / "mage" / "archer" (대소문자 무관) 또는
+	// 전체 enum 이름("CHARACTER_KNIGHT") 을 받는다. 실패하면 CHARACTER_NONE.
+	Protocol::CharacterType ParseCharacterType(const std::wstring& text)
+	{
+		std::string lower;
+		std::string exact;
+		for (wchar_t ch : text)
+		{
+			const char c = (ch < 128) ? static_cast<char>(ch) : '?';
+			exact += c;
+			lower += static_cast<char>(::tolower(c));
+		}
+
+		if (lower == "knight")				return Protocol::CHARACTER_KNIGHT;
+		if (lower == "mage")				return Protocol::CHARACTER_MAGE;
+		if (lower == "archer" || lower == "acher")	return Protocol::CHARACTER_ACHER;
+
+		Protocol::CharacterType parsed = Protocol::CHARACTER_NONE;
+		Protocol::CharacterType_Parse(exact, &parsed);
+		return parsed;
 	}
 
 	// 몬스터 종류 키워드 -> MonsterType. "zombie" / "necromancer" (대소문자 무관) 또는
@@ -132,8 +155,9 @@ void GameCommands::Register()
 			context.Reply(L"%s", GRoom->DescribeObjects().c_str());
 		}, CommandRunMode::GameThread);
 
-	GCommandRegistry->Register(L"spawn", L"spawn <name> [x] [y] [radius]",
-		L"add a session-less dummy player to the room (connected clients get S_SPAWN)",
+	GCommandRegistry->Register(L"spawn", L"spawn <charType> [x] [y] [radius]",
+		L"add a session-less dummy player to the room (charType : knight / mage / archer). "
+		L"connected clients get S_SPAWN",
 		[](CommandContext& context)
 		{
 			if (GRoom == nullptr)
@@ -144,21 +168,22 @@ void GameCommands::Register()
 
 			if (context.ArgCount() < 2)
 			{
-				context.Reply(L"usage : spawn <name> [x] [y] [radius]");
+				context.Reply(L"usage : spawn <charType> [x] [y] [radius]  (knight / mage / archer)");
+				return;
+			}
+
+			const Protocol::CharacterType charType = ParseCharacterType(context.Arg(1));
+			if (charType == Protocol::CHARACTER_NONE)
+			{
+				context.Reply(L"unknown character type : %s (knight / mage / archer)", context.Arg(1).c_str());
 				return;
 			}
 
 			PlayerRef player = MakeShared<Player>();
 
-			// 명령 인자는 wstring이라 이름을 좁은 문자열로 옮긴다.
-			// 디버그용이므로 ASCII가 아닌 글자는 '?'로 떨군다.
-			const std::wstring& wideName = context.Arg(1);
-			string narrowName;
-			narrowName.reserve(wideName.size());
-			for (wchar_t ch : wideName)
-				narrowName += (ch < 128) ? static_cast<char>(ch) : '?';
-
-			player->SetName(narrowName);
+			// 타입으로 CharacterData 테이블을 조회해 스탯/충돌 사이즈가 함께 정해진다.
+			player->SetCharacterType(charType);
+			player->SetName(Protocol::CharacterType_Name(charType));
 
 			bool useRandomSpawnPos = true;
 
@@ -572,7 +597,9 @@ void GameCommands::Register()
 			const int32 lifeTicks = (lifeSec > 0) ? lifeSec * 20 : 0;
 
 			// 디버그 스폰은 고정 피해 10 (ownerId 0 이면 어차피 아무도 안 맞음).
-			GameObjectRef proj = GRoom->SpawnProjectile(x, y, dir, speed, lifeTicks, ownerId, 10);
+			// 종류는 기본 투사체(ProjectileData 의 defaultProjectile).
+			GameObjectRef proj = GRoom->SpawnProjectile(x, y, dir, speed, lifeTicks, ownerId, 10,
+				ProjectileData::Get().GetDefaultType());
 
 			if (proj == nullptr)
 			{

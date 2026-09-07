@@ -902,10 +902,11 @@ void Room::NotifyAttackStart(uint64 objectId, Protocol::DirectionType dir)
 
 GameObjectRef Room::SpawnProjectile(int32 cellX, int32 cellY, Protocol::DirectionType dir,
 								   int32 cellsPerSec, int32 lifetimeTicks,
-								   uint64 ownerId, int32 damage)
+								   uint64 ownerId, int32 damage, Protocol::ProjectileType type)
 {
 	ProjectileRef proj = MakeShared<Projectile>();
 
+	proj->SetProjectileType(type);
 	proj->SetPos(cellX, cellY);
 	proj->Launch(dir, cellsPerSec, _tickCount,
 		(lifetimeTicks > 0) ? lifetimeTicks : PROJECTILE_LIFETIME_TICKS, ownerId, damage);
@@ -918,10 +919,12 @@ GameObjectRef Room::SpawnProjectile(int32 cellX, int32 cellY, Protocol::Directio
 
 GameObjectRef Room::SpawnProjectileVec(int32 spawnFpX, int32 spawnFpY,
 									   int32 velSubX, int32 velSubY, uint64 ownerId,
-									   int32 rangeCells, int32 lifetimeTicks, int32 damage)
+									   int32 rangeCells, int32 lifetimeTicks, int32 damage,
+									   Protocol::ProjectileType type)
 {
 	ProjectileRef proj = MakeShared<Projectile>();
 
+	proj->SetProjectileType(type);
 	proj->SetFixedPos(spawnFpX, spawnFpY);
 	proj->LaunchVec(velSubX, velSubY, ownerId, rangeCells, _tickCount,
 		(lifetimeTicks > 0) ? lifetimeTicks : PROJECTILE_LIFETIME_TICKS, damage);
@@ -999,7 +1002,7 @@ void Room::HandleAttack(GameObjectRef object, Protocol::Vector2 aimCell,
 		: PROJECTILE_LIFETIME_TICKS;
 
 	SpawnProjectileVec(spawnFpX, spawnFpY, velSubX, velSubY,
-		object->GetObjId(), proj.rangeCells, lifetimeTicks, proj.damage);
+		object->GetObjId(), proj.rangeCells, lifetimeTicks, proj.damage, proj.type);
 
 	player->SetLastAttackWallMs(now);
 

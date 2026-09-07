@@ -29,6 +29,10 @@ public:
 	void	Launch(Protocol::DirectionType dir, int32 cellsPerSec,
 				   uint64 roomTickNow, int32 lifetimeTicks, uint64 ownerId, int32 damage);
 
+	// 종류. 클라가 이 타입으로 ProjectileData 를 조회해 애니메이션을 정한다. FillObjectInfo 가 싣는다.
+	void					SetProjectileType(Protocol::ProjectileType type)	{ _type = type; }
+	Protocol::ProjectileType	GetProjectileType() const						{ return _type; }
+
 	uint64	GetExpireTick() const	{ return _expireTick; }
 	uint64	GetOwnerId() const		{ return _ownerId; }
 	int32	GetDamage() const		{ return _damage; }
@@ -40,6 +44,7 @@ public:
 	bool	IsOutOfRange() const;
 
 private:
+	Protocol::ProjectileType	_type = Protocol::Projectile_Pellet;
 	uint64	_expireTick = 0;
 	uint64	_ownerId = 0;
 	int32	_damage = 0;

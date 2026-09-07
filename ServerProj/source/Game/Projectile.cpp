@@ -23,6 +23,9 @@ void Projectile::FillObjectInfo(Protocol::ObjectInfo* info)
 	Protocol::CreatureState* state = info->mutable_state();
 	state->set_velsubx(Movement().velSubX);
 	state->set_velsuby(Movement().velSubY);
+
+	// 종류 - 클라가 이 타입으로 ProjectileData 를 조회해 애니메이션을 정한다.
+	info->mutable_projectile()->set_projectiletype(_type);
 }
 
 void Projectile::LaunchVec(int32 velSubX, int32 velSubY, uint64 ownerId,

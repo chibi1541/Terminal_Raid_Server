@@ -51,14 +51,29 @@ message PlayerInfo
 	// TODO : userid로 변경
 	uint64 objectId = 1;
 	string name = 2;
-	CharacterType chartype = 3;
+	CharacterType chartype = 3;	// 클라가 이 타입으로 CharacterData 를 조회해 스프라이트/스탯을 정한다
+}
+
+// 몬스터 고유 정보. 클라가 monsterType 으로 MonsterData 를 조회한다.
+message MonsterInfo
+{
+	MonsterType monsterType = 1;
+}
+
+// 투사체 고유 정보. 클라가 projectileType 으로 ProjectileData 를 조회한다.
+message ProjectileInfo
+{
+	ProjectileType projectileType = 1;
 }
 
 // 월드에 존재하는 개체 공통 정보. 스폰/디스폰 패킷이 사용한다.
+// objectType(objectId 상위 16비트)에 따라 아래 셋 중 하나만 채운다.
 message ObjectInfo
 {
 	uint64 objectId = 1;
 	CreatureState state = 2;
-	PlayerInfo player = 3;	// objectType == OBJECT_PLAYER 일 때만 채운다
+	PlayerInfo player = 3;			// OBJECT_PLAYER
+	MonsterInfo monster = 4;			// OBJECT_MONSTER
+	ProjectileInfo projectile = 5;	// OBJECT_PROJECTILE
 }
 
