@@ -23,6 +23,10 @@ void Room::BeginPlay()
 {
 	LoadLevel();
 
+	const uint64 now = ::GetTickCount64();
+	_lastTickWallClockMs = now;
+	_nextTickScheduleMs = now + TICK_INTERVAL_MS;
+
 	DoTimer(TICK_INTERVAL_MS, &Room::Tick);
 
 	LOG_INFO(L"[room] begin play (%u x %u)", GetWidth(), GetHeight());
@@ -31,6 +35,22 @@ void Room::BeginPlay()
 void Room::Tick()
 {
 	_tickCount++;
+
+	const uint64 now = ::GetTickCount64();
+
+	// 이번 틱이 실제로 몇 ms 만에 돌아왔는지 측정한다. DoTimer 재예약이 항상
+	// 고정 TICK_INTERVAL_MS 를 가정하면 디스패치/큐잉 지연이 누적만 되므로,
+	// 시뮬레이션(이동 적분/AI 델타)은 이 실측값을 쓴다.
+	uint64 deltaMs64 = now - _lastTickWallClockMs;
+	if (deltaMs64 == 0)
+		deltaMs64 = 1;	// 0 나눗셈/이동 정지 방지
+	_lastTickWallClockMs = now;
+
+	const uint64 maxDeltaMs = static_cast<uint64>(TICK_INTERVAL_MS) * MAX_CATCHUP_TICKS;
+	if (deltaMs64 > maxDeltaMs)
+		deltaMs64 = maxDeltaMs;	// 디버거/GC 정지급 지연은 시뮬레이션이 한 번에 확 전진하지 않게 자른다
+
+	_lastDeltaMs = static_cast<uint32>(deltaMs64);
 
 	// 이번 틱에 쓸 공간 인덱스를 먼저 세운다.
 	// 이 아래에서 도는 이동 / 전투 로직은 전부 이 트리를 보게 된다.
@@ -47,8 +67,25 @@ void Room::Tick()
 	// 수명이 다했거나 벽에 박힌 투사체를 정리한다. (마지막 위치는 위에서 이미 보냈다)
 	SweepExpiredProjectiles();
 
+	// 드리프트 보정 : 이번 틱이 예정 시각(_nextTickScheduleMs)보다 늦게 실행됐으면
+	// 늦은 만큼 다음 예약 지연에서 빼서 정박자로 수렴시킨다. 너무 많이 밀렸으면
+	// (디버거/GC 정지급) 따라잡기를 포기하고 지금 시각 기준으로 다시 잡는다.
+	uint64 nextDelay = TICK_INTERVAL_MS;
+
+	if (now >= _nextTickScheduleMs)
+	{
+		const uint64 behindMs = now - _nextTickScheduleMs;
+
+		if (behindMs > maxDeltaMs)
+			_nextTickScheduleMs = now;	// 포기 - 정박자를 지금부터 다시 잡는다
+		else
+			nextDelay = (behindMs < TICK_INTERVAL_MS) ? (TICK_INTERVAL_MS - behindMs) : 0;
+	}
+
+	_nextTickScheduleMs += TICK_INTERVAL_MS;
+
 	// (jobs 명령의 reserved timers가 0이면 틱 루프가 끊긴 것)
-	DoTimer(TICK_INTERVAL_MS, &Room::Tick);
+	DoTimer(static_cast<uint32>(nextDelay), &Room::Tick);
 }
 
 void Room::Enter(GameObjectRef object, bool useRandomSpawnPos)
@@ -454,7 +491,7 @@ void Room::UpdateMovement()
 		if (ux == 0 && uy == 0)
 			continue;
 
-		int32 step = m.EffectiveSpeed() * TICK_INTERVAL_MS / 1000;	// 서브유닛/틱
+		int32 step = m.EffectiveSpeed() * static_cast<int32>(_lastDeltaMs) / 1000;	// 서브유닛/틱
 		if (ux != 0 && uy != 0)
 			step = step * 181 / 256;								// 대각 보정 (≈1/√2, 정수)
 
@@ -496,6 +533,8 @@ void Room::BroadcastMoves()
 		return;
 
 	pkt.set_servertick(static_cast<uint32>(_tickCount));
+	pkt.set_deltams(_lastDeltaMs);
+	pkt.set_servertime(_lastTickWallClockMs);
 	Broadcast(ClientPacketHandler::MakeSendBuffer(pkt), 0);
 }
 

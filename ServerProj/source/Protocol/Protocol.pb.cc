@@ -174,6 +174,8 @@ PROTOBUF_CONSTEXPR S_MOVE::S_MOVE(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.moves_)*/{}
   , /*decltype(_impl_.servertick_)*/0u
+  , /*decltype(_impl_.deltams_)*/0u
+  , /*decltype(_impl_.servertime_)*/uint64_t{0u}
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct S_MOVEDefaultTypeInternal {
   PROTOBUF_CONSTEXPR S_MOVEDefaultTypeInternal()
@@ -346,6 +348,8 @@ const uint32_t TableStruct_Protocol_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE
   ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::Protocol::S_MOVE, _impl_.servertick_),
   PROTOBUF_FIELD_OFFSET(::Protocol::S_MOVE, _impl_.moves_),
+  PROTOBUF_FIELD_OFFSET(::Protocol::S_MOVE, _impl_.deltams_),
+  PROTOBUF_FIELD_OFFSET(::Protocol::S_MOVE, _impl_.servertime_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::Protocol::S_MOVE_ACK, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -399,10 +403,10 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 69, -1, -1, sizeof(::Protocol::S_DESPAWN)},
   { 76, -1, -1, sizeof(::Protocol::C_MOVE)},
   { 85, -1, -1, sizeof(::Protocol::S_MOVE)},
-  { 93, -1, -1, sizeof(::Protocol::S_MOVE_ACK)},
-  { 103, -1, -1, sizeof(::Protocol::S_HIT)},
-  { 114, -1, -1, sizeof(::Protocol::S_DEATH)},
-  { 123, -1, -1, sizeof(::Protocol::S_ATTACK_START)},
+  { 95, -1, -1, sizeof(::Protocol::S_MOVE_ACK)},
+  { 105, -1, -1, sizeof(::Protocol::S_HIT)},
+  { 116, -1, -1, sizeof(::Protocol::S_DEATH)},
+  { 125, -1, -1, sizeof(::Protocol::S_ATTACK_START)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -440,19 +444,20 @@ const char descriptor_table_protodef_Protocol_2eproto[] PROTOBUF_SECTION_VARIABL
   "ocol.ObjectInfo\022\022\n\nserverTick\030\002 \001(\r\"\036\n\tS"
   "_DESPAWN\022\021\n\tobjectIds\030\001 \003(\004\"T\n\006C_MOVE\022\020\n"
   "\010inputSeq\030\001 \001(\r\022\022\n\nclientTick\030\002 \001(\r\022$\n\003d"
-  "ir\030\003 \001(\0162\027.Protocol.DirectionType\"\?\n\006S_M"
+  "ir\030\003 \001(\0162\027.Protocol.DirectionType\"d\n\006S_M"
   "OVE\022\022\n\nserverTick\030\001 \001(\r\022!\n\005moves\030\002 \003(\0132\022"
-  ".Protocol.MoveInfo\"\205\001\n\nS_MOVE_ACK\022\035\n\025las"
-  "tProcessedInputSeq\030\001 \001(\r\022\022\n\nserverTick\030\002"
-  " \001(\r\022\036\n\003pos\030\003 \001(\0132\021.Protocol.Vector2\022$\n\003"
-  "dir\030\004 \001(\0162\027.Protocol.DirectionType\"`\n\005S_"
-  "HIT\022\020\n\010targetId\030\001 \001(\004\022\022\n\nattackerId\030\002 \001("
-  "\004\022\016\n\006damage\030\003 \001(\005\022\r\n\005newHp\030\004 \001(\005\022\022\n\nserv"
-  "erTick\030\005 \001(\r\"A\n\007S_DEATH\022\020\n\010objectId\030\001 \001("
-  "\004\022\020\n\010killerId\030\002 \001(\004\022\022\n\nserverTick\030\003 \001(\r\""
-  "\\\n\016S_ATTACK_START\022\020\n\010objectId\030\001 \001(\004\022$\n\003d"
-  "ir\030\002 \001(\0162\027.Protocol.DirectionType\022\022\n\nser"
-  "verTick\030\003 \001(\rb\006proto3"
+  ".Protocol.MoveInfo\022\017\n\007deltaMs\030\003 \001(\r\022\022\n\ns"
+  "erverTime\030\004 \001(\004\"\205\001\n\nS_MOVE_ACK\022\035\n\025lastPr"
+  "ocessedInputSeq\030\001 \001(\r\022\022\n\nserverTick\030\002 \001("
+  "\r\022\036\n\003pos\030\003 \001(\0132\021.Protocol.Vector2\022$\n\003dir"
+  "\030\004 \001(\0162\027.Protocol.DirectionType\"`\n\005S_HIT"
+  "\022\020\n\010targetId\030\001 \001(\004\022\022\n\nattackerId\030\002 \001(\004\022\016"
+  "\n\006damage\030\003 \001(\005\022\r\n\005newHp\030\004 \001(\005\022\022\n\nserverT"
+  "ick\030\005 \001(\r\"A\n\007S_DEATH\022\020\n\010objectId\030\001 \001(\004\022\020"
+  "\n\010killerId\030\002 \001(\004\022\022\n\nserverTick\030\003 \001(\r\"\\\n\016"
+  "S_ATTACK_START\022\020\n\010objectId\030\001 \001(\004\022$\n\003dir\030"
+  "\002 \001(\0162\027.Protocol.DirectionType\022\022\n\nserver"
+  "Tick\030\003 \001(\rb\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_Protocol_2eproto_deps[2] = {
   &::descriptor_table_Enum_2eproto,
@@ -460,7 +465,7 @@ static const ::_pbi::DescriptorTable* const descriptor_table_Protocol_2eproto_de
 };
 static ::_pbi::once_flag descriptor_table_Protocol_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_Protocol_2eproto = {
-    false, false, 1101, descriptor_table_protodef_Protocol_2eproto,
+    false, false, 1138, descriptor_table_protodef_Protocol_2eproto,
     "Protocol.proto",
     &descriptor_table_Protocol_2eproto_once, descriptor_table_Protocol_2eproto_deps, 2, 16,
     schemas, file_default_instances, TableStruct_Protocol_2eproto::offsets,
@@ -2451,10 +2456,14 @@ S_MOVE::S_MOVE(const S_MOVE& from)
   new (&_impl_) Impl_{
       decltype(_impl_.moves_){from._impl_.moves_}
     , decltype(_impl_.servertick_){}
+    , decltype(_impl_.deltams_){}
+    , decltype(_impl_.servertime_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  _this->_impl_.servertick_ = from._impl_.servertick_;
+  ::memcpy(&_impl_.servertick_, &from._impl_.servertick_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.servertime_) -
+    reinterpret_cast<char*>(&_impl_.servertick_)) + sizeof(_impl_.servertime_));
   // @@protoc_insertion_point(copy_constructor:Protocol.S_MOVE)
 }
 
@@ -2465,6 +2474,8 @@ inline void S_MOVE::SharedCtor(
   new (&_impl_) Impl_{
       decltype(_impl_.moves_){arena}
     , decltype(_impl_.servertick_){0u}
+    , decltype(_impl_.deltams_){0u}
+    , decltype(_impl_.servertime_){uint64_t{0u}}
     , /*decltype(_impl_._cached_size_)*/{}
   };
 }
@@ -2494,7 +2505,9 @@ void S_MOVE::Clear() {
   (void) cached_has_bits;
 
   _impl_.moves_.Clear();
-  _impl_.servertick_ = 0u;
+  ::memset(&_impl_.servertick_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.servertime_) -
+      reinterpret_cast<char*>(&_impl_.servertick_)) + sizeof(_impl_.servertime_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -2522,6 +2535,22 @@ const char* S_MOVE::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
             CHK_(ptr);
             if (!ctx->DataAvailable(ptr)) break;
           } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<18>(ptr));
+        } else
+          goto handle_unusual;
+        continue;
+      // uint32 deltaMs = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 24)) {
+          _impl_.deltams_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // uint64 serverTime = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 32)) {
+          _impl_.servertime_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
@@ -2568,6 +2597,18 @@ uint8_t* S_MOVE::_InternalSerialize(
         InternalWriteMessage(2, repfield, repfield.GetCachedSize(), target, stream);
   }
 
+  // uint32 deltaMs = 3;
+  if (this->_internal_deltams() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(3, this->_internal_deltams(), target);
+  }
+
+  // uint64 serverTime = 4;
+  if (this->_internal_servertime() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(4, this->_internal_servertime(), target);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -2596,6 +2637,16 @@ size_t S_MOVE::ByteSizeLong() const {
     total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_servertick());
   }
 
+  // uint32 deltaMs = 3;
+  if (this->_internal_deltams() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_deltams());
+  }
+
+  // uint64 serverTime = 4;
+  if (this->_internal_servertime() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_servertime());
+  }
+
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
@@ -2618,6 +2669,12 @@ void S_MOVE::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBU
   if (from._internal_servertick() != 0) {
     _this->_internal_set_servertick(from._internal_servertick());
   }
+  if (from._internal_deltams() != 0) {
+    _this->_internal_set_deltams(from._internal_deltams());
+  }
+  if (from._internal_servertime() != 0) {
+    _this->_internal_set_servertime(from._internal_servertime());
+  }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
@@ -2636,7 +2693,12 @@ void S_MOVE::InternalSwap(S_MOVE* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   _impl_.moves_.InternalSwap(&other->_impl_.moves_);
-  swap(_impl_.servertick_, other->_impl_.servertick_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(S_MOVE, _impl_.servertime_)
+      + sizeof(S_MOVE::_impl_.servertime_)
+      - PROTOBUF_FIELD_OFFSET(S_MOVE, _impl_.servertick_)>(
+          reinterpret_cast<char*>(&_impl_.servertick_),
+          reinterpret_cast<char*>(&other->_impl_.servertick_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata S_MOVE::GetMetadata() const {

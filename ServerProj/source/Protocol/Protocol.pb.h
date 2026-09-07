@@ -1956,6 +1956,8 @@ class S_MOVE final :
   enum : int {
     kMovesFieldNumber = 2,
     kServerTickFieldNumber = 1,
+    kDeltaMsFieldNumber = 3,
+    kServerTimeFieldNumber = 4,
   };
   // repeated .Protocol.MoveInfo moves = 2;
   int moves_size() const;
@@ -1984,6 +1986,24 @@ class S_MOVE final :
   void _internal_set_servertick(uint32_t value);
   public:
 
+  // uint32 deltaMs = 3;
+  void clear_deltams();
+  uint32_t deltams() const;
+  void set_deltams(uint32_t value);
+  private:
+  uint32_t _internal_deltams() const;
+  void _internal_set_deltams(uint32_t value);
+  public:
+
+  // uint64 serverTime = 4;
+  void clear_servertime();
+  uint64_t servertime() const;
+  void set_servertime(uint64_t value);
+  private:
+  uint64_t _internal_servertime() const;
+  void _internal_set_servertime(uint64_t value);
+  public:
+
   // @@protoc_insertion_point(class_scope:Protocol.S_MOVE)
  private:
   class _Internal;
@@ -1994,6 +2014,8 @@ class S_MOVE final :
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Protocol::MoveInfo > moves_;
     uint32_t servertick_;
+    uint32_t deltams_;
+    uint64_t servertime_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -3432,6 +3454,46 @@ inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Protocol::MoveInfo >&
 S_MOVE::moves() const {
   // @@protoc_insertion_point(field_list:Protocol.S_MOVE.moves)
   return _impl_.moves_;
+}
+
+// uint32 deltaMs = 3;
+inline void S_MOVE::clear_deltams() {
+  _impl_.deltams_ = 0u;
+}
+inline uint32_t S_MOVE::_internal_deltams() const {
+  return _impl_.deltams_;
+}
+inline uint32_t S_MOVE::deltams() const {
+  // @@protoc_insertion_point(field_get:Protocol.S_MOVE.deltaMs)
+  return _internal_deltams();
+}
+inline void S_MOVE::_internal_set_deltams(uint32_t value) {
+  
+  _impl_.deltams_ = value;
+}
+inline void S_MOVE::set_deltams(uint32_t value) {
+  _internal_set_deltams(value);
+  // @@protoc_insertion_point(field_set:Protocol.S_MOVE.deltaMs)
+}
+
+// uint64 serverTime = 4;
+inline void S_MOVE::clear_servertime() {
+  _impl_.servertime_ = uint64_t{0u};
+}
+inline uint64_t S_MOVE::_internal_servertime() const {
+  return _impl_.servertime_;
+}
+inline uint64_t S_MOVE::servertime() const {
+  // @@protoc_insertion_point(field_get:Protocol.S_MOVE.serverTime)
+  return _internal_servertime();
+}
+inline void S_MOVE::_internal_set_servertime(uint64_t value) {
+  
+  _impl_.servertime_ = value;
+}
+inline void S_MOVE::set_servertime(uint64_t value) {
+  _internal_set_servertime(value);
+  // @@protoc_insertion_point(field_set:Protocol.S_MOVE.serverTime)
 }
 
 // -------------------------------------------------------------------

@@ -29,6 +29,7 @@ class Room : public JobQueue
 		SNAP_MAX_RADIUS			= 8,	// 막힌 타일을 통행 가능한 타일로 스냅할 때의 최대 반경
 		MOVE_KEYFRAME_INTERVAL	= 10,	// 이 틱마다 움직이는 액터를 강제로 브로드캐스트 (500ms 드리프트 보정)
 		PROJECTILE_LIFETIME_TICKS	= 100,	// 투사체 기본 수명 (5초 @ 20Hz)
+		MAX_CATCHUP_TICKS		= 5,	// 이 배수(5틱=250ms)만큼 밀리면 따라잡기 포기하고 리셋
 	};
 
 public:
@@ -152,7 +153,8 @@ public:
 	void		TickBehaviors(float deltaTime);
 	BtStatus	TickBehavior(uint64 objectId, float deltaTime);
 
-	float		GetTickDeltaTime() const { return static_cast<float>(TICK_INTERVAL_MS) / 1000.0f; }
+	// 더 이상 고정 50ms 가 아니다 - 가장 최근 틱에서 실제로 측정된 경과 시간.
+	float		GetTickDeltaTime() const { return static_cast<float>(_lastDeltaMs) / 1000.0f; }
 
 	// 쿼드트리 결과를 대조하기 위한 전수 조사. 디버그 명령 전용이다.
 	void	QueryCircleBruteForce(int32 centerX, int32 centerY, int32 radius,
@@ -224,6 +226,18 @@ private:
 	// Tick() 에서만 증가하지만 C_PING 핸들러(IOCP 워커)가 읽으므로 atomic.
 	Atomic<uint64>	_tickCount = 0;
 	uint64			_lastKeyframeTick = 0;
+
+	/*----------
+		틱 드리프트 보정
+
+		DoTimer 가 항상 고정 TICK_INTERVAL_MS 로 재예약하면 디스패치/큐잉 지연이
+		누적만 되고 절대 줄어들지 않는다. 실제 경과 시간을 측정해 시뮬레이션에 쓰고,
+		다음 예약은 이번 틱이 예정보다 얼마나 늦었는지를 빼서 정박자로 수렴시킨다.
+	-----------*/
+
+	uint64	_lastTickWallClockMs = 0;	// 지난 틱이 실제로 실행된 시각 (GetTickCount64())
+	uint64	_nextTickScheduleMs = 0;	// 다음 틱이 "원래" 실행됐어야 할 절대 시각 - 보정 기준
+	uint32	_lastDeltaMs = TICK_INTERVAL_MS;	// 가장 최근 틱의 실제 경과 시간(ms)
 };
 
 // Room은 StlAllocator 기반 컨테이너를 들고 있어서 GMemory보다 먼저 만들어지면 안 된다.
