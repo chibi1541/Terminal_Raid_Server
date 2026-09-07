@@ -120,6 +120,7 @@
     <ClCompile Include="source\AI\BtNodeRegistry.cpp" />
     <ClCompile Include="source\AI\BtTypes.cpp" />
     <ClCompile Include="source\Debug\GameCommands.cpp" />
+    <ClCompile Include="source\Game\ProjectileData.cpp" />
     <ClCompile Include="source\Game\GameObject.cpp" />
     <ClCompile Include="source\Game\JpsPathFinder.cpp" />
     <ClCompile Include="source\Game\Level.cpp" />
@@ -167,6 +168,7 @@
     <ClInclude Include="source\AI\BtTypes.h" />
     <ClInclude Include="source\Debug\GameCommands.h" />
     <ClInclude Include="source\Game\Bounds.h" />
+    <ClInclude Include="source\Game\ProjectileData.h" />
     <ClInclude Include="source\Game\GameObject.h" />
     <ClInclude Include="source\Game\JpsPathFinder.h" />
     <ClInclude Include="source\Game\Level.h" />

@@ -72,13 +72,22 @@ public:
 	// C_MOVE 핸들러가 DoAsync 로 넘긴다.
 	void	HandleMove(GameObjectRef object, uint32 inputSeq, uint32 clientTimeMs, int32 dir);
 
+	// 플레이어 공격(발사). C_ATTACK 핸들러가 DoAsync 로 넘긴다.
+	// aimCell/muzzleCell 은 클라가 화면->월드 변환해 보낸 값. 서버가 쿨다운·거리 검증 후 스폰.
+	void	HandleAttack(GameObjectRef object, Protocol::Vector2 aimCell,
+						 Protocol::Vector2 muzzleCell, uint32 clientTimeMs);
+
 	// 목표 셀까지 JPS 경로를 깔고 추종 시작. 디버그 goto / 향후 AI 리프가 공유한다.
 	bool	OrderMoveTo(uint64 objectId, int32 cellX, int32 cellY);
 
-	// 직진 투사체를 스폰해 룸에 넣는다. cellsPerSec <= 0 이면 기본 속도,
-	// lifetimeTicks <= 0 이면 기본 수명. 실패하면 nullptr.
+	// 8방향 직진 투사체 (proj 디버그 명령). cellsPerSec <= 0 이면 기본 속도.
 	GameObjectRef	SpawnProjectile(int32 cellX, int32 cellY, Protocol::DirectionType dir,
 									int32 cellsPerSec, int32 lifetimeTicks);
+
+	// 임의 각도 투사체. spawnFp = 고정소수점 스폰 위치, velSub = 서브유닛/초 속도 벡터.
+	GameObjectRef	SpawnProjectileVec(int32 spawnFpX, int32 spawnFpY,
+									   int32 velSubX, int32 velSubY, uint64 ownerId,
+									   int32 rangeCells, int32 lifetimeTicks);
 
 	// 디버그 : 이동 루프만 count 틱 수동으로 굴린다. (bt step 과 같은 방식)
 	void	DebugStepMovement(int32 count);

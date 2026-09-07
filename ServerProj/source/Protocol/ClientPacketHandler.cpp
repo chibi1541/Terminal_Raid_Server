@@ -128,6 +128,20 @@ bool Handle_C_MOVE(PacketSessionRef& session, Protocol::C_MOVE& pkt)
 	return true;
 }
 
+bool Handle_C_ATTACK(PacketSessionRef& session, Protocol::C_ATTACK& pkt)
+{
+	GameSessionRef gameSession = static_pointer_cast<GameSession>(session);
+	PlayerRef player = gameSession->GetPlayer();
+
+	if (player == nullptr || GRoom == nullptr)
+		return true;
+
+	GRoom->DoAsync(&Room::HandleAttack, static_pointer_cast<GameObject>(player),
+		pkt.aimcell(), pkt.muzzlecell(), pkt.clienttimems());
+
+	return true;
+}
+
 bool Handle_C_DEBUG_CONFIG(PacketSessionRef& session, Protocol::C_DEBUG_CONFIG& pkt)
 {
 	GameSessionRef gameSession = static_pointer_cast<GameSession>(session);

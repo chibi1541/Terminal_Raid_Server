@@ -166,4 +166,46 @@ namespace MoveMath
 			doneY = wantY;
 		}
 	}
+
+	// 임의 각도 속도 벡터(velSubX/Y, 서브유닛/초)로 elapsedMs 동안 이동.
+	// <=0.5셀 조각으로 나눠 각 조각의 목적 셀이 막혔으면 거기서 멈추고 true(벽 히트) 리턴.
+	// 슬라이드하지 않는다 - 투사체용. 서버 Room::UpdateMovement 가 쓴다.
+	template <typename BlockedFn>
+	inline bool IntegrateVec(int32_t& fpX, int32_t& fpY,
+		int32_t velSubX, int32_t velSubY, int32_t elapsedMs, BlockedFn&& isBlocked)
+	{
+		if (elapsedMs <= 0 || (velSubX == 0 && velSubY == 0))
+			return false;
+
+		const int64_t totalX = static_cast<int64_t>(velSubX) * elapsedMs / 1000;
+		const int64_t totalY = static_cast<int64_t>(velSubY) * elapsedMs / 1000;
+
+		const int64_t absX = (totalX < 0) ? -totalX : totalX;
+		const int64_t absY = (totalY < 0) ? -totalY : totalY;
+		const int64_t span = (absX > absY) ? absX : absY;
+
+		const int32_t steps = (span <= SUBSTEP_SUBUNITS)
+			? 1
+			: static_cast<int32_t>((span + SUBSTEP_SUBUNITS - 1) / SUBSTEP_SUBUNITS);
+
+		int64_t doneX = 0;
+		int64_t doneY = 0;
+		for (int32_t i = 1; i <= steps; ++i)
+		{
+			const int64_t wantX = totalX * i / steps;
+			const int64_t wantY = totalY * i / steps;
+			const int32_t nx = fpX + static_cast<int32_t>(wantX - doneX);
+			const int32_t ny = fpY + static_cast<int32_t>(wantY - doneY);
+
+			if (isBlocked(nx >> POS_SHIFT, ny >> POS_SHIFT))
+				return true;	// 이 조각의 목적 셀이 벽. fp 는 직전 값 그대로 두고 멈춘다.
+
+			fpX = nx;
+			fpY = ny;
+			doneX = wantX;
+			doneY = wantY;
+		}
+
+		return false;
+	}
 }

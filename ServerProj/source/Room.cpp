@@ -6,8 +6,10 @@
 #include "Game/Projectile.h"
 #include "Game/ObjectIdGenerator.h"
 #include "GameSession.h"
+#include "Game/ProjectileData.h"
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 
 // 생성은 main()에서 한다. Room.h의 주석 참고.
 shared_ptr<Room> GRoom;
@@ -468,6 +470,31 @@ void Room::UpdateMovement()
 			}
 		}
 
+		// 임의 각도 속도 벡터 (투사체) - 8방향 dir 대신 이걸로 적분한다.
+		if (m.velSubX != 0 || m.velSubY != 0)
+		{
+			const int32 beforeCX = object->GetPosX();
+			const int32 beforeCY = object->GetPosY();
+
+			// 투사체는 슬라이드 안 함 - 막힌 셀 만나면 그 자리에서 멈추고 hitWall.
+			const bool hitWall = MoveMath::IntegrateVec(m.fpX, m.fpY, m.velSubX, m.velSubY,
+				static_cast<int32>(_lastDeltaMs),
+				[&](int32 cx, int32 cy) { return _level.IsCellBlocked(cx, cy); });
+			object->SyncCellFromFixed();
+
+			if (object->GetObjType() == Protocol::OBJECT_PROJECTILE)
+			{
+				Projectile* proj = static_cast<Projectile*>(object);
+				if (hitWall || proj->IsOutOfRange())
+					proj->MarkExpired();	// SweepExpiredProjectiles 가 이 틱 끝에 걷어간다
+			}
+
+			if (object->GetPosX() != beforeCX || object->GetPosY() != beforeCY || keyframe)
+				m.dirty = true;
+
+			continue;
+		}
+
 		int32 ux = 0;
 		int32 uy = 0;
 		DirUnit(m.dir, OUT ux, OUT uy);
@@ -869,6 +896,98 @@ GameObjectRef Room::SpawnProjectile(int32 cellX, int32 cellY, Protocol::Directio
 	return proj;
 }
 
+GameObjectRef Room::SpawnProjectileVec(int32 spawnFpX, int32 spawnFpY,
+									   int32 velSubX, int32 velSubY, uint64 ownerId,
+									   int32 rangeCells, int32 lifetimeTicks)
+{
+	ProjectileRef proj = MakeShared<Projectile>();
+
+	proj->SetFixedPos(spawnFpX, spawnFpY);
+	proj->LaunchVec(velSubX, velSubY, ownerId, rangeCells, _tickCount,
+		(lifetimeTicks > 0) ? lifetimeTicks : PROJECTILE_LIFETIME_TICKS);
+
+	Enter(static_pointer_cast<GameObject>(proj), false);
+
+	return proj;
+}
+
+void Room::HandleAttack(GameObjectRef object, Protocol::Vector2 aimCell,
+						Protocol::Vector2 muzzleCell, uint32 clientTimeMs)
+{
+	(void)clientTimeMs;
+
+	if (object == nullptr || object->GetObjType() != Protocol::OBJECT_PLAYER)
+		return;
+
+	Player* player = static_cast<Player*>(object.get());
+
+	const ProjectileDef& proj = ProjectileData::Get().GetDefault();
+
+	// 발사 쿨다운 (서버 강제).
+	const uint64 now = ::GetTickCount64();
+	if (player->GetLastAttackWallMs() != 0 &&
+		now - player->GetLastAttackWallMs() < static_cast<uint64>(proj.fireIntervalMs))
+	{
+		return;
+	}
+
+	// muzzle 을 플레이어 권위 위치 근처로 클램프 (스폰 위치 조작 방지).
+	const float px = static_cast<float>(object->GetPosX());
+	const float py = static_cast<float>(object->GetPosY());
+	float mx = static_cast<float>(muzzleCell.x());
+	float my = static_cast<float>(muzzleCell.y());
+
+	const float mdx = mx - px;
+	const float mdy = my - py;
+	const float mDist = ::sqrtf(mdx * mdx + mdy * mdy);
+	const float maxMuzzle = static_cast<float>(proj.spawnUpCells) + 3.0f;	// 예측 오차 여유
+
+	if (mDist > maxMuzzle && mDist > 0.001f)
+	{
+		mx = px + mdx / mDist * static_cast<float>(proj.spawnUpCells);
+		my = py + mdy / mDist * static_cast<float>(proj.spawnUpCells);
+	}
+
+	// 조준 방향.
+	const float adx = static_cast<float>(aimCell.x()) - mx;
+	const float ady = static_cast<float>(aimCell.y()) - my;
+	const float aDist = ::sqrtf(adx * adx + ady * ady);
+
+	if (aDist < 1.0f)
+		return;	// degenerate - 커서가 발사 기준점과 겹침
+
+	const float ndx = adx / aDist;
+	const float ndy = ady / aDist;
+
+	// 스폰 위치 = muzzle + 조준 * spawnForwardCells, 서브셀 정밀.
+	const float scale = static_cast<float>(MoveMath::POS_SCALE);
+	const int32 spawnFpX = static_cast<int32>((mx + ndx * proj.spawnForwardCells) * scale)
+		+ MoveMath::POS_SCALE / 2;
+	const int32 spawnFpY = static_cast<int32>((my + ndy * proj.spawnForwardCells) * scale)
+		+ MoveMath::POS_SCALE / 2;
+
+	// 속도 벡터 (서브유닛/초).
+	const int32 velSubX = static_cast<int32>(ndx * proj.speedCellsPerSec * scale);
+	const int32 velSubY = static_cast<int32>(ndy * proj.speedCellsPerSec * scale);
+
+	// 사정거리 -> 수명 틱 파생.
+	const int32 lifetimeTicks = (proj.speedCellsPerSec > 0)
+		? static_cast<int32>((static_cast<int64>(proj.rangeCells) * 1000
+			/ proj.speedCellsPerSec + TICK_INTERVAL_MS - 1) / TICK_INTERVAL_MS) + 2
+		: PROJECTILE_LIFETIME_TICKS;
+
+	SpawnProjectileVec(spawnFpX, spawnFpY, velSubX, velSubY,
+		object->GetObjId(), proj.rangeCells, lifetimeTicks);
+
+	player->SetLastAttackWallMs(now);
+
+	// 발사자 공격 모션 (8방향).
+	Protocol::Vector2 from;
+	from.set_x(static_cast<int32>(mx));
+	from.set_y(static_cast<int32>(my));
+	NotifyAttackStart(object->GetObjId(), DirTo(from, aimCell));
+}
+
 void Room::SweepExpiredProjectiles()
 {
 	// Leave 가 _objects 를 건드리므로 대상을 먼저 추려두고 지운다.
@@ -883,20 +1002,8 @@ void Room::SweepExpiredProjectiles()
 
 		Projectile* proj = static_cast<Projectile*>(object);
 
-		// 수명 초과.
-		if (_tickCount >= proj->GetExpireTick())
-		{
-			dead.push_back(item.second);
-			continue;
-		}
-
-		// 진행 방향의 다음 칸이 벽이면 (= 이 틱에 벽에 막혀 멈췄으면) 즉시 소멸.
-		int32 ux = 0;
-		int32 uy = 0;
-		DirUnit(proj->Movement().dir, OUT ux, OUT uy);
-
-		if ((ux != 0 || uy != 0) &&
-			_level.IsCellBlocked(object->GetPosX() + ux, object->GetPosY() + uy))
+		// 수명 초과 (MarkExpired 로 벽 히트 시 _expireTick=0 이 되므로 여기서 같이 걸린다) 또는 사거리 초과.
+		if (_tickCount >= proj->GetExpireTick() || proj->IsOutOfRange())
 		{
 			dead.push_back(item.second);
 		}

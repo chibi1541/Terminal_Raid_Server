@@ -36,6 +36,11 @@ struct MovementComponent
 	Protocol::DirectionType	dir = Protocol::DIR_NONE;
 	MoveState				state = MoveState::Idle;
 
+	// 임의 각도 속도 벡터(서브유닛/초). 0 이 아니면 UpdateMovement 가 8방향 dir 대신 이걸로 적분한다.
+	// 투사체가 마우스 조준 방향으로 이 값을 받는다. 플레이어/몬스터는 0 (dir 기반).
+	int32					velSubX = 0;
+	int32					velSubY = 0;
+
 	// AI 가 채우는 타일 경로. 플레이어 방향 이동은 비운 채로 둔다.
 	Vector<TilePos>			path;
 	int32					pathIndex = 0;
@@ -115,6 +120,13 @@ public:
 		_pos.set_y(y);
 		_move.fpX = x * POS_SCALE + POS_SCALE / 2;
 		_move.fpY = y * POS_SCALE + POS_SCALE / 2;
+	}
+	// 서브셀 정밀 위치를 직접 놓는다 (투사체 스폰). 셀은 fp >> POS_SHIFT 로 파생.
+	void SetFixedPos(int32 fpX, int32 fpY)
+	{
+		_move.fpX = fpX;
+		_move.fpY = fpY;
+		SyncCellFromFixed();
 	}
 	void SetRoom(shared_ptr<Room> room)			{ _room = room; }
 

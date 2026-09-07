@@ -160,3 +160,13 @@ message S_DEBUG_PATH
 	repeated DebugPathNode searchNodes = 4;	// JPS 가 open 에 넣은 점프 포인트 (goto·path 명령 때만)
 	bool cleared = 5;						// 경로 종료 통지
 }
+
+// 클라 -> 서버 : 공격(발사) 요청.
+// muzzleCell / aimCell 은 클라가 화면->월드로 변환해서 보낸다 (카메라 회전이 클라에만 있으므로).
+// 서버는 muzzle 을 플레이어 권위 위치 근처로 클램프한 뒤 방향/속도/스폰점을 파생한다.
+message C_ATTACK
+{
+	Vector2 aimCell = 1;		// 마우스 커서의 월드 셀 좌표
+	Vector2 muzzleCell = 2;		// 발사 기준점(플레이어 정위치에서 화면상 위로 spawnUpCells)의 월드 셀 좌표
+	uint32 clientTimeMs = 3;	// 로컬 단조 시계 (쿨다운 / 순서)
+}

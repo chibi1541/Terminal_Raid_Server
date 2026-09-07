@@ -9,6 +9,7 @@
 #include "Protocol/ClientPacketHandler.h"
 #include "Protocol/Protocol.pb.h"
 #include "Room.h"
+#include "Game/ProjectileData.h"
 #include "Debug/GameCommands.h"
 #include "AdminServer.h"
 #include "CommandRegistry.h"
@@ -72,6 +73,9 @@ int main()
 	// 캔버스가 참조할 리프 타입들을 먼저 등록한다.
 	// 트리 로드보다 반드시 앞에 와야 이름을 못 찾는 실패가 안 난다.
 	BtNodeRegistry::RegisterBuiltins();
+
+	// 투사체 정의. 실패해도 컴파일 기본값으로 진행. (작업 디렉터리 = Server/ServerProj)
+	ProjectileData::Get().LoadFromFile(L"../Config/ProjectileData.xml");
 
 	// Room은 StlAllocator 컨테이너를 들고 있어서 GMemory가 준비된 뒤에 만들어야 한다.
 	// (자세한 내용은 Room.h 주석)

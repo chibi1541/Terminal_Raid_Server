@@ -537,6 +537,8 @@ class CreatureState final :
     kMaxHpFieldNumber = 3,
     kDirFieldNumber = 4,
     kSpeedFieldNumber = 5,
+    kVelSubXFieldNumber = 6,
+    kVelSubYFieldNumber = 7,
   };
   // .Protocol.Vector2 pos = 1;
   bool has_pos() const;
@@ -592,6 +594,24 @@ class CreatureState final :
   void _internal_set_speed(int32_t value);
   public:
 
+  // int32 velSubX = 6;
+  void clear_velsubx();
+  int32_t velsubx() const;
+  void set_velsubx(int32_t value);
+  private:
+  int32_t _internal_velsubx() const;
+  void _internal_set_velsubx(int32_t value);
+  public:
+
+  // int32 velSubY = 7;
+  void clear_velsuby();
+  int32_t velsuby() const;
+  void set_velsuby(int32_t value);
+  private:
+  int32_t _internal_velsuby() const;
+  void _internal_set_velsuby(int32_t value);
+  public:
+
   // @@protoc_insertion_point(class_scope:Protocol.CreatureState)
  private:
   class _Internal;
@@ -605,6 +625,8 @@ class CreatureState final :
     int32_t maxhp_;
     int dir_;
     int32_t speed_;
+    int32_t velsubx_;
+    int32_t velsuby_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -1513,6 +1535,46 @@ inline void CreatureState::_internal_set_speed(int32_t value) {
 inline void CreatureState::set_speed(int32_t value) {
   _internal_set_speed(value);
   // @@protoc_insertion_point(field_set:Protocol.CreatureState.speed)
+}
+
+// int32 velSubX = 6;
+inline void CreatureState::clear_velsubx() {
+  _impl_.velsubx_ = 0;
+}
+inline int32_t CreatureState::_internal_velsubx() const {
+  return _impl_.velsubx_;
+}
+inline int32_t CreatureState::velsubx() const {
+  // @@protoc_insertion_point(field_get:Protocol.CreatureState.velSubX)
+  return _internal_velsubx();
+}
+inline void CreatureState::_internal_set_velsubx(int32_t value) {
+  
+  _impl_.velsubx_ = value;
+}
+inline void CreatureState::set_velsubx(int32_t value) {
+  _internal_set_velsubx(value);
+  // @@protoc_insertion_point(field_set:Protocol.CreatureState.velSubX)
+}
+
+// int32 velSubY = 7;
+inline void CreatureState::clear_velsuby() {
+  _impl_.velsuby_ = 0;
+}
+inline int32_t CreatureState::_internal_velsuby() const {
+  return _impl_.velsuby_;
+}
+inline int32_t CreatureState::velsuby() const {
+  // @@protoc_insertion_point(field_get:Protocol.CreatureState.velSubY)
+  return _internal_velsuby();
+}
+inline void CreatureState::_internal_set_velsuby(int32_t value) {
+  
+  _impl_.velsuby_ = value;
+}
+inline void CreatureState::set_velsuby(int32_t value) {
+  _internal_set_velsuby(value);
+  // @@protoc_insertion_point(field_set:Protocol.CreatureState.velSubY)
 }
 
 // -------------------------------------------------------------------

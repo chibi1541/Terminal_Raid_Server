@@ -31,11 +31,16 @@ public:
 	void SetName(const string& name)					{ _name = name; }
 	void SetSession(shared_ptr<GameSession> session)	{ _session = session; }
 
+	// 마지막 발사 시각(GetTickCount64). 0 = 아직 안 쏨. Room::HandleAttack 이 쿨다운에 쓴다.
+	uint64	GetLastAttackWallMs() const			{ return _lastAttackWallMs; }
+	void	SetLastAttackWallMs(uint64 ms)		{ _lastAttackWallMs = ms; }
+
 private:
 	// TODO : Set UserID
 	uint64					_userId = 0;
 	string					_name;
 	weak_ptr<GameSession>	_session;
+	uint64					_lastAttackWallMs = 0;
 };
 
 using PlayerRef = shared_ptr<Player>;

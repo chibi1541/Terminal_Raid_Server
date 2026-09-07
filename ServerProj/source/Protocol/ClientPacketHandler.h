@@ -28,6 +28,7 @@ enum : uint16
 	PKT_C_DEBUG_CONFIG = 1016,
 	PKT_S_DEBUG_LEVEL = 1017,
 	PKT_S_DEBUG_PATH = 1018,
+	PKT_C_ATTACK = 1019,
 };
 
 bool Handle_INVALID(PacketSessionRef& session, BYTE* buffer, int32 len);
@@ -39,6 +40,7 @@ bool Handle_C_ENTER_ROOM(PacketSessionRef& session, Protocol::C_ENTER_ROOM& pkt)
 bool Handle_C_EXIT_ROOM(PacketSessionRef& session, Protocol::C_EXIT_ROOM& pkt);
 bool Handle_C_MOVE(PacketSessionRef& session, Protocol::C_MOVE& pkt);
 bool Handle_C_DEBUG_CONFIG(PacketSessionRef& session, Protocol::C_DEBUG_CONFIG& pkt);
+bool Handle_C_ATTACK(PacketSessionRef& session, Protocol::C_ATTACK& pkt);
 
 // PacketHandler 클래스 자동화
 class ClientPacketHandler
@@ -56,6 +58,7 @@ public:
 		GPacketHandler[PKT_C_EXIT_ROOM] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::C_EXIT_ROOM>(Handle_C_EXIT_ROOM, session, buffer, len); };
 		GPacketHandler[PKT_C_MOVE] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::C_MOVE>(Handle_C_MOVE, session, buffer, len); };
 		GPacketHandler[PKT_C_DEBUG_CONFIG] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::C_DEBUG_CONFIG>(Handle_C_DEBUG_CONFIG, session, buffer, len); };
+		GPacketHandler[PKT_C_ATTACK] = [](PacketSessionRef& session, BYTE* buffer, int32 len) { return HandlePacket<Protocol::C_ATTACK>(Handle_C_ATTACK, session, buffer, len); };
 
 	}
 
