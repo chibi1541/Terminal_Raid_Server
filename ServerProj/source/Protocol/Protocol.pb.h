@@ -2148,6 +2148,8 @@ class S_MOVE_ACK final :
     kLastProcessedInputSeqFieldNumber = 1,
     kServerTickFieldNumber = 2,
     kDirFieldNumber = 4,
+    kPosSubXFieldNumber = 5,
+    kPosSubYFieldNumber = 6,
   };
   // .Protocol.Vector2 pos = 3;
   bool has_pos() const;
@@ -2194,6 +2196,24 @@ class S_MOVE_ACK final :
   void _internal_set_dir(::Protocol::DirectionType value);
   public:
 
+  // int32 posSubX = 5;
+  void clear_possubx();
+  int32_t possubx() const;
+  void set_possubx(int32_t value);
+  private:
+  int32_t _internal_possubx() const;
+  void _internal_set_possubx(int32_t value);
+  public:
+
+  // int32 posSubY = 6;
+  void clear_possuby();
+  int32_t possuby() const;
+  void set_possuby(int32_t value);
+  private:
+  int32_t _internal_possuby() const;
+  void _internal_set_possuby(int32_t value);
+  public:
+
   // @@protoc_insertion_point(class_scope:Protocol.S_MOVE_ACK)
  private:
   class _Internal;
@@ -2206,6 +2226,8 @@ class S_MOVE_ACK final :
     uint32_t lastprocessedinputseq_;
     uint32_t servertick_;
     int dir_;
+    int32_t possubx_;
+    int32_t possuby_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -3643,6 +3665,46 @@ inline void S_MOVE_ACK::_internal_set_dir(::Protocol::DirectionType value) {
 inline void S_MOVE_ACK::set_dir(::Protocol::DirectionType value) {
   _internal_set_dir(value);
   // @@protoc_insertion_point(field_set:Protocol.S_MOVE_ACK.dir)
+}
+
+// int32 posSubX = 5;
+inline void S_MOVE_ACK::clear_possubx() {
+  _impl_.possubx_ = 0;
+}
+inline int32_t S_MOVE_ACK::_internal_possubx() const {
+  return _impl_.possubx_;
+}
+inline int32_t S_MOVE_ACK::possubx() const {
+  // @@protoc_insertion_point(field_get:Protocol.S_MOVE_ACK.posSubX)
+  return _internal_possubx();
+}
+inline void S_MOVE_ACK::_internal_set_possubx(int32_t value) {
+  
+  _impl_.possubx_ = value;
+}
+inline void S_MOVE_ACK::set_possubx(int32_t value) {
+  _internal_set_possubx(value);
+  // @@protoc_insertion_point(field_set:Protocol.S_MOVE_ACK.posSubX)
+}
+
+// int32 posSubY = 6;
+inline void S_MOVE_ACK::clear_possuby() {
+  _impl_.possuby_ = 0;
+}
+inline int32_t S_MOVE_ACK::_internal_possuby() const {
+  return _impl_.possuby_;
+}
+inline int32_t S_MOVE_ACK::possuby() const {
+  // @@protoc_insertion_point(field_get:Protocol.S_MOVE_ACK.posSubY)
+  return _internal_possuby();
+}
+inline void S_MOVE_ACK::_internal_set_possuby(int32_t value) {
+  
+  _impl_.possuby_ = value;
+}
+inline void S_MOVE_ACK::set_possuby(int32_t value) {
+  _internal_set_possuby(value);
+  // @@protoc_insertion_point(field_set:Protocol.S_MOVE_ACK.posSubY)
 }
 
 // -------------------------------------------------------------------

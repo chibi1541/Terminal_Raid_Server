@@ -2,6 +2,7 @@
 #include "Protocol/Struct.pb.h"
 #include "Game/Bounds.h"
 #include "Game/NavGrid.h"	// TilePos
+#include "Shared/MovementMath.h"	// 좌표 눈금 · 이동 적분식의 유일한 정의 (클라와 공유)
 
 class Room;
 
@@ -15,9 +16,11 @@ class Room;
 	  float를 안 쓰는 이유는 JpsPathFinder / OverlapsCircle 와 같다 - 결정성.
 ----------------*/
 
-constexpr int32 POS_SHIFT = 8;
-constexpr int32 POS_SCALE = 1 << POS_SHIFT;			// 256 : 1셀 = 256 서브유닛
-constexpr int32 DEFAULT_MOVE_SPEED_CELLS = 6;		// 기본 이동 속도 (셀/초)
+// 값의 실체는 Shared/MovementMath.h 에 있다. 여기서는 기존 이름만 그대로 재노출한다
+// (클라와 서버가 같은 헤더를 보므로 자동으로 일치한다).
+constexpr int32 POS_SHIFT = MoveMath::POS_SHIFT;
+constexpr int32 POS_SCALE = MoveMath::POS_SCALE;					// 256 : 1셀 = 256 서브유닛
+constexpr int32 DEFAULT_MOVE_SPEED_CELLS = MoveMath::DEFAULT_MOVE_SPEED_CELLS;	// 기본 이동 속도 (셀/초)
 
 enum class MoveState : uint8
 {
@@ -47,6 +50,12 @@ struct MovementComponent
 	uint64					lastInputWallMs = 0;		// 그 C_MOVE 를 서버가 처리한 시각(GetTickCount64)
 	int64					moveTimeCreditMs = 0;		// (클라 주장 - 서버 허용) 누적. 양수로 계속 쌓이면 어뷰징
 	bool					hasInputTimeBase = false;	// 첫 입력 전에는 대조 기준이 없다
+
+	// 재조정(reconciliation) 기준점. 마지막으로 처리한 입력 순간(lastInputClientTimeMs)의
+	// 권위 위치. 다음 입력이 오면 여기서부터 heldMs 만큼 정확히 다시 적분한다
+	// (매 틱 free-run 이 벌려 놓은 잔차를 이 시점에 되감아 없앤다).
+	int32					anchorFpX = 0;
+	int32					anchorFpY = 0;
 
 	int32 EffectiveSpeed() const
 	{
@@ -86,6 +95,10 @@ public:
 	const Protocol::Vector2&	GetPos() const		{ return _pos; }
 	int32						GetPosX() const		{ return _pos.x(); }
 	int32						GetPosY() const		{ return _pos.y(); }
+	// 서브유닛 고정소수점 위치(1셀=256). 이동 복제(S_MOVE_ACK / MoveInfo)가 셀 대신 이 값을
+	// 실어 보내야 클라 재조정/보간이 셀 내부 위치를 잃지 않는다.
+	int32						GetFixedX() const	{ return _move.fpX; }
+	int32						GetFixedY() const	{ return _move.fpY; }
 	int32						GetRadius() const	{ return _radius; }
 	int32						GetHp() const		{ return _hp; }
 	int32						GetMaxHp() const	{ return _maxHp; }

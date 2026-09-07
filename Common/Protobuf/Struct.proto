@@ -33,10 +33,12 @@ message CreatureState
 message MoveInfo
 {
 	uint64 objectId = 1;
-	Vector2 pos = 2;			// 권위 정수 셀 좌표
+	Vector2 pos = 2;			// 권위 정수 셀 좌표 (late-join / 디버그 호환용)
 	DirectionType dir = 3;
 	int32 speed = 4;			// 서브유닛/초
 	uint32 serverTick = 5;
+	int32 posSubX = 6;			// 권위 위치 X, 서브유닛 고정소수점 (1셀 = 256). 원격 보간은 이 값을 쓴다.
+	int32 posSubY = 7;
 }
 
 // 유저가 조종하는 플레이어 고유 정보.

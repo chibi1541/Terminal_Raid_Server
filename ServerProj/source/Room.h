@@ -31,9 +31,10 @@ class Room : public JobQueue
 		PROJECTILE_LIFETIME_TICKS	= 100,	// 투사체 기본 수명 (5초 @ 20Hz)
 		MAX_CATCHUP_TICKS		= 5,	// 이 배수(5틱=250ms)만큼 밀리면 따라잡기 포기하고 리셋
 
-		// 클라 이동 입력 검증(anti-cheat). HandleMove 가 클라 주장 시간 vs 서버 실측 시간을 대조한다.
-		MOVE_JITTER_MARGIN_MS	= 200,	// 편도 지연 지터 허용치. 이 안쪽 차이는 정상으로 본다
+		// 클라 이동 입력 검증(anti-cheat) + 재조정. HandleMove 가 클라 주장 시간 vs 서버 실측 시간을 대조한다.
+		MOVE_JITTER_MARGIN_MS	= 200,	// 편도 지연 지터 허용치. heldMs 는 [실측-이값, 실측+이값] 으로 클램프
 		MOVE_ABUSE_THRESHOLD_MS	= 3000,	// moveTimeCreditMs 누적이 이 값을 넘으면 어뷰징으로 강한 경고
+		MOVE_SUBSTEP_SUBUNITS	= 128,	// 정확 catch-up 을 이 크기(0.5셀) 이하 조각으로 나눠 충돌 검사
 	};
 
 public:
@@ -203,6 +204,11 @@ private:
 	// 코너컷은 막는다. 액터-액터 충돌은 이번 범위 밖.
 	// 반환값 : 복제 셀(_pos)이 바뀌었으면 true.
 	bool	IntegrateActor(GameObject* object, int32 stepX, int32 stepY);
+
+	// 정확 catch-up : object 의 anchor 로 되감은 뒤, dir 방향으로 heldMs 만큼의 변위를
+	// (클라 replay 와 동일한 단일 청크 식으로 계산해) <=0.5셀 조각으로 나눠 충돌을 보며
+	// 다시 적분한다. HandleMove 가 방향을 바꾸기 직전에 부른다.
+	void	IntegrateHeld(GameObject* object, Protocol::DirectionType dir, int32 heldMs);
 
 	// centerX/Y 를 중심으로 object 의 풋프린트 박스 전체가 벽에 막혔는지 검사.
 	// 풋프린트 미설정(1x1) 객체는 지금처럼 셀 1칸만 본다 - 기존 동작 그대로.

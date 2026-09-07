@@ -92,8 +92,10 @@ message S_MOVE_ACK
 {
 	uint32 lastProcessedInputSeq = 1;
 	uint32 serverTick = 2;
-	Vector2 pos = 3;
+	Vector2 pos = 3;			// 권위 위치 (정수 셀). 디버그 / late-join 호환용.
 	DirectionType dir = 4;
+	int32 posSubX = 5;			// 권위 위치 X, 서브유닛 고정소수점 (1셀 = 256). 재조정 앵커는 이 값을 쓴다.
+	int32 posSubY = 6;			// 정수 셀만 쓰면 서버의 셀 내부 위치가 잘려 왕복마다 최대 0.5칸씩 튄다.
 }
 
 // 피격 통지. 위치처럼 매 틱 바뀌는 게 아니라 "이 순간 한 번" 일어나는 것이라 S_MOVE와 분리한다.

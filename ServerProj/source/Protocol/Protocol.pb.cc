@@ -192,6 +192,8 @@ PROTOBUF_CONSTEXPR S_MOVE_ACK::S_MOVE_ACK(
   , /*decltype(_impl_.lastprocessedinputseq_)*/0u
   , /*decltype(_impl_.servertick_)*/0u
   , /*decltype(_impl_.dir_)*/0
+  , /*decltype(_impl_.possubx_)*/0
+  , /*decltype(_impl_.possuby_)*/0
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct S_MOVE_ACKDefaultTypeInternal {
   PROTOBUF_CONSTEXPR S_MOVE_ACKDefaultTypeInternal()
@@ -360,6 +362,8 @@ const uint32_t TableStruct_Protocol_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE
   PROTOBUF_FIELD_OFFSET(::Protocol::S_MOVE_ACK, _impl_.servertick_),
   PROTOBUF_FIELD_OFFSET(::Protocol::S_MOVE_ACK, _impl_.pos_),
   PROTOBUF_FIELD_OFFSET(::Protocol::S_MOVE_ACK, _impl_.dir_),
+  PROTOBUF_FIELD_OFFSET(::Protocol::S_MOVE_ACK, _impl_.possubx_),
+  PROTOBUF_FIELD_OFFSET(::Protocol::S_MOVE_ACK, _impl_.possuby_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::Protocol::S_HIT, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -404,9 +408,9 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 76, -1, -1, sizeof(::Protocol::C_MOVE)},
   { 85, -1, -1, sizeof(::Protocol::S_MOVE)},
   { 95, -1, -1, sizeof(::Protocol::S_MOVE_ACK)},
-  { 105, -1, -1, sizeof(::Protocol::S_HIT)},
-  { 116, -1, -1, sizeof(::Protocol::S_DEATH)},
-  { 125, -1, -1, sizeof(::Protocol::S_ATTACK_START)},
+  { 107, -1, -1, sizeof(::Protocol::S_HIT)},
+  { 118, -1, -1, sizeof(::Protocol::S_DEATH)},
+  { 127, -1, -1, sizeof(::Protocol::S_ATTACK_START)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -447,17 +451,18 @@ const char descriptor_table_protodef_Protocol_2eproto[] PROTOBUF_SECTION_VARIABL
   "ir\030\003 \001(\0162\027.Protocol.DirectionType\"d\n\006S_M"
   "OVE\022\022\n\nserverTick\030\001 \001(\r\022!\n\005moves\030\002 \003(\0132\022"
   ".Protocol.MoveInfo\022\017\n\007deltaMs\030\003 \001(\r\022\022\n\ns"
-  "erverTime\030\004 \001(\004\"\205\001\n\nS_MOVE_ACK\022\035\n\025lastPr"
+  "erverTime\030\004 \001(\004\"\247\001\n\nS_MOVE_ACK\022\035\n\025lastPr"
   "ocessedInputSeq\030\001 \001(\r\022\022\n\nserverTick\030\002 \001("
   "\r\022\036\n\003pos\030\003 \001(\0132\021.Protocol.Vector2\022$\n\003dir"
-  "\030\004 \001(\0162\027.Protocol.DirectionType\"`\n\005S_HIT"
-  "\022\020\n\010targetId\030\001 \001(\004\022\022\n\nattackerId\030\002 \001(\004\022\016"
-  "\n\006damage\030\003 \001(\005\022\r\n\005newHp\030\004 \001(\005\022\022\n\nserverT"
-  "ick\030\005 \001(\r\"A\n\007S_DEATH\022\020\n\010objectId\030\001 \001(\004\022\020"
-  "\n\010killerId\030\002 \001(\004\022\022\n\nserverTick\030\003 \001(\r\"\\\n\016"
-  "S_ATTACK_START\022\020\n\010objectId\030\001 \001(\004\022$\n\003dir\030"
-  "\002 \001(\0162\027.Protocol.DirectionType\022\022\n\nserver"
-  "Tick\030\003 \001(\rb\006proto3"
+  "\030\004 \001(\0162\027.Protocol.DirectionType\022\017\n\007posSu"
+  "bX\030\005 \001(\005\022\017\n\007posSubY\030\006 \001(\005\"`\n\005S_HIT\022\020\n\010ta"
+  "rgetId\030\001 \001(\004\022\022\n\nattackerId\030\002 \001(\004\022\016\n\006dama"
+  "ge\030\003 \001(\005\022\r\n\005newHp\030\004 \001(\005\022\022\n\nserverTick\030\005 "
+  "\001(\r\"A\n\007S_DEATH\022\020\n\010objectId\030\001 \001(\004\022\020\n\010kill"
+  "erId\030\002 \001(\004\022\022\n\nserverTick\030\003 \001(\r\"\\\n\016S_ATTA"
+  "CK_START\022\020\n\010objectId\030\001 \001(\004\022$\n\003dir\030\002 \001(\0162"
+  "\027.Protocol.DirectionType\022\022\n\nserverTick\030\003"
+  " \001(\rb\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_Protocol_2eproto_deps[2] = {
   &::descriptor_table_Enum_2eproto,
@@ -465,7 +470,7 @@ static const ::_pbi::DescriptorTable* const descriptor_table_Protocol_2eproto_de
 };
 static ::_pbi::once_flag descriptor_table_Protocol_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_Protocol_2eproto = {
-    false, false, 1138, descriptor_table_protodef_Protocol_2eproto,
+    false, false, 1172, descriptor_table_protodef_Protocol_2eproto,
     "Protocol.proto",
     &descriptor_table_Protocol_2eproto_once, descriptor_table_Protocol_2eproto_deps, 2, 16,
     schemas, file_default_instances, TableStruct_Protocol_2eproto::offsets,
@@ -2738,6 +2743,8 @@ S_MOVE_ACK::S_MOVE_ACK(const S_MOVE_ACK& from)
     , decltype(_impl_.lastprocessedinputseq_){}
     , decltype(_impl_.servertick_){}
     , decltype(_impl_.dir_){}
+    , decltype(_impl_.possubx_){}
+    , decltype(_impl_.possuby_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
@@ -2745,8 +2752,8 @@ S_MOVE_ACK::S_MOVE_ACK(const S_MOVE_ACK& from)
     _this->_impl_.pos_ = new ::Protocol::Vector2(*from._impl_.pos_);
   }
   ::memcpy(&_impl_.lastprocessedinputseq_, &from._impl_.lastprocessedinputseq_,
-    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.dir_) -
-    reinterpret_cast<char*>(&_impl_.lastprocessedinputseq_)) + sizeof(_impl_.dir_));
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.possuby_) -
+    reinterpret_cast<char*>(&_impl_.lastprocessedinputseq_)) + sizeof(_impl_.possuby_));
   // @@protoc_insertion_point(copy_constructor:Protocol.S_MOVE_ACK)
 }
 
@@ -2759,6 +2766,8 @@ inline void S_MOVE_ACK::SharedCtor(
     , decltype(_impl_.lastprocessedinputseq_){0u}
     , decltype(_impl_.servertick_){0u}
     , decltype(_impl_.dir_){0}
+    , decltype(_impl_.possubx_){0}
+    , decltype(_impl_.possuby_){0}
     , /*decltype(_impl_._cached_size_)*/{}
   };
 }
@@ -2792,8 +2801,8 @@ void S_MOVE_ACK::Clear() {
   }
   _impl_.pos_ = nullptr;
   ::memset(&_impl_.lastprocessedinputseq_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&_impl_.dir_) -
-      reinterpret_cast<char*>(&_impl_.lastprocessedinputseq_)) + sizeof(_impl_.dir_));
+      reinterpret_cast<char*>(&_impl_.possuby_) -
+      reinterpret_cast<char*>(&_impl_.lastprocessedinputseq_)) + sizeof(_impl_.possuby_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -2833,6 +2842,22 @@ const char* S_MOVE_ACK::_InternalParse(const char* ptr, ::_pbi::ParseContext* ct
           uint64_t val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
           _internal_set_dir(static_cast<::Protocol::DirectionType>(val));
+        } else
+          goto handle_unusual;
+        continue;
+      // int32 posSubX = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 40)) {
+          _impl_.possubx_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // int32 posSubY = 6;
+      case 6:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 48)) {
+          _impl_.possuby_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
@@ -2891,6 +2916,18 @@ uint8_t* S_MOVE_ACK::_InternalSerialize(
       4, this->_internal_dir(), target);
   }
 
+  // int32 posSubX = 5;
+  if (this->_internal_possubx() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteInt32ToArray(5, this->_internal_possubx(), target);
+  }
+
+  // int32 posSubY = 6;
+  if (this->_internal_possuby() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteInt32ToArray(6, this->_internal_possuby(), target);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -2930,6 +2967,16 @@ size_t S_MOVE_ACK::ByteSizeLong() const {
       ::_pbi::WireFormatLite::EnumSize(this->_internal_dir());
   }
 
+  // int32 posSubX = 5;
+  if (this->_internal_possubx() != 0) {
+    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_possubx());
+  }
+
+  // int32 posSubY = 6;
+  if (this->_internal_possuby() != 0) {
+    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_possuby());
+  }
+
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
@@ -2961,6 +3008,12 @@ void S_MOVE_ACK::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PRO
   if (from._internal_dir() != 0) {
     _this->_internal_set_dir(from._internal_dir());
   }
+  if (from._internal_possubx() != 0) {
+    _this->_internal_set_possubx(from._internal_possubx());
+  }
+  if (from._internal_possuby() != 0) {
+    _this->_internal_set_possuby(from._internal_possuby());
+  }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
@@ -2979,8 +3032,8 @@ void S_MOVE_ACK::InternalSwap(S_MOVE_ACK* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(S_MOVE_ACK, _impl_.dir_)
-      + sizeof(S_MOVE_ACK::_impl_.dir_)
+      PROTOBUF_FIELD_OFFSET(S_MOVE_ACK, _impl_.possuby_)
+      + sizeof(S_MOVE_ACK::_impl_.possuby_)
       - PROTOBUF_FIELD_OFFSET(S_MOVE_ACK, _impl_.pos_)>(
           reinterpret_cast<char*>(&_impl_.pos_),
           reinterpret_cast<char*>(&other->_impl_.pos_));

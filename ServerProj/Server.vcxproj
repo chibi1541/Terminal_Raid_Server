@@ -184,6 +184,7 @@
     <ClInclude Include="source\Protocol\Protocol.pb.h" />
     <ClInclude Include="source\Protocol\Struct.pb.h" />
     <ClInclude Include="source\Room.h" />
+    <ClInclude Include="source\Shared\MovementMath.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

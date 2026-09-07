@@ -738,6 +738,8 @@ class MoveInfo final :
     kDirFieldNumber = 3,
     kSpeedFieldNumber = 4,
     kServerTickFieldNumber = 5,
+    kPosSubXFieldNumber = 6,
+    kPosSubYFieldNumber = 7,
   };
   // .Protocol.Vector2 pos = 2;
   bool has_pos() const;
@@ -793,6 +795,24 @@ class MoveInfo final :
   void _internal_set_servertick(uint32_t value);
   public:
 
+  // int32 posSubX = 6;
+  void clear_possubx();
+  int32_t possubx() const;
+  void set_possubx(int32_t value);
+  private:
+  int32_t _internal_possubx() const;
+  void _internal_set_possubx(int32_t value);
+  public:
+
+  // int32 posSubY = 7;
+  void clear_possuby();
+  int32_t possuby() const;
+  void set_possuby(int32_t value);
+  private:
+  int32_t _internal_possuby() const;
+  void _internal_set_possuby(int32_t value);
+  public:
+
   // @@protoc_insertion_point(class_scope:Protocol.MoveInfo)
  private:
   class _Internal;
@@ -806,6 +826,8 @@ class MoveInfo final :
     int dir_;
     int32_t speed_;
     uint32_t servertick_;
+    int32_t possubx_;
+    int32_t possuby_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -1665,6 +1687,46 @@ inline void MoveInfo::_internal_set_servertick(uint32_t value) {
 inline void MoveInfo::set_servertick(uint32_t value) {
   _internal_set_servertick(value);
   // @@protoc_insertion_point(field_set:Protocol.MoveInfo.serverTick)
+}
+
+// int32 posSubX = 6;
+inline void MoveInfo::clear_possubx() {
+  _impl_.possubx_ = 0;
+}
+inline int32_t MoveInfo::_internal_possubx() const {
+  return _impl_.possubx_;
+}
+inline int32_t MoveInfo::possubx() const {
+  // @@protoc_insertion_point(field_get:Protocol.MoveInfo.posSubX)
+  return _internal_possubx();
+}
+inline void MoveInfo::_internal_set_possubx(int32_t value) {
+  
+  _impl_.possubx_ = value;
+}
+inline void MoveInfo::set_possubx(int32_t value) {
+  _internal_set_possubx(value);
+  // @@protoc_insertion_point(field_set:Protocol.MoveInfo.posSubX)
+}
+
+// int32 posSubY = 7;
+inline void MoveInfo::clear_possuby() {
+  _impl_.possuby_ = 0;
+}
+inline int32_t MoveInfo::_internal_possuby() const {
+  return _impl_.possuby_;
+}
+inline int32_t MoveInfo::possuby() const {
+  // @@protoc_insertion_point(field_get:Protocol.MoveInfo.posSubY)
+  return _internal_possuby();
+}
+inline void MoveInfo::_internal_set_possuby(int32_t value) {
+  
+  _impl_.possuby_ = value;
+}
+inline void MoveInfo::set_possuby(int32_t value) {
+  _internal_set_possuby(value);
+  // @@protoc_insertion_point(field_set:Protocol.MoveInfo.posSubY)
 }
 
 // -------------------------------------------------------------------

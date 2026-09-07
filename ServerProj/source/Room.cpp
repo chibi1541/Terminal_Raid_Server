@@ -405,6 +405,51 @@ bool Room::IntegrateActor(GameObject* object, int32 stepX, int32 stepY)
 	return (object->GetPosX() != cx || object->GetPosY() != cy);
 }
 
+void Room::IntegrateHeld(GameObject* object, Protocol::DirectionType dir, int32 heldMs)
+{
+	if (heldMs <= 0)
+		return;
+
+	int32 ux = 0;
+	int32 uy = 0;
+	DirUnit(dir, OUT ux, OUT uy);
+	if (ux == 0 && uy == 0)
+		return;
+
+	MovementComponent& m = object->Movement();
+
+	// anchor 기준 총 변위. 단일 청크 - 클라 replay 의 한 세그먼트 계산과 정확히 같다.
+	int32 totalX = 0;
+	int32 totalY = 0;
+	MoveMath::StepFixed(ux, uy, m.EffectiveSpeed(), heldMs, OUT totalX, OUT totalY);
+
+	// 매 틱 free-run 이 밀어 놓은 위치를 버리고 anchor 로 되감는다.
+	m.fpX = m.anchorFpX;
+	m.fpY = m.anchorFpY;
+	object->SyncCellFromFixed();
+
+	const int32 absX = (totalX < 0) ? -totalX : totalX;
+	const int32 absY = (totalY < 0) ? -totalY : totalY;
+	const int32 span = (absX > absY) ? absX : absY;
+
+	const int32 steps = (span <= MOVE_SUBSTEP_SUBUNITS)
+		? 1
+		: (span + MOVE_SUBSTEP_SUBUNITS - 1) / MOVE_SUBSTEP_SUBUNITS;
+
+	// total 을 steps 조각으로 정수 배분한다. 조각 합은 반올림 오차 없이 정확히 total 이라
+	// 벽이 없으면 결과가 클라 예측과 일치한다. 조각마다 IntegrateActor 로 충돌/슬라이드.
+	int32 doneX = 0;
+	int32 doneY = 0;
+	for (int32 i = 1; i <= steps; ++i)
+	{
+		const int32 wantX = static_cast<int32>(static_cast<int64>(totalX) * i / steps);
+		const int32 wantY = static_cast<int32>(static_cast<int64>(totalY) * i / steps);
+		IntegrateActor(object, wantX - doneX, wantY - doneY);
+		doneX = wantX;
+		doneY = wantY;
+	}
+}
+
 bool Room::IsFootprintBlocked(const GameObject* object, int32 centerX, int32 centerY) const
 {
 	const int32 tilesWide = object->GetFootprintTilesWide();
@@ -491,11 +536,12 @@ void Room::UpdateMovement()
 		if (ux == 0 && uy == 0)
 			continue;
 
-		int32 step = m.EffectiveSpeed() * static_cast<int32>(_lastDeltaMs) / 1000;	// 서브유닛/틱
-		if (ux != 0 && uy != 0)
-			step = step * 181 / 256;								// 대각 보정 (≈1/√2, 정수)
+		// 이번 틱 변위. 클라 예측(LocalPlayer::RecomputePrediction)과 같은 식을 쓴다.
+		int32 stepX = 0;
+		int32 stepY = 0;
+		MoveMath::StepFixed(ux, uy, m.EffectiveSpeed(), static_cast<int32>(_lastDeltaMs), OUT stepX, OUT stepY);
 
-		const bool cellChanged = IntegrateActor(object, ux * step, uy * step);
+		const bool cellChanged = IntegrateActor(object, stepX, stepY);
 
 		if (cellChanged || keyframe)
 			m.dirty = true;
@@ -525,6 +571,8 @@ void Room::BroadcastMoves()
 		info->set_dir(m.dir);
 		info->set_speed(m.EffectiveSpeed());
 		info->set_servertick(static_cast<uint32>(_tickCount));
+		info->set_possubx(object->GetFixedX());	// 서브유닛 권위 위치. 원격 보간이 이 값을 쓴다.
+		info->set_possuby(object->GetFixedY());
 
 		m.dirty = false;
 	}
@@ -551,15 +599,20 @@ void Room::HandleMove(GameObjectRef object, uint32 inputSeq, uint32 clientTimeMs
 
 	m.lastProcessedInputSeq = inputSeq;
 
-	// --- 클라 이동 입력 검증 (anti-cheat) ---
+	// 범위 밖 dir 은 정지로 취급한다.
+	Protocol::DirectionType newDir = Protocol::DIR_NONE;
+	if (dir >= Protocol::DIR_NONE && dir <= Protocol::DIR_DOWN_RIGHT)
+		newDir = static_cast<Protocol::DirectionType>(dir);
+
+	// --- 이동량 검증 + 정확 catch-up (reconciliation 앵커) ---
 	//
-	// 방향-홀드 모델에서 직전 방향이 유지된 시간은 두 관점으로 잰다.
+	// 방향-홀드 모델에서 "직전 방향이 유지된 시간"을 두 관점으로 잰다.
 	//  - 클라 주장 : clientTimeMs - 직전 입력의 clientTimeMs  (클라 단조 시계)
-	//  - 서버 실측 : now - 직전 입력을 처리한 서버 시각        (서버 단조 시계)
-	// 클라가 두 입력 사이에 "실제로 흐른 시간"보다 더 오래 눌렀다고 우길 수는 없다.
-	// 네트워크 지연이 그 사이에 줄었다면 최대 편도 지터(MOVE_JITTER_MARGIN_MS)만큼 여유를 준다.
-	// 그 창을 벗어난 초과분은 moveTimeCreditMs 에 쌓고, 계속 쌓이면 어뷰징으로 본다.
-	// (길게 누르면 heldMsServer 도 그만큼 커지므로 정상 홀드는 자연히 통과한다)
+	//  - 서버 실측 : now - 직전 입력을 서버가 처리한 시각      (서버 단조 시계)
+	// 서버 실측을 진실로 삼고, 클라 타임스탬프는 ±지터(MOVE_JITTER_MARGIN_MS) 범위에서만
+	// 신뢰한다. 이렇게 클램프한 heldMs 로 직전 방향을 anchor 에서 정확히 다시 적분해
+	// 권위 위치를 확정한다(매 틱 free-run 이 벌려 놓은 잔차는 여기서 사라진다).
+	// 클라가 시간을 부풀리면 상한을 넘긴 만큼 moveTimeCreditMs 에 쌓고 경고한다.
 	// (seq 0 = 디버그 호출은 클라 시계가 없으므로 건너뛴다)
 	if (inputSeq != 0)
 	{
@@ -568,17 +621,27 @@ void Room::HandleMove(GameObjectRef object, uint32 inputSeq, uint32 clientTimeMs
 		if (m.hasInputTimeBase)
 		{
 			const uint32 heldMsClient = clientTimeMs - m.lastInputClientTimeMs;	// uint32 wrap-safe
-			const uint64 heldMsServer = now - m.lastInputWallMs;
+			uint64 heldMsServerRaw = now - m.lastInputWallMs;
+			if (heldMsServerRaw > 60000)
+				heldMsServerRaw = 60000;										// 비정상 장기 공백 상한
+			const int32 heldMsServer = static_cast<int32>(heldMsServerRaw);
 
-			const uint64 allowedMs = heldMsServer + MOVE_JITTER_MARGIN_MS;
+			int32 lo = heldMsServer - MOVE_JITTER_MARGIN_MS;
+			if (lo < 0)
+				lo = 0;
+			const int32 hi = heldMsServer + MOVE_JITTER_MARGIN_MS;
 
-			if (heldMsClient > allowedMs)
+			int32 heldMs = static_cast<int32>(heldMsClient);
+			if (heldMs < lo) heldMs = lo;
+			if (heldMs > hi) heldMs = hi;
+
+			if (static_cast<int32>(heldMsClient) > hi)
 			{
-				const int64 overshootMs = static_cast<int64>(heldMsClient) - static_cast<int64>(allowedMs);
+				const int64 overshootMs = static_cast<int64>(heldMsClient) - hi;
 				m.moveTimeCreditMs += overshootMs;
 
-				LOG_WARN(L"[move-check] objectId=%llu 클라 주장 %ums > 허용 %llums (실측 %llums + 여유 %dms), 초과 %lldms 누적 %lldms",
-					object->GetObjId(), heldMsClient, allowedMs, heldMsServer,
+				LOG_WARN(L"[move-check] objectId=%llu 클라 주장 %ums > 허용 %dms (실측 %dms + 여유 %dms), 초과 %lldms 누적 %lldms",
+					object->GetObjId(), heldMsClient, hi, heldMsServer,
 					static_cast<int32>(MOVE_JITTER_MARGIN_MS), overshootMs, m.moveTimeCreditMs);
 
 				if (m.moveTimeCreditMs > MOVE_ABUSE_THRESHOLD_MS)
@@ -589,11 +652,14 @@ void Room::HandleMove(GameObjectRef object, uint32 inputSeq, uint32 clientTimeMs
 			}
 			else if (m.moveTimeCreditMs > 0)
 			{
-				// 정상 구간에서는 그동안 쌓인 의심분을 서서히 돌려준다 (일시적 지터의 오탐 방지).
-				m.moveTimeCreditMs -= static_cast<int64>(allowedMs - heldMsClient);
+				// 정상 구간마다 그동안 쌓인 의심분을 서서히 돌려준다 (일시적 지터 오탐 방지).
+				m.moveTimeCreditMs -= MOVE_JITTER_MARGIN_MS;
 				if (m.moveTimeCreditMs < 0)
 					m.moveTimeCreditMs = 0;
 			}
+
+			// 직전 방향(m.dir)을 anchor 에서 heldMs 만큼 정확히 적분 -> 권위 위치 확정.
+			IntegrateHeld(object.get(), m.dir, heldMs);
 		}
 
 		m.lastInputClientTimeMs = clientTimeMs;
@@ -601,10 +667,9 @@ void Room::HandleMove(GameObjectRef object, uint32 inputSeq, uint32 clientTimeMs
 		m.hasInputTimeBase = true;
 	}
 
-	// 범위 밖 dir 은 정지로 취급한다.
-	Protocol::DirectionType newDir = Protocol::DIR_NONE;
-	if (dir >= Protocol::DIR_NONE && dir <= Protocol::DIR_DOWN_RIGHT)
-		newDir = static_cast<Protocol::DirectionType>(dir);
+	// 새 방향을 반영한다. anchor 는 방금 확정된 권위 위치(정확 catch-up 결과, 또는 첫 입력이면 현 위치).
+	m.anchorFpX = m.fpX;
+	m.anchorFpY = m.fpY;
 
 	// 방향 입력이 오면 진행 중이던 경로 추종은 취소한다.
 	m.ClearPath();
@@ -624,6 +689,8 @@ void Room::HandleMove(GameObjectRef object, uint32 inputSeq, uint32 clientTimeMs
 			ack.set_servertick(static_cast<uint32>(_tickCount));
 			ack.mutable_pos()->CopyFrom(object->GetPos());
 			ack.set_dir(m.dir);
+			ack.set_possubx(object->GetFixedX());	// 서브유닛 권위 위치. 클라 재조정 앵커.
+			ack.set_possuby(object->GetFixedY());
 			session->Send(ClientPacketHandler::MakeSendBuffer(ack));
 		}
 	}
