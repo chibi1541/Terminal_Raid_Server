@@ -9,8 +9,8 @@ Player::Player()
 	// objectId 상위 16비트가 타입이므로 타입을 정한 직후에 발급한다.
 	SetObjId(ObjectIdGenerator::GenerateObjectId(GetObjType()));
 
-	// 길찾기 풋프린트 : 가로 2 x 세로 1 타일.
-	SetFootprint(2, 1);
+	// 길찾기 / 이동 차단 풋프린트. 클라 예측과 공유하는 상수(Shared/MovementMath.h).
+	SetFootprint(MoveMath::PLAYER_FOOTPRINT_TILES_WIDE, MoveMath::PLAYER_FOOTPRINT_TILES_HIGH);
 }
 
 void Player::FillObjectInfo(Protocol::ObjectInfo* info)

@@ -35,7 +35,7 @@ class Room : public JobQueue
 		// 클라 이동 입력 검증(anti-cheat) + 재조정. HandleMove 가 클라 주장 시간 vs 서버 실측 시간을 대조한다.
 		MOVE_JITTER_MARGIN_MS	= 200,	// 편도 지연 지터 허용치. heldMs 는 [실측-이값, 실측+이값] 으로 클램프
 		MOVE_ABUSE_THRESHOLD_MS	= 3000,	// moveTimeCreditMs 누적이 이 값을 넘으면 어뷰징으로 강한 경고
-		MOVE_SUBSTEP_SUBUNITS	= 128,	// 정확 catch-up 을 이 크기(0.5셀) 이하 조각으로 나눠 충돌 검사
+		// 충돌 슬라이드 조각 크기는 MoveMath::SUBSTEP_SUBUNITS (Shared/MovementMath.h) 에서 온다.
 	};
 
 public:

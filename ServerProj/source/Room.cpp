@@ -373,34 +373,10 @@ bool Room::IntegrateActor(GameObject* object, int32 stepX, int32 stepY)
 	const int32 cx = object->GetPosX();
 	const int32 cy = object->GetPosY();
 
-	int32 nx = m.fpX + stepX;
-	int32 ny = m.fpY + stepY;
-	int32 ncx = nx >> POS_SHIFT;
-	int32 ncy = ny >> POS_SHIFT;
+	// 좌표 산수(슬라이드/코너컷)는 클라와 공유. 여기는 풋프린트 콜백만 엮는다.
+	MoveMath::SlideStep(m.fpX, m.fpY, stepX, stepY,
+		[&](int32 tx, int32 ty) { return IsFootprintBlocked(object, tx, ty); });
 
-	// X축 이동이 벽에 막히면 X만 되돌리고 Y로 슬라이드시킨다.
-	if (ncx != cx && IsFootprintBlocked(object, ncx, cy))
-	{
-		nx = m.fpX;
-		ncx = cx;
-	}
-
-	// Y축도 동일.
-	if (ncy != cy && IsFootprintBlocked(object, cx, ncy))
-	{
-		ny = m.fpY;
-		ncy = cy;
-	}
-
-	// 두 축이 다 살아 대각으로 들어가는데 목적 칸이 막혔으면 코너컷이다. Y를 죽인다.
-	if (ncx != cx && ncy != cy && IsFootprintBlocked(object, ncx, ncy))
-	{
-		ny = m.fpY;
-		ncy = cy;
-	}
-
-	m.fpX = nx;
-	m.fpY = ny;
 	object->SyncCellFromFixed();
 
 	return (object->GetPosX() != cx || object->GetPosY() != cy);
@@ -419,66 +395,24 @@ void Room::IntegrateHeld(GameObject* object, Protocol::DirectionType dir, int32 
 
 	MovementComponent& m = object->Movement();
 
-	// anchor 기준 총 변위. 단일 청크 - 클라 replay 의 한 세그먼트 계산과 정확히 같다.
-	int32 totalX = 0;
-	int32 totalY = 0;
-	MoveMath::StepFixed(ux, uy, m.EffectiveSpeed(), heldMs, OUT totalX, OUT totalY);
-
-	// 매 틱 free-run 이 밀어 놓은 위치를 버리고 anchor 로 되감는다.
+	// 매 틱 free-run 이 밀어 놓은 위치를 버리고 anchor 로 되감은 뒤,
+	// 클라 replay 와 같은 공유 적분기로 heldMs 만큼 정확히 다시 적분한다.
 	m.fpX = m.anchorFpX;
 	m.fpY = m.anchorFpY;
+
+	MoveMath::IntegrateSlide(m.fpX, m.fpY, ux, uy, m.EffectiveSpeed(), heldMs,
+		[&](int32 cx, int32 cy) { return IsFootprintBlocked(object, cx, cy); });
+
 	object->SyncCellFromFixed();
-
-	const int32 absX = (totalX < 0) ? -totalX : totalX;
-	const int32 absY = (totalY < 0) ? -totalY : totalY;
-	const int32 span = (absX > absY) ? absX : absY;
-
-	const int32 steps = (span <= MOVE_SUBSTEP_SUBUNITS)
-		? 1
-		: (span + MOVE_SUBSTEP_SUBUNITS - 1) / MOVE_SUBSTEP_SUBUNITS;
-
-	// total 을 steps 조각으로 정수 배분한다. 조각 합은 반올림 오차 없이 정확히 total 이라
-	// 벽이 없으면 결과가 클라 예측과 일치한다. 조각마다 IntegrateActor 로 충돌/슬라이드.
-	int32 doneX = 0;
-	int32 doneY = 0;
-	for (int32 i = 1; i <= steps; ++i)
-	{
-		const int32 wantX = static_cast<int32>(static_cast<int64>(totalX) * i / steps);
-		const int32 wantY = static_cast<int32>(static_cast<int64>(totalY) * i / steps);
-		IntegrateActor(object, wantX - doneX, wantY - doneY);
-		doneX = wantX;
-		doneY = wantY;
-	}
 }
 
 bool Room::IsFootprintBlocked(const GameObject* object, int32 centerX, int32 centerY) const
 {
-	const int32 tilesWide = object->GetFootprintTilesWide();
-	const int32 tilesHigh = object->GetFootprintTilesHigh();
-
-	if (tilesWide <= 1 && tilesHigh <= 1)
-		return _level.IsCellBlocked(centerX, centerY);
-
-	const int32 tileSize = _level.GetTileSize();
-	const int32 cellsWide = tilesWide * tileSize;
-	const int32 cellsHigh = tilesHigh * tileSize;
-
-	// _pos 를 중심으로 대칭 - 짝수라 안 나뉘면 오른쪽/아래쪽에 한 칸 더.
-	const int32 minX = centerX - cellsWide / 2;
-	const int32 maxX = minX + cellsWide - 1;
-	const int32 minY = centerY - cellsHigh / 2;
-	const int32 maxY = minY + cellsHigh - 1;
-
-	for (int32 y = minY; y <= maxY; y++)
-	{
-		for (int32 x = minX; x <= maxX; x++)
-		{
-			if (_level.IsCellBlocked(x, y))
-				return true;
-		}
-	}
-
-	return false;
+	// 박스 산수는 클라 예측과 공유(MoveMath::FootprintBlocked). 여기는 셀 판정만 엮는다.
+	return MoveMath::FootprintBlocked(centerX, centerY,
+		object->GetFootprintTilesWide(), object->GetFootprintTilesHigh(),
+		_level.GetTileSize(),
+		[&](int32 x, int32 y) { return _level.IsCellBlocked(x, y); });
 }
 
 void Room::UpdateMovement()
@@ -541,12 +475,18 @@ void Room::UpdateMovement()
 		if (ux == 0 && uy == 0)
 			continue;
 
-		// 이번 틱 변위. 클라 예측(LocalPlayer::RecomputePrediction)과 같은 식을 쓴다.
-		int32 stepX = 0;
-		int32 stepY = 0;
-		MoveMath::StepFixed(ux, uy, m.EffectiveSpeed(), static_cast<int32>(_lastDeltaMs), OUT stepX, OUT stepY);
+		// 이번 틱 이동. 클라 예측(LocalPlayer::ReplayInputs)과 같은 공유 적분기를 쓴다.
+		// 조각으로 나눠 슬라이드하므로 라그 틱(_lastDeltaMs 큼)에도 벽을 안 뚫는다.
+		const int32 beforeCX = object->GetPosX();
+		const int32 beforeCY = object->GetPosY();
 
-		const bool cellChanged = IntegrateActor(object, stepX, stepY);
+		MoveMath::IntegrateSlide(m.fpX, m.fpY, ux, uy, m.EffectiveSpeed(),
+			static_cast<int32>(_lastDeltaMs),
+			[&](int32 cx, int32 cy) { return IsFootprintBlocked(object, cx, cy); });
+		object->SyncCellFromFixed();
+
+		const bool cellChanged =
+			(object->GetPosX() != beforeCX || object->GetPosY() != beforeCY);
 
 		if (cellChanged || keyframe)
 			m.dirty = true;

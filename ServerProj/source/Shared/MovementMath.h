@@ -23,6 +23,11 @@ namespace MoveMath
 	constexpr int32_t DIAG_NUM = 181;
 	constexpr int32_t DIAG_DEN = 256;
 
+	// 플레이어가 차지하는 타일 수 (가로 x 세로). 서버 Player::Player 와 클라 예측이 공유한다.
+	// 셀 박스 = (WIDE*tileSize) x (HIGH*tileSize), 중심은 캐릭터 위치.
+	constexpr int32_t PLAYER_FOOTPRINT_TILES_WIDE = 2;
+	constexpr int32_t PLAYER_FOOTPRINT_TILES_HIGH = 1;
+
 	// 단위 방향벡터 (ux, uy ∈ {-1, 0, 1}) 로 speedSubunitsPerSec 속도로 elapsedMs 동안
 	// 이동한 고정소수점 변위를 (outDx, outDy) 에 채운다.
 	//
@@ -47,5 +52,118 @@ namespace MoveMath
 
 		outDx = static_cast<int32_t>(ux * mag);
 		outDy = static_cast<int32_t>(uy * mag);
+	}
+
+	// 충돌 슬라이드를 나눌 조각 크기(서브유닛). 0.5셀. 한 조각이 이 이상 움직이지 않으면
+	// 목적 셀만 검사해도 셀을 건너뛰지 않는다.
+	constexpr int32_t SUBSTEP_SUBUNITS = 128;
+
+	// 한 스텝(stepX, stepY 서브유닛)을 fp 에 더하되 막힌 셀 중심에는 못 들어간다.
+	// 축을 분리해 슬라이드하고 코너컷(대각으로 두 벽 사이를 파고드는 것)을 막는다.
+	// isBlocked(cellX, cellY) -> true 면 그 셀은 통행 불가.
+	//
+	// 서버 Room::IntegrateActor 와 클라 LocalPlayer 예측이 이 한 구현을 공유한다.
+	// (위치는 항상 >= 0 이라 fp >> POS_SHIFT 의 산술 시프트 부호 문제 없음)
+	template <typename BlockedFn>
+	inline void SlideStep(int32_t& fpX, int32_t& fpY,
+		int32_t stepX, int32_t stepY, BlockedFn&& isBlocked)
+	{
+		const int32_t cx = fpX >> POS_SHIFT;
+		const int32_t cy = fpY >> POS_SHIFT;
+
+		int32_t nx = fpX + stepX;
+		int32_t ny = fpY + stepY;
+		int32_t ncx = nx >> POS_SHIFT;
+		int32_t ncy = ny >> POS_SHIFT;
+
+		// X축이 벽에 막히면 X만 되돌리고 Y로 슬라이드.
+		if (ncx != cx && isBlocked(ncx, cy))
+		{
+			nx = fpX;
+			ncx = cx;
+		}
+
+		// Y축도 동일.
+		if (ncy != cy && isBlocked(cx, ncy))
+		{
+			ny = fpY;
+			ncy = cy;
+		}
+
+		// 두 축이 다 살아 대각으로 들어가는데 목적 칸이 막혔으면 코너컷이다. Y를 죽인다.
+		if (ncx != cx && ncy != cy && isBlocked(ncx, ncy))
+		{
+			ny = fpY;
+			ncy = cy;
+		}
+
+		fpX = nx;
+		fpY = ny;
+	}
+
+	// centerCell 을 중심으로 (tilesWide x tilesHigh) 타일 박스 안에 막힌 셀이 하나라도 있으면 true.
+	// = 서버 Room::IsFootprintBlocked. tilesWide/High <= 1 이면 단일 셀만 본다.
+	// isCellBlocked(cellX, cellY) -> true 면 그 셀 통행 불가.
+	template <typename CellBlockedFn>
+	inline bool FootprintBlocked(int32_t centerX, int32_t centerY,
+		int32_t tilesWide, int32_t tilesHigh, int32_t tileSize, CellBlockedFn&& isCellBlocked)
+	{
+		if (tilesWide <= 1 && tilesHigh <= 1)
+			return isCellBlocked(centerX, centerY);
+
+		const int32_t cellsWide = tilesWide * tileSize;
+		const int32_t cellsHigh = tilesHigh * tileSize;
+
+		// 캐릭터 위치를 중심으로 대칭. 짝수라 안 나뉘면 오른쪽/아래쪽에 한 칸 더(서버와 동일).
+		const int32_t minX = centerX - cellsWide / 2;
+		const int32_t maxX = minX + cellsWide - 1;
+		const int32_t minY = centerY - cellsHigh / 2;
+		const int32_t maxY = minY + cellsHigh - 1;
+
+		for (int32_t y = minY; y <= maxY; ++y)
+		{
+			for (int32_t x = minX; x <= maxX; ++x)
+			{
+				if (isCellBlocked(x, y))
+					return true;
+			}
+		}
+
+		return false;
+	}
+
+	// dir(ux,uy) 로 elapsedMs 동안 이동한 StepFixed 변위를 <=0.5셀 조각으로 나눠 SlideStep.
+	// 조각 합은 반올림 오차 없이 정확히 총변위라 벽이 없으면 StepFixed 단일 적용과 같다.
+	// 서버 Room::IntegrateHeld / Room::UpdateMovement 와 클라 replay 가 공유한다.
+	template <typename BlockedFn>
+	inline void IntegrateSlide(int32_t& fpX, int32_t& fpY,
+		int32_t ux, int32_t uy,
+		int32_t speedSubunitsPerSec, int32_t elapsedMs, BlockedFn&& isBlocked)
+	{
+		int32_t totalX = 0;
+		int32_t totalY = 0;
+		StepFixed(ux, uy, speedSubunitsPerSec, elapsedMs, totalX, totalY);
+
+		if (totalX == 0 && totalY == 0)
+			return;
+
+		const int32_t absX = (totalX < 0) ? -totalX : totalX;
+		const int32_t absY = (totalY < 0) ? -totalY : totalY;
+		const int32_t span = (absX > absY) ? absX : absY;
+
+		const int32_t steps = (span <= SUBSTEP_SUBUNITS)
+			? 1
+			: (span + SUBSTEP_SUBUNITS - 1) / SUBSTEP_SUBUNITS;
+
+		int32_t doneX = 0;
+		int32_t doneY = 0;
+		for (int32_t i = 1; i <= steps; ++i)
+		{
+			const int32_t wantX = static_cast<int32_t>(static_cast<int64_t>(totalX) * i / steps);
+			const int32_t wantY = static_cast<int32_t>(static_cast<int64_t>(totalY) * i / steps);
+			SlideStep(fpX, fpY, wantX - doneX, wantY - doneY, isBlocked);
+			doneX = wantX;
+			doneY = wantY;
+		}
 	}
 }
