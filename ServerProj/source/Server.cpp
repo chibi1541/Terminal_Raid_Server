@@ -10,6 +10,7 @@
 #include "Protocol/Protocol.pb.h"
 #include "Room.h"
 #include "Game/ProjectileData.h"
+#include "Game/MonsterData.h"
 #include "Debug/GameCommands.h"
 #include "AdminServer.h"
 #include "CommandRegistry.h"
@@ -75,7 +76,8 @@ int main()
 	BtNodeRegistry::RegisterBuiltins();
 
 	// 투사체 정의. 실패해도 컴파일 기본값으로 진행. (작업 디렉터리 = Server/ServerProj)
-	ProjectileData::Get().LoadFromFile(L"../Config/ProjectileData.xml");
+	ProjectileData::Get().LoadFromFile(L"../Data/ProjectileData.xml");
+	MonsterData::Get().LoadFromFile(L"../Data/MonsterData.xml");
 
 	// Room은 StlAllocator 컨테이너를 들고 있어서 GMemory가 준비된 뒤에 만들어야 한다.
 	// (자세한 내용은 Room.h 주석)

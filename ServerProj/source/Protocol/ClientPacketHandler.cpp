@@ -147,7 +147,7 @@ bool Handle_C_DEBUG_CONFIG(PacketSessionRef& session, Protocol::C_DEBUG_CONFIG& 
 	GameSessionRef gameSession = static_pointer_cast<GameSession>(session);
 
 	const bool wasWantingGrid = gameSession->WantsLevelGrid();
-	gameSession->SetDebugConfig(pkt.wantlevelgrid(), pkt.wantpaths());
+	gameSession->SetDebugConfig(pkt.wantlevelgrid(), pkt.wantpaths(), pkt.wantquadtree());
 
 	// 격자를 새로 켰으면 지금 상태를 1회 보낸다. 룸 스레드에서 조립한다.
 	if (pkt.wantlevelgrid() && wasWantingGrid == false && GRoom != nullptr)

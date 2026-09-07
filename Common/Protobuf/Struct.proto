@@ -29,6 +29,7 @@ message CreatureState
 	int32 speed = 5;		// 서브유닛/초 (1셀 = 256). 늦게 접속한 클라가 움직이는 액터를 바로 예측할 수 있게
 	int32 velSubX = 6;		// 임의 각도 속도 벡터 (서브유닛/초). 0 이면 위의 8방향 dir/speed 사용.
 	int32 velSubY = 7;		// 투사체가 이 값으로 스폰 스냅샷을 받아 데드레커닝한다.
+	int32 radius = 8;		// 충돌 반경 (셀). 클라 반경 원 시각화 + late-join 예측용.
 }
 
 // 이동 갱신 한 건. S_MOVE 가 배치로 싣는다.

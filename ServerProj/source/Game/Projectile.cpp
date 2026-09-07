@@ -26,7 +26,7 @@ void Projectile::FillObjectInfo(Protocol::ObjectInfo* info)
 }
 
 void Projectile::LaunchVec(int32 velSubX, int32 velSubY, uint64 ownerId,
-						   int32 rangeCells, uint64 roomTickNow, int32 lifetimeTicks)
+						   int32 rangeCells, uint64 roomTickNow, int32 lifetimeTicks, int32 damage)
 {
 	MovementComponent& m = Movement();
 
@@ -39,6 +39,7 @@ void Projectile::LaunchVec(int32 velSubX, int32 velSubY, uint64 ownerId,
 	m.dirty = true;
 
 	_ownerId = ownerId;
+	_damage = (damage > 0) ? damage : 0;
 	_originFpX = m.fpX;
 	_originFpY = m.fpY;
 
@@ -56,7 +57,7 @@ void Projectile::LaunchVec(int32 velSubX, int32 velSubY, uint64 ownerId,
 }
 
 void Projectile::Launch(Protocol::DirectionType dir, int32 cellsPerSec,
-						uint64 roomTickNow, int32 lifetimeTicks)
+						uint64 roomTickNow, int32 lifetimeTicks, uint64 ownerId, int32 damage)
 {
 	int32 ux = 0;
 	int32 uy = 0;
@@ -84,7 +85,7 @@ void Projectile::Launch(Protocol::DirectionType dir, int32 cellsPerSec,
 		velY = velY * MoveMath::DIAG_NUM / MoveMath::DIAG_DEN;
 	}
 
-	LaunchVec(velX, velY, 0, 0, roomTickNow, lifetimeTicks);
+	LaunchVec(velX, velY, ownerId, 0, roomTickNow, lifetimeTicks, damage);
 }
 
 bool Projectile::IsOutOfRange() const

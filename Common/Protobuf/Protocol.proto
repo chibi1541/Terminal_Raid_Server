@@ -132,6 +132,7 @@ message C_DEBUG_CONFIG
 {
 	bool wantLevelGrid = 1;	// 서버 충돌 격자 오버레이
 	bool wantPaths = 2;		// 길찾기 경로/노드 오버레이
+	bool wantQuadtree = 3;	// 쿼드트리 노드 + 액터 반경 원 + 충돌 타이밍 오버레이
 }
 
 // 서버 → 클라 : 서버가 보는 충돌 권위 격자. wantLevelGrid 를 켜는 순간, 행 밴드로 쪼개
@@ -167,6 +168,25 @@ message S_DEBUG_PATH
 message C_ATTACK
 {
 	Vector2 aimCell = 1;		// 마우스 커서의 월드 셀 좌표
-	Vector2 muzzleCell = 2;		// 발사 기준점(플레이어 정위치에서 화면상 위로 spawnUpCells)의 월드 셀 좌표
+	Vector2 muzzleCell = 2;		// 발사 기준점(플레이어 몸통 중심)의 월드 셀 좌표
 	uint32 clientTimeMs = 3;	// 로컬 단조 시계 (쿨다운 / 순서)
+}
+
+// 쿼드트리 노드 하나의 셀 경계 (폐구간). S_DEBUG_QUADTREE 가 싣는다.
+message DebugRect
+{
+	int32 minX = 1;
+	int32 minY = 2;
+	int32 maxX = 3;
+	int32 maxY = 4;
+}
+
+// 서버 → 클라 : wantQuadtree 세션에게 ~5Hz. 쿼드트리 분할 + 충돌 처리 타이밍.
+message S_DEBUG_QUADTREE
+{
+	repeated DebugRect nodes = 1;	// 개체를 품은(비어있지 않은) 노드들. 상한 256
+	uint32 objectCount = 2;			// 트리에 들어간 살아있는 개체 수
+	uint32 buildMicros = 3;			// 마지막 틱 RebuildCollisionTree(이동 반영분) 소요 us
+	uint32 collisionMicros = 4;		// 마지막 틱 ResolveProjectileHits 소요 us
+	uint32 serverTick = 5;
 }

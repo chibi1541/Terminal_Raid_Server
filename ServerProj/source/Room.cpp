@@ -63,12 +63,32 @@ void Room::Tick()
 	// AI 는 여기서 의도(방향 / 경로)만 액터에 기록한다.
 	TickBehaviors(GetTickDeltaTime());
 
-	// 기록된 의도대로 위치를 적분하고, 바뀐 액터를 한 번에 브로드캐스트한다.
+	// 기록된 의도대로 위치를 적분한다.
 	UpdateMovement();
+
+	// 이동이 반영된 위치로 트리를 한 번 더 짓고, 투사체 명중 판정을 돌린다.
+	// 두 구간 소요를 재서 디버그 오버레이(S_DEBUG_QUADTREE) / collision 명령이 쓴다.
+	{
+		const auto tBuild0 = std::chrono::steady_clock::now();
+		RebuildCollisionTree();
+		const auto tBuild1 = std::chrono::steady_clock::now();
+		ResolveProjectileHits();
+		const auto tHit1 = std::chrono::steady_clock::now();
+
+		_lastTreeBuildMicros = static_cast<uint32>(
+			std::chrono::duration_cast<std::chrono::microseconds>(tBuild1 - tBuild0).count());
+		_lastCollisionMicros = static_cast<uint32>(
+			std::chrono::duration_cast<std::chrono::microseconds>(tHit1 - tBuild1).count());
+	}
+
+	// 바뀐 액터를 한 번에 브로드캐스트한다.
 	BroadcastMoves();
 
-	// 수명이 다했거나 벽에 박힌 투사체를 정리한다. (마지막 위치는 위에서 이미 보냈다)
+	// 수명이 다했거나 벽에 박힌(또는 이번 틱에 명중한) 투사체를 정리한다. (마지막 위치는 위에서 이미 보냈다)
 	SweepExpiredProjectiles();
+
+	// 쿼드트리 디버그 오버레이 (~5Hz, 구독 세션 없으면 비용 0).
+	BroadcastDebugQuadtree();
 
 	// 드리프트 보정 : 이번 틱이 예정 시각(_nextTickScheduleMs)보다 늦게 실행됐으면
 	// 늦은 만큼 다음 예약 지연에서 빼서 정박자로 수렴시킨다. 너무 많이 밀렸으면
@@ -286,7 +306,7 @@ std::wstring Room::DescribeObjects()
 bool Room::LoadLevel()
 {
 	// Server.exe는 Binaries/Debug 에서 실행되므로 프로젝트 루트까지 두 단계 올라간다.
-	static const WCHAR* LEVEL_PATH = L"../Config/Level01.xml";
+	static const WCHAR* LEVEL_PATH = L"../Data/Level01.xml";
 
 	if (_level.LoadFromFile(LEVEL_PATH))
 		return true;
@@ -881,13 +901,14 @@ void Room::NotifyAttackStart(uint64 objectId, Protocol::DirectionType dir)
 }
 
 GameObjectRef Room::SpawnProjectile(int32 cellX, int32 cellY, Protocol::DirectionType dir,
-								   int32 cellsPerSec, int32 lifetimeTicks)
+								   int32 cellsPerSec, int32 lifetimeTicks,
+								   uint64 ownerId, int32 damage)
 {
 	ProjectileRef proj = MakeShared<Projectile>();
 
 	proj->SetPos(cellX, cellY);
 	proj->Launch(dir, cellsPerSec, _tickCount,
-		(lifetimeTicks > 0) ? lifetimeTicks : PROJECTILE_LIFETIME_TICKS);
+		(lifetimeTicks > 0) ? lifetimeTicks : PROJECTILE_LIFETIME_TICKS, ownerId, damage);
 
 	// spawn 명령과 동일하게 좌표를 지정해서 넣는다 (랜덤 스폰 X).
 	Enter(static_pointer_cast<GameObject>(proj), false);
@@ -897,13 +918,13 @@ GameObjectRef Room::SpawnProjectile(int32 cellX, int32 cellY, Protocol::Directio
 
 GameObjectRef Room::SpawnProjectileVec(int32 spawnFpX, int32 spawnFpY,
 									   int32 velSubX, int32 velSubY, uint64 ownerId,
-									   int32 rangeCells, int32 lifetimeTicks)
+									   int32 rangeCells, int32 lifetimeTicks, int32 damage)
 {
 	ProjectileRef proj = MakeShared<Projectile>();
 
 	proj->SetFixedPos(spawnFpX, spawnFpY);
 	proj->LaunchVec(velSubX, velSubY, ownerId, rangeCells, _tickCount,
-		(lifetimeTicks > 0) ? lifetimeTicks : PROJECTILE_LIFETIME_TICKS);
+		(lifetimeTicks > 0) ? lifetimeTicks : PROJECTILE_LIFETIME_TICKS, damage);
 
 	Enter(static_pointer_cast<GameObject>(proj), false);
 
@@ -978,7 +999,7 @@ void Room::HandleAttack(GameObjectRef object, Protocol::Vector2 aimCell,
 		: PROJECTILE_LIFETIME_TICKS;
 
 	SpawnProjectileVec(spawnFpX, spawnFpY, velSubX, velSubY,
-		object->GetObjId(), proj.rangeCells, lifetimeTicks);
+		object->GetObjId(), proj.rangeCells, lifetimeTicks, proj.damage);
 
 	player->SetLastAttackWallMs(now);
 
@@ -987,6 +1008,116 @@ void Room::HandleAttack(GameObjectRef object, Protocol::Vector2 aimCell,
 	from.set_x(static_cast<int32>(mx));
 	from.set_y(static_cast<int32>(my));
 	NotifyAttackStart(object->GetObjId(), DirTo(from, aimCell));
+}
+
+void Room::ResolveProjectileHits()
+{
+	// DealDamage 가 Leave 로 _objects 를 건드리므로, 판정은 먼저 다 모으고 나서 적용한다.
+	struct Hit { uint64 attackerId; uint64 targetId; int32 damage; };
+	Vector<Hit> hits;
+
+	Vector<GameObject*> candidates;
+
+	for (auto& item : _objects)
+	{
+		GameObject* object = item.second.get();
+
+		if (object == nullptr || object->GetObjType() != Protocol::OBJECT_PROJECTILE)
+			continue;
+		if (object->IsAlive() == false)
+			continue;
+
+		Projectile* proj = static_cast<Projectile*>(object);
+
+		// 발사자 진영 -> 맞힐 대상 타입. ownerId 0(디버그 스폰)은 아무도 안 맞힌다.
+		const Protocol::ObjectType ownerType =
+			ObjectIdGenerator::GetObjectType(proj->GetOwnerId());
+
+		Protocol::ObjectType targetType;
+		if (ownerType == Protocol::OBJECT_PLAYER)
+			targetType = Protocol::OBJECT_MONSTER;
+		else if (ownerType == Protocol::OBJECT_MONSTER)
+			targetType = Protocol::OBJECT_PLAYER;
+		else
+			continue;
+
+		// QueryCircle 은 (대상._radius + 질의반경) 겹침까지 이미 걸러 준다.
+		// 질의반경 = 투사체 반경 => 결과 = 투사체 원과 겹치는 액터들.
+		QueryCircle(proj->GetPosX(), proj->GetPosY(), proj->GetRadius(), OUT candidates);
+
+		for (GameObject* c : candidates)
+		{
+			if (c == nullptr || c->GetObjId() == proj->GetOwnerId())
+				continue;
+			if (c->GetObjType() != targetType || c->IsAlive() == false)
+				continue;
+
+			hits.push_back({ proj->GetOwnerId(), c->GetObjId(), proj->GetDamage() });
+			proj->MarkExpired();	// SweepExpiredProjectiles 가 이 틱 끝에 걷어간다
+			break;					// 한 틱에 첫 명중 하나만 (관통 없음)
+		}
+	}
+
+	for (const Hit& h : hits)
+		DealDamage(h.attackerId, h.targetId, h.damage);
+}
+
+void Room::BroadcastDebugQuadtree()
+{
+	if ((_tickCount % 4) != 0)	// 틱 20Hz -> ~5Hz
+		return;
+
+	// 구독 세션이 하나도 없으면 조립 비용조차 아낀다.
+	auto anySubscriber = [&]() -> bool
+	{
+		for (auto& item : _objects)
+		{
+			GameObject* o = item.second.get();
+			if (o == nullptr || o->GetObjType() != Protocol::OBJECT_PLAYER)
+				continue;
+			if (GameSessionRef s = static_cast<Player*>(o)->GetSession())
+				if (s->WantsQuadtree())
+					return true;
+		}
+		return false;
+	};
+
+	if (anySubscriber() == false)
+		return;
+
+	Vector<Bounds> nodes;
+	_collisionTree.CollectNodeBounds(OUT nodes, 256);
+
+	Protocol::S_DEBUG_QUADTREE pkt;
+	for (const Bounds& b : nodes)
+	{
+		Protocol::DebugRect* r = pkt.add_nodes();
+		r->set_minx(b.minX);
+		r->set_miny(b.minY);
+		r->set_maxx(b.maxX);
+		r->set_maxy(b.maxY);
+	}
+
+	int32 alive = 0;
+	for (auto& item : _objects)
+		if (item.second != nullptr && item.second->IsAlive())
+			alive++;
+
+	pkt.set_objectcount(static_cast<uint32>(alive));
+	pkt.set_buildmicros(_lastTreeBuildMicros);
+	pkt.set_collisionmicros(_lastCollisionMicros);
+	pkt.set_servertick(static_cast<uint32>(_tickCount));
+
+	const SendBufferRef buffer = ClientPacketHandler::MakeSendBuffer(pkt);
+	for (auto& item : _objects)
+	{
+		GameObject* o = item.second.get();
+		if (o == nullptr || o->GetObjType() != Protocol::OBJECT_PLAYER)
+			continue;
+		if (GameSessionRef s = static_cast<Player*>(o)->GetSession())
+			if (s->WantsQuadtree())
+				s->Send(buffer);
+	}
 }
 
 void Room::SweepExpiredProjectiles()

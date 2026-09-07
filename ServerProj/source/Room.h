@@ -81,13 +81,15 @@ public:
 	bool	OrderMoveTo(uint64 objectId, int32 cellX, int32 cellY);
 
 	// 8방향 직진 투사체 (proj 디버그 명령). cellsPerSec <= 0 이면 기본 속도.
+	// ownerId 를 몬스터 id 로 주면 "몬스터 투사체"가 되어 플레이어를 맞힌다 (proj [ownerId]).
 	GameObjectRef	SpawnProjectile(int32 cellX, int32 cellY, Protocol::DirectionType dir,
-									int32 cellsPerSec, int32 lifetimeTicks);
+									int32 cellsPerSec, int32 lifetimeTicks,
+									uint64 ownerId, int32 damage);
 
 	// 임의 각도 투사체. spawnFp = 고정소수점 스폰 위치, velSub = 서브유닛/초 속도 벡터.
 	GameObjectRef	SpawnProjectileVec(int32 spawnFpX, int32 spawnFpY,
 									   int32 velSubX, int32 velSubY, uint64 ownerId,
-									   int32 rangeCells, int32 lifetimeTicks);
+									   int32 rangeCells, int32 lifetimeTicks, int32 damage);
 
 	// 디버그 : 이동 루프만 count 틱 수동으로 굴린다. (bt step 과 같은 방식)
 	void	DebugStepMovement(int32 count);
@@ -100,6 +102,10 @@ public:
 
 	// wantLevelGrid 를 켠 세션에게 현재 충돌 격자를 1회 보낸다. IOCP 워커가 DoAsync 로 넘긴다.
 	void	SendDebugLevelTo(shared_ptr<GameSession> session);
+
+	// 마지막 틱의 충돌 처리 타이밍 (us). collision 콘솔 명령이 읽는다.
+	uint32	GetLastTreeBuildMicros() const	{ return _lastTreeBuildMicros; }
+	uint32	GetLastCollisionMicros() const	{ return _lastCollisionMicros; }
 
 	/*----------
 		이벤트성 상태 (Hit / Death / Attack)
@@ -219,6 +225,13 @@ private:
 	// 수명이 다했거나 벽에 막힌 투사체를 걷어낸다. Tick() 이 이동 브로드캐스트 뒤에 부른다.
 	void	SweepExpiredProjectiles();
 
+	// 살아있는 투사체마다 발사자 진영 반대편(플레이어<->몬스터)을 쿼드트리로 찾아 명중 판정.
+	// 명중 시 DealDamage + 투사체 MarkExpired. Tick() 이 UpdateMovement 뒤(2차 트리 재구축 후) 부른다.
+	void	ResolveProjectileHits();
+
+	// wantQuadtree 세션에게 쿼드트리 노드 + 타이밍을 보낸다. Tick 끝에서 ~5Hz.
+	void	BroadcastDebugQuadtree();
+
 	// 고정소수점 위치에 step 을 더하되 벽을 뚫지 않는다. 축을 분리해 슬라이드하고
 	// 코너컷은 막는다. 액터-액터 충돌은 이번 범위 밖.
 	// 반환값 : 복제 셀(_pos)이 바뀌었으면 true.
@@ -272,6 +285,10 @@ private:
 	uint64	_lastTickWallClockMs = 0;	// 지난 틱이 실제로 실행된 시각 (GetTickCount64())
 	uint64	_nextTickScheduleMs = 0;	// 다음 틱이 "원래" 실행됐어야 할 절대 시각 - 보정 기준
 	uint32	_lastDeltaMs = TICK_INTERVAL_MS;	// 가장 최근 틱의 실제 경과 시간(ms)
+
+	// 충돌 디버그 타이밍 (us). 2차 RebuildCollisionTree / ResolveProjectileHits 소요.
+	uint32	_lastTreeBuildMicros = 0;
+	uint32	_lastCollisionMicros = 0;
 };
 
 // Room은 StlAllocator 기반 컨테이너를 들고 있어서 GMemory보다 먼저 만들어지면 안 된다.

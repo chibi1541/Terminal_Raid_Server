@@ -238,6 +238,25 @@ void QuadTree::CollectStats(const Node* node, OUT Stats& stats) const
 		CollectStats(node->children[i], OUT stats);
 }
 
+void QuadTree::CollectBounds(const Node* node, OUT Vector<Bounds>& out, int32 maxNodes) const
+{
+	if (node == nullptr || static_cast<int32>(out.size()) >= maxNodes)
+		return;
+
+	// 빈 노드는 시각적으로 의미가 없어 건너뛴다 (분할선에 걸친 개체가 상위에 남는 것도 포함).
+	if (node->objects.empty() == false)
+		out.push_back(node->bounds);
+
+	for (int32 i = 0; i < 4; i++)
+		CollectBounds(node->children[i], OUT out, maxNodes);
+}
+
+void QuadTree::CollectNodeBounds(OUT Vector<Bounds>& out, int32 maxNodes) const
+{
+	out.clear();
+	CollectBounds(_root, OUT out, maxNodes);
+}
+
 std::wstring QuadTree::Describe() const
 {
 	Stats stats;

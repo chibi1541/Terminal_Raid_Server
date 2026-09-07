@@ -15,7 +15,7 @@
 class BehaviorTreeManager
 {
 public:
-	// 이미 있으면 그걸 돌려주고, 없으면 Config/AI/<name>.canvas 를 읽는다.
+	// 이미 있으면 그걸 돌려주고, 없으면 Data/AI/<name>.canvas 를 읽는다.
 	const BehaviorTree*	Load(const string& name);
 	const BehaviorTree*	Find(const string& name) const;
 

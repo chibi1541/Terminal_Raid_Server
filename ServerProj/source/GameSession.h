@@ -26,16 +26,19 @@ public:
 	// IOCP 워커에서 쓰고 룸 스레드에서 읽는다 - bool 원자성에 기댄다(디버그 전용, 정확할 필요 없음).
 	bool		WantsLevelGrid() const		{ return _wantLevelGrid; }
 	bool		WantsPaths() const			{ return _wantPaths; }
-	void		SetDebugConfig(bool wantLevelGrid, bool wantPaths)
+	bool		WantsQuadtree() const		{ return _wantQuadtree; }
+	void		SetDebugConfig(bool wantLevelGrid, bool wantPaths, bool wantQuadtree)
 	{
 		_wantLevelGrid = wantLevelGrid;
 		_wantPaths = wantPaths;
+		_wantQuadtree = wantQuadtree;
 	}
 
 private:
 	PlayerRef _player;
 	bool _wantLevelGrid = false;
 	bool _wantPaths = false;
+	bool _wantQuadtree = false;
 };
 
 using GameSessionRef = shared_ptr<GameSession>;

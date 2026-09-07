@@ -5,11 +5,11 @@
 namespace
 {
 	// Server.exe 는 Binaries 에서 실행되므로 프로젝트 루트까지 한 단계 올라간다.
-	// (Config/Level01.xml 과 같은 기준)
+	// (Data/Level01.xml 과 같은 기준)
 	std::wstring MakePath(const string& name)
 	{
 		std::wstring wideName(name.begin(), name.end());
-		return L"../Config/AI/" + wideName + L".canvas";
+		return L"../Data/AI/" + wideName + L".canvas";
 	}
 }
 

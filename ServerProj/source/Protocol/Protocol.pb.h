@@ -72,6 +72,9 @@ extern C_PINGDefaultTypeInternal _C_PING_default_instance_;
 class DebugPathNode;
 struct DebugPathNodeDefaultTypeInternal;
 extern DebugPathNodeDefaultTypeInternal _DebugPathNode_default_instance_;
+class DebugRect;
+struct DebugRectDefaultTypeInternal;
+extern DebugRectDefaultTypeInternal _DebugRect_default_instance_;
 class S_ATTACK_START;
 struct S_ATTACK_STARTDefaultTypeInternal;
 extern S_ATTACK_STARTDefaultTypeInternal _S_ATTACK_START_default_instance_;
@@ -84,6 +87,9 @@ extern S_DEBUG_LEVELDefaultTypeInternal _S_DEBUG_LEVEL_default_instance_;
 class S_DEBUG_PATH;
 struct S_DEBUG_PATHDefaultTypeInternal;
 extern S_DEBUG_PATHDefaultTypeInternal _S_DEBUG_PATH_default_instance_;
+class S_DEBUG_QUADTREE;
+struct S_DEBUG_QUADTREEDefaultTypeInternal;
+extern S_DEBUG_QUADTREEDefaultTypeInternal _S_DEBUG_QUADTREE_default_instance_;
 class S_DESPAWN;
 struct S_DESPAWNDefaultTypeInternal;
 extern S_DESPAWNDefaultTypeInternal _S_DESPAWN_default_instance_;
@@ -121,10 +127,12 @@ template<> ::Protocol::C_LOGIN* Arena::CreateMaybeMessage<::Protocol::C_LOGIN>(A
 template<> ::Protocol::C_MOVE* Arena::CreateMaybeMessage<::Protocol::C_MOVE>(Arena*);
 template<> ::Protocol::C_PING* Arena::CreateMaybeMessage<::Protocol::C_PING>(Arena*);
 template<> ::Protocol::DebugPathNode* Arena::CreateMaybeMessage<::Protocol::DebugPathNode>(Arena*);
+template<> ::Protocol::DebugRect* Arena::CreateMaybeMessage<::Protocol::DebugRect>(Arena*);
 template<> ::Protocol::S_ATTACK_START* Arena::CreateMaybeMessage<::Protocol::S_ATTACK_START>(Arena*);
 template<> ::Protocol::S_DEATH* Arena::CreateMaybeMessage<::Protocol::S_DEATH>(Arena*);
 template<> ::Protocol::S_DEBUG_LEVEL* Arena::CreateMaybeMessage<::Protocol::S_DEBUG_LEVEL>(Arena*);
 template<> ::Protocol::S_DEBUG_PATH* Arena::CreateMaybeMessage<::Protocol::S_DEBUG_PATH>(Arena*);
+template<> ::Protocol::S_DEBUG_QUADTREE* Arena::CreateMaybeMessage<::Protocol::S_DEBUG_QUADTREE>(Arena*);
 template<> ::Protocol::S_DESPAWN* Arena::CreateMaybeMessage<::Protocol::S_DESPAWN>(Arena*);
 template<> ::Protocol::S_ENTER_ROOM* Arena::CreateMaybeMessage<::Protocol::S_ENTER_ROOM>(Arena*);
 template<> ::Protocol::S_EXIT_ROOM* Arena::CreateMaybeMessage<::Protocol::S_EXIT_ROOM>(Arena*);
@@ -2910,6 +2918,7 @@ class C_DEBUG_CONFIG final :
   enum : int {
     kWantLevelGridFieldNumber = 1,
     kWantPathsFieldNumber = 2,
+    kWantQuadtreeFieldNumber = 3,
   };
   // bool wantLevelGrid = 1;
   void clear_wantlevelgrid();
@@ -2929,6 +2938,15 @@ class C_DEBUG_CONFIG final :
   void _internal_set_wantpaths(bool value);
   public:
 
+  // bool wantQuadtree = 3;
+  void clear_wantquadtree();
+  bool wantquadtree() const;
+  void set_wantquadtree(bool value);
+  private:
+  bool _internal_wantquadtree() const;
+  void _internal_set_wantquadtree(bool value);
+  public:
+
   // @@protoc_insertion_point(class_scope:Protocol.C_DEBUG_CONFIG)
  private:
   class _Internal;
@@ -2939,6 +2957,7 @@ class C_DEBUG_CONFIG final :
   struct Impl_ {
     bool wantlevelgrid_;
     bool wantpaths_;
+    bool wantquadtree_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -3702,6 +3721,388 @@ class C_ATTACK final :
     ::Protocol::Vector2* aimcell_;
     ::Protocol::Vector2* muzzlecell_;
     uint32_t clienttimems_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_Protocol_2eproto;
+};
+// -------------------------------------------------------------------
+
+class DebugRect final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:Protocol.DebugRect) */ {
+ public:
+  inline DebugRect() : DebugRect(nullptr) {}
+  ~DebugRect() override;
+  explicit PROTOBUF_CONSTEXPR DebugRect(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  DebugRect(const DebugRect& from);
+  DebugRect(DebugRect&& from) noexcept
+    : DebugRect() {
+    *this = ::std::move(from);
+  }
+
+  inline DebugRect& operator=(const DebugRect& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline DebugRect& operator=(DebugRect&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const DebugRect& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const DebugRect* internal_default_instance() {
+    return reinterpret_cast<const DebugRect*>(
+               &_DebugRect_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    21;
+
+  friend void swap(DebugRect& a, DebugRect& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(DebugRect* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(DebugRect* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  DebugRect* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<DebugRect>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const DebugRect& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const DebugRect& from) {
+    DebugRect::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(DebugRect* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "Protocol.DebugRect";
+  }
+  protected:
+  explicit DebugRect(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kMinXFieldNumber = 1,
+    kMinYFieldNumber = 2,
+    kMaxXFieldNumber = 3,
+    kMaxYFieldNumber = 4,
+  };
+  // int32 minX = 1;
+  void clear_minx();
+  int32_t minx() const;
+  void set_minx(int32_t value);
+  private:
+  int32_t _internal_minx() const;
+  void _internal_set_minx(int32_t value);
+  public:
+
+  // int32 minY = 2;
+  void clear_miny();
+  int32_t miny() const;
+  void set_miny(int32_t value);
+  private:
+  int32_t _internal_miny() const;
+  void _internal_set_miny(int32_t value);
+  public:
+
+  // int32 maxX = 3;
+  void clear_maxx();
+  int32_t maxx() const;
+  void set_maxx(int32_t value);
+  private:
+  int32_t _internal_maxx() const;
+  void _internal_set_maxx(int32_t value);
+  public:
+
+  // int32 maxY = 4;
+  void clear_maxy();
+  int32_t maxy() const;
+  void set_maxy(int32_t value);
+  private:
+  int32_t _internal_maxy() const;
+  void _internal_set_maxy(int32_t value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:Protocol.DebugRect)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    int32_t minx_;
+    int32_t miny_;
+    int32_t maxx_;
+    int32_t maxy_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_Protocol_2eproto;
+};
+// -------------------------------------------------------------------
+
+class S_DEBUG_QUADTREE final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:Protocol.S_DEBUG_QUADTREE) */ {
+ public:
+  inline S_DEBUG_QUADTREE() : S_DEBUG_QUADTREE(nullptr) {}
+  ~S_DEBUG_QUADTREE() override;
+  explicit PROTOBUF_CONSTEXPR S_DEBUG_QUADTREE(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  S_DEBUG_QUADTREE(const S_DEBUG_QUADTREE& from);
+  S_DEBUG_QUADTREE(S_DEBUG_QUADTREE&& from) noexcept
+    : S_DEBUG_QUADTREE() {
+    *this = ::std::move(from);
+  }
+
+  inline S_DEBUG_QUADTREE& operator=(const S_DEBUG_QUADTREE& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline S_DEBUG_QUADTREE& operator=(S_DEBUG_QUADTREE&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const S_DEBUG_QUADTREE& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const S_DEBUG_QUADTREE* internal_default_instance() {
+    return reinterpret_cast<const S_DEBUG_QUADTREE*>(
+               &_S_DEBUG_QUADTREE_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    22;
+
+  friend void swap(S_DEBUG_QUADTREE& a, S_DEBUG_QUADTREE& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(S_DEBUG_QUADTREE* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(S_DEBUG_QUADTREE* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  S_DEBUG_QUADTREE* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<S_DEBUG_QUADTREE>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const S_DEBUG_QUADTREE& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const S_DEBUG_QUADTREE& from) {
+    S_DEBUG_QUADTREE::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(S_DEBUG_QUADTREE* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "Protocol.S_DEBUG_QUADTREE";
+  }
+  protected:
+  explicit S_DEBUG_QUADTREE(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kNodesFieldNumber = 1,
+    kObjectCountFieldNumber = 2,
+    kBuildMicrosFieldNumber = 3,
+    kCollisionMicrosFieldNumber = 4,
+    kServerTickFieldNumber = 5,
+  };
+  // repeated .Protocol.DebugRect nodes = 1;
+  int nodes_size() const;
+  private:
+  int _internal_nodes_size() const;
+  public:
+  void clear_nodes();
+  ::Protocol::DebugRect* mutable_nodes(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Protocol::DebugRect >*
+      mutable_nodes();
+  private:
+  const ::Protocol::DebugRect& _internal_nodes(int index) const;
+  ::Protocol::DebugRect* _internal_add_nodes();
+  public:
+  const ::Protocol::DebugRect& nodes(int index) const;
+  ::Protocol::DebugRect* add_nodes();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Protocol::DebugRect >&
+      nodes() const;
+
+  // uint32 objectCount = 2;
+  void clear_objectcount();
+  uint32_t objectcount() const;
+  void set_objectcount(uint32_t value);
+  private:
+  uint32_t _internal_objectcount() const;
+  void _internal_set_objectcount(uint32_t value);
+  public:
+
+  // uint32 buildMicros = 3;
+  void clear_buildmicros();
+  uint32_t buildmicros() const;
+  void set_buildmicros(uint32_t value);
+  private:
+  uint32_t _internal_buildmicros() const;
+  void _internal_set_buildmicros(uint32_t value);
+  public:
+
+  // uint32 collisionMicros = 4;
+  void clear_collisionmicros();
+  uint32_t collisionmicros() const;
+  void set_collisionmicros(uint32_t value);
+  private:
+  uint32_t _internal_collisionmicros() const;
+  void _internal_set_collisionmicros(uint32_t value);
+  public:
+
+  // uint32 serverTick = 5;
+  void clear_servertick();
+  uint32_t servertick() const;
+  void set_servertick(uint32_t value);
+  private:
+  uint32_t _internal_servertick() const;
+  void _internal_set_servertick(uint32_t value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:Protocol.S_DEBUG_QUADTREE)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Protocol::DebugRect > nodes_;
+    uint32_t objectcount_;
+    uint32_t buildmicros_;
+    uint32_t collisionmicros_;
+    uint32_t servertick_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -4925,6 +5326,26 @@ inline void C_DEBUG_CONFIG::set_wantpaths(bool value) {
   // @@protoc_insertion_point(field_set:Protocol.C_DEBUG_CONFIG.wantPaths)
 }
 
+// bool wantQuadtree = 3;
+inline void C_DEBUG_CONFIG::clear_wantquadtree() {
+  _impl_.wantquadtree_ = false;
+}
+inline bool C_DEBUG_CONFIG::_internal_wantquadtree() const {
+  return _impl_.wantquadtree_;
+}
+inline bool C_DEBUG_CONFIG::wantquadtree() const {
+  // @@protoc_insertion_point(field_get:Protocol.C_DEBUG_CONFIG.wantQuadtree)
+  return _internal_wantquadtree();
+}
+inline void C_DEBUG_CONFIG::_internal_set_wantquadtree(bool value) {
+  
+  _impl_.wantquadtree_ = value;
+}
+inline void C_DEBUG_CONFIG::set_wantquadtree(bool value) {
+  _internal_set_wantquadtree(value);
+  // @@protoc_insertion_point(field_set:Protocol.C_DEBUG_CONFIG.wantQuadtree)
+}
+
 // -------------------------------------------------------------------
 
 // S_DEBUG_LEVEL
@@ -5506,9 +5927,221 @@ inline void C_ATTACK::set_clienttimems(uint32_t value) {
   // @@protoc_insertion_point(field_set:Protocol.C_ATTACK.clientTimeMs)
 }
 
+// -------------------------------------------------------------------
+
+// DebugRect
+
+// int32 minX = 1;
+inline void DebugRect::clear_minx() {
+  _impl_.minx_ = 0;
+}
+inline int32_t DebugRect::_internal_minx() const {
+  return _impl_.minx_;
+}
+inline int32_t DebugRect::minx() const {
+  // @@protoc_insertion_point(field_get:Protocol.DebugRect.minX)
+  return _internal_minx();
+}
+inline void DebugRect::_internal_set_minx(int32_t value) {
+  
+  _impl_.minx_ = value;
+}
+inline void DebugRect::set_minx(int32_t value) {
+  _internal_set_minx(value);
+  // @@protoc_insertion_point(field_set:Protocol.DebugRect.minX)
+}
+
+// int32 minY = 2;
+inline void DebugRect::clear_miny() {
+  _impl_.miny_ = 0;
+}
+inline int32_t DebugRect::_internal_miny() const {
+  return _impl_.miny_;
+}
+inline int32_t DebugRect::miny() const {
+  // @@protoc_insertion_point(field_get:Protocol.DebugRect.minY)
+  return _internal_miny();
+}
+inline void DebugRect::_internal_set_miny(int32_t value) {
+  
+  _impl_.miny_ = value;
+}
+inline void DebugRect::set_miny(int32_t value) {
+  _internal_set_miny(value);
+  // @@protoc_insertion_point(field_set:Protocol.DebugRect.minY)
+}
+
+// int32 maxX = 3;
+inline void DebugRect::clear_maxx() {
+  _impl_.maxx_ = 0;
+}
+inline int32_t DebugRect::_internal_maxx() const {
+  return _impl_.maxx_;
+}
+inline int32_t DebugRect::maxx() const {
+  // @@protoc_insertion_point(field_get:Protocol.DebugRect.maxX)
+  return _internal_maxx();
+}
+inline void DebugRect::_internal_set_maxx(int32_t value) {
+  
+  _impl_.maxx_ = value;
+}
+inline void DebugRect::set_maxx(int32_t value) {
+  _internal_set_maxx(value);
+  // @@protoc_insertion_point(field_set:Protocol.DebugRect.maxX)
+}
+
+// int32 maxY = 4;
+inline void DebugRect::clear_maxy() {
+  _impl_.maxy_ = 0;
+}
+inline int32_t DebugRect::_internal_maxy() const {
+  return _impl_.maxy_;
+}
+inline int32_t DebugRect::maxy() const {
+  // @@protoc_insertion_point(field_get:Protocol.DebugRect.maxY)
+  return _internal_maxy();
+}
+inline void DebugRect::_internal_set_maxy(int32_t value) {
+  
+  _impl_.maxy_ = value;
+}
+inline void DebugRect::set_maxy(int32_t value) {
+  _internal_set_maxy(value);
+  // @@protoc_insertion_point(field_set:Protocol.DebugRect.maxY)
+}
+
+// -------------------------------------------------------------------
+
+// S_DEBUG_QUADTREE
+
+// repeated .Protocol.DebugRect nodes = 1;
+inline int S_DEBUG_QUADTREE::_internal_nodes_size() const {
+  return _impl_.nodes_.size();
+}
+inline int S_DEBUG_QUADTREE::nodes_size() const {
+  return _internal_nodes_size();
+}
+inline void S_DEBUG_QUADTREE::clear_nodes() {
+  _impl_.nodes_.Clear();
+}
+inline ::Protocol::DebugRect* S_DEBUG_QUADTREE::mutable_nodes(int index) {
+  // @@protoc_insertion_point(field_mutable:Protocol.S_DEBUG_QUADTREE.nodes)
+  return _impl_.nodes_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Protocol::DebugRect >*
+S_DEBUG_QUADTREE::mutable_nodes() {
+  // @@protoc_insertion_point(field_mutable_list:Protocol.S_DEBUG_QUADTREE.nodes)
+  return &_impl_.nodes_;
+}
+inline const ::Protocol::DebugRect& S_DEBUG_QUADTREE::_internal_nodes(int index) const {
+  return _impl_.nodes_.Get(index);
+}
+inline const ::Protocol::DebugRect& S_DEBUG_QUADTREE::nodes(int index) const {
+  // @@protoc_insertion_point(field_get:Protocol.S_DEBUG_QUADTREE.nodes)
+  return _internal_nodes(index);
+}
+inline ::Protocol::DebugRect* S_DEBUG_QUADTREE::_internal_add_nodes() {
+  return _impl_.nodes_.Add();
+}
+inline ::Protocol::DebugRect* S_DEBUG_QUADTREE::add_nodes() {
+  ::Protocol::DebugRect* _add = _internal_add_nodes();
+  // @@protoc_insertion_point(field_add:Protocol.S_DEBUG_QUADTREE.nodes)
+  return _add;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Protocol::DebugRect >&
+S_DEBUG_QUADTREE::nodes() const {
+  // @@protoc_insertion_point(field_list:Protocol.S_DEBUG_QUADTREE.nodes)
+  return _impl_.nodes_;
+}
+
+// uint32 objectCount = 2;
+inline void S_DEBUG_QUADTREE::clear_objectcount() {
+  _impl_.objectcount_ = 0u;
+}
+inline uint32_t S_DEBUG_QUADTREE::_internal_objectcount() const {
+  return _impl_.objectcount_;
+}
+inline uint32_t S_DEBUG_QUADTREE::objectcount() const {
+  // @@protoc_insertion_point(field_get:Protocol.S_DEBUG_QUADTREE.objectCount)
+  return _internal_objectcount();
+}
+inline void S_DEBUG_QUADTREE::_internal_set_objectcount(uint32_t value) {
+  
+  _impl_.objectcount_ = value;
+}
+inline void S_DEBUG_QUADTREE::set_objectcount(uint32_t value) {
+  _internal_set_objectcount(value);
+  // @@protoc_insertion_point(field_set:Protocol.S_DEBUG_QUADTREE.objectCount)
+}
+
+// uint32 buildMicros = 3;
+inline void S_DEBUG_QUADTREE::clear_buildmicros() {
+  _impl_.buildmicros_ = 0u;
+}
+inline uint32_t S_DEBUG_QUADTREE::_internal_buildmicros() const {
+  return _impl_.buildmicros_;
+}
+inline uint32_t S_DEBUG_QUADTREE::buildmicros() const {
+  // @@protoc_insertion_point(field_get:Protocol.S_DEBUG_QUADTREE.buildMicros)
+  return _internal_buildmicros();
+}
+inline void S_DEBUG_QUADTREE::_internal_set_buildmicros(uint32_t value) {
+  
+  _impl_.buildmicros_ = value;
+}
+inline void S_DEBUG_QUADTREE::set_buildmicros(uint32_t value) {
+  _internal_set_buildmicros(value);
+  // @@protoc_insertion_point(field_set:Protocol.S_DEBUG_QUADTREE.buildMicros)
+}
+
+// uint32 collisionMicros = 4;
+inline void S_DEBUG_QUADTREE::clear_collisionmicros() {
+  _impl_.collisionmicros_ = 0u;
+}
+inline uint32_t S_DEBUG_QUADTREE::_internal_collisionmicros() const {
+  return _impl_.collisionmicros_;
+}
+inline uint32_t S_DEBUG_QUADTREE::collisionmicros() const {
+  // @@protoc_insertion_point(field_get:Protocol.S_DEBUG_QUADTREE.collisionMicros)
+  return _internal_collisionmicros();
+}
+inline void S_DEBUG_QUADTREE::_internal_set_collisionmicros(uint32_t value) {
+  
+  _impl_.collisionmicros_ = value;
+}
+inline void S_DEBUG_QUADTREE::set_collisionmicros(uint32_t value) {
+  _internal_set_collisionmicros(value);
+  // @@protoc_insertion_point(field_set:Protocol.S_DEBUG_QUADTREE.collisionMicros)
+}
+
+// uint32 serverTick = 5;
+inline void S_DEBUG_QUADTREE::clear_servertick() {
+  _impl_.servertick_ = 0u;
+}
+inline uint32_t S_DEBUG_QUADTREE::_internal_servertick() const {
+  return _impl_.servertick_;
+}
+inline uint32_t S_DEBUG_QUADTREE::servertick() const {
+  // @@protoc_insertion_point(field_get:Protocol.S_DEBUG_QUADTREE.serverTick)
+  return _internal_servertick();
+}
+inline void S_DEBUG_QUADTREE::_internal_set_servertick(uint32_t value) {
+  
+  _impl_.servertick_ = value;
+}
+inline void S_DEBUG_QUADTREE::set_servertick(uint32_t value) {
+  _internal_set_servertick(value);
+  // @@protoc_insertion_point(field_set:Protocol.S_DEBUG_QUADTREE.serverTick)
+}
+
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

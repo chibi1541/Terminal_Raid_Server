@@ -21,16 +21,17 @@ public:
 	virtual void FillObjectInfo(Protocol::ObjectInfo* info) override;
 
 	// velSubX/Y : 서브유닛/초 속도 벡터. roomTickNow 발사 시점 룸 틱, lifetimeTicks 뒤 소멸 예약.
-	// rangeCells <= 0 이면 사정거리 무제한 (수명만).
+	// rangeCells <= 0 이면 사정거리 무제한 (수명만). damage : 명중 시 대상에게 줄 피해.
 	void	LaunchVec(int32 velSubX, int32 velSubY, uint64 ownerId,
-					  int32 rangeCells, uint64 roomTickNow, int32 lifetimeTicks);
+					  int32 rangeCells, uint64 roomTickNow, int32 lifetimeTicks, int32 damage);
 
 	// 8방향 편의 버전 (proj 디버그 명령용). dir 을 velSub 로 바꿔 LaunchVec 에 위임.
 	void	Launch(Protocol::DirectionType dir, int32 cellsPerSec,
-				   uint64 roomTickNow, int32 lifetimeTicks);
+				   uint64 roomTickNow, int32 lifetimeTicks, uint64 ownerId, int32 damage);
 
 	uint64	GetExpireTick() const	{ return _expireTick; }
 	uint64	GetOwnerId() const		{ return _ownerId; }
+	int32	GetDamage() const		{ return _damage; }
 
 	// 즉시 소멸 예약 (벽 히트 등). 다음 SweepExpiredProjectiles 가 걷어간다.
 	void	MarkExpired()			{ _expireTick = 0; }
@@ -41,6 +42,7 @@ public:
 private:
 	uint64	_expireTick = 0;
 	uint64	_ownerId = 0;
+	int32	_damage = 0;
 	int32	_originFpX = 0;
 	int32	_originFpY = 0;
 	int64	_maxDistSqSub = 0;	// 0 = 무제한

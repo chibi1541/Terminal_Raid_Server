@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-서버 충돌 레벨 XML(Config/Level01.xml)을 클라이언트 프롭 배치에서 생성한다.
+서버 충돌 레벨 XML(Data/Level01.xml)을 클라이언트 프롭 배치에서 생성한다.
 
     python Server/Tools/gen_level.py
 
@@ -9,7 +9,7 @@
     Client/Assets/Level/Cemetery/CemeteryProps.prop.xml     프롭별 tileSpan / tileSize
 
 쓰는 것:
-    Server/Config/Level01.xml   ('#' = 막힘 셀, '.' = 통행 가능)
+    Server/Data/Level01.xml   ('#' = 막힘 셀, '.' = 통행 가능)
 
 막힘 셀 :
     1. 각 프롭의 타일 영역 (엔진 StaticPropActor::GetTileBounds 와 동일한 산수)
@@ -35,7 +35,7 @@ from collections import deque
 REPO_ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", ".."))
 LAYOUT_XML = os.path.join(REPO_ROOT, "Client", "Assets", "Level", "Cemetery", "Cemetery.LevelLayout.xml")
 PROPS_XML = os.path.join(REPO_ROOT, "Client", "Assets", "Level", "Cemetery", "CemeteryProps.prop.xml")
-OUT_XML = os.path.join(REPO_ROOT, "Server", "Config", "Level01.xml")
+OUT_XML = os.path.join(REPO_ROOT, "Server", "Data", "Level01.xml")
 
 LEVEL_ID = "Cemetery"
 WIDTH = 380

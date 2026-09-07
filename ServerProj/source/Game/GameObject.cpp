@@ -48,6 +48,9 @@ void GameObject::FillObjectInfo(Protocol::ObjectInfo* info)
 	// 이동 상태도 스냅샷에 실어야 늦게 접속한 클라가 움직이는 액터를 바로 예측한다.
 	state->set_dir(_move.dir);
 	state->set_speed(_move.EffectiveSpeed());
+
+	// 원형 충돌 반경. 클라가 반경 원 디버그 시각화에 쓴다.
+	state->set_radius(_radius);
 }
 
 Bounds GameObject::GetBounds() const

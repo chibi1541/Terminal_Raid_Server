@@ -485,8 +485,9 @@ void GameCommands::Register()
 		}, CommandRunMode::GameThread);
 
 	GCommandRegistry->Register(L"proj",
-		L"proj <x> <y> <dir> [speedCellsPerSec] [lifetimeSec]",
-		L"spawn a straight-line projectile (dir : left/right/up/down/ul/ur/dl/dr)",
+		L"proj <x> <y> <dir> [speedCellsPerSec] [lifetimeSec] [ownerId]",
+		L"spawn a straight-line projectile (dir : left/right/up/down/ul/ur/dl/dr). ownerId : "
+		L"monster id => monster projectile that hits players; omitted => hits nobody",
 		[](CommandContext& context)
 		{
 			if (GRoom == nullptr)
@@ -531,10 +532,20 @@ void GameCommands::Register()
 				return;
 			}
 
+			// ownerId : 명중 판정용. 몬스터 id 를 주면 "몬스터 투사체"가 되어 플레이어를 맞힌다.
+			uint64 ownerId = 0;
+
+			if (context.ArgCount() >= 7 && ParseUint64(context.Arg(6), OUT ownerId) == false)
+			{
+				context.Reply(L"bad ownerId : %s", context.Arg(6).c_str());
+				return;
+			}
+
 			// 틱은 50ms 고정 = 초당 20틱. 0 이면 Room 이 기본 수명을 쓴다.
 			const int32 lifeTicks = (lifeSec > 0) ? lifeSec * 20 : 0;
 
-			GameObjectRef proj = GRoom->SpawnProjectile(x, y, dir, speed, lifeTicks);
+			// 디버그 스폰은 고정 피해 10 (ownerId 0 이면 어차피 아무도 안 맞음).
+			GameObjectRef proj = GRoom->SpawnProjectile(x, y, dir, speed, lifeTicks, ownerId, 10);
 
 			if (proj == nullptr)
 			{
@@ -542,9 +553,9 @@ void GameCommands::Register()
 				return;
 			}
 
-			context.Reply(L"projectile objectId=%llu at (%d, %d) dir=%s speed=%d",
+			context.Reply(L"projectile objectId=%llu at (%d, %d) dir=%s speed=%d owner=%llu",
 				proj->GetObjId(), x, y, context.Arg(3).c_str(),
-				(speed > 0) ? speed : DEFAULT_MOVE_SPEED_CELLS);
+				(speed > 0) ? speed : DEFAULT_MOVE_SPEED_CELLS, ownerId);
 		}, CommandRunMode::GameThread);
 
 	GCommandRegistry->Register(L"level", L"level", L"level info and tile map",
@@ -681,6 +692,21 @@ void GameCommands::Register()
 			GRoom->RebuildCollisionTree();
 
 			context.Reply(L"%s", GRoom->DescribeTree().c_str());
+		}, CommandRunMode::GameThread);
+
+	GCommandRegistry->Register(L"collision", L"collision",
+		L"last tick collision timing (2nd tree rebuild + projectile hit resolve)",
+		[](CommandContext& context)
+		{
+			if (GRoom == nullptr)
+			{
+				context.Reply(L"room not created");
+				return;
+			}
+
+			context.Reply(L"collision : build %u us  resolve %u us  |  tree nodes %d",
+				GRoom->GetLastTreeBuildMicros(), GRoom->GetLastCollisionMicros(),
+				GRoom->GetTreeNodeCount());
 		}, CommandRunMode::GameThread);
 
 	GCommandRegistry->Register(L"query", L"query <x> <y> <radius>",
@@ -932,7 +958,7 @@ void GameCommands::Register()
 			{
 				context.Reply(L"bt auto <on|off>              automatic ticking from Room::Tick\n"
 					L"bt leaves                     registered leaf types\n"
-					L"bt load <name>                load Config/AI/<name>.canvas\n"
+					L"bt load <name>                load Data/AI/<name>.canvas\n"
 					L"bt reload <name>              reload and rebind attached instances\n"
 					L"bt dump [name]                tree structure with resolved child order\n"
 					L"bt attach <objectId> <name>   attach an instance to an object\n"

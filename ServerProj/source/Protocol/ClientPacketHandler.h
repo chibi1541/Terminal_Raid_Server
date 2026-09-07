@@ -29,6 +29,7 @@ enum : uint16
 	PKT_S_DEBUG_LEVEL = 1017,
 	PKT_S_DEBUG_PATH = 1018,
 	PKT_C_ATTACK = 1019,
+	PKT_S_DEBUG_QUADTREE = 1020,
 };
 
 bool Handle_INVALID(PacketSessionRef& session, BYTE* buffer, int32 len);
@@ -82,6 +83,7 @@ public:
 	static SendBufferRef MakeSendBuffer(Protocol::S_ATTACK_START& pkt) {return MakeSendBuffer(pkt, PKT_S_ATTACK_START); }
 	static SendBufferRef MakeSendBuffer(Protocol::S_DEBUG_LEVEL& pkt) {return MakeSendBuffer(pkt, PKT_S_DEBUG_LEVEL); }
 	static SendBufferRef MakeSendBuffer(Protocol::S_DEBUG_PATH& pkt) {return MakeSendBuffer(pkt, PKT_S_DEBUG_PATH); }
+	static SendBufferRef MakeSendBuffer(Protocol::S_DEBUG_QUADTREE& pkt) {return MakeSendBuffer(pkt, PKT_S_DEBUG_QUADTREE); }
 
 
 private:

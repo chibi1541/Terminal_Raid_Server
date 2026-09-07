@@ -1,26 +1,7 @@
 ﻿#include "pch.h"
 #include "Game/Monster.h"
+#include "Game/MonsterData.h"
 #include "Game/ObjectIdGenerator.h"
-
-namespace
-{
-	// 아직 몬스터 데이터 테이블이 없어 이름별 고정값만 임시로 둔다.
-	// 실제 몬스터 데이터 테이블이 생기면 그쪽으로 옮길 것.
-	int32 LookupFootprintTilesWide(const string& monsterTypeName)
-	{
-		static const HashMap<string, int32> table =
-		{
-			{ "goblin", 2 },
-			{ "orc", 3 },
-			{ "troll", 4 },
-			{ "ogre", 5 },
-			{ "dragon", 6 },
-		};
-
-		auto it = table.find(monsterTypeName);
-		return (it != table.end()) ? it->second : 2;	// 모르는 이름이면 기본 2
-	}
-}
 
 Monster::Monster()
 {
@@ -41,12 +22,12 @@ void Monster::SetMonsterTypeName(const string& name)
 {
 	_monsterTypeName = name;
 
-	const int32 tilesWide = LookupFootprintTilesWide(name);
+	// 이름으로 MonsterData 테이블을 조회해 길찾기 풋프린트 / 충돌 박스 / 반경 / 체력을 정한다.
+	const MonsterDef& def = MonsterData::Get().Find(name);
 
-	// 길찾기 NavGrid 번들링(타일 단위).
-	SetFootprint(tilesWide, 1);
-
-	// 벽 충돌 박스(셀 단위, 위치 중심). 임시로 타일폭 * 4(셀/타일) 정사각.
-	// 몬스터별 정확한 박스/반경/HP 는 이후 MonsterData 테이블로 옮긴다.
-	SetCollisionBox(tilesWide * 4, tilesWide * 4);
+	SetFootprint(def.footprintTiles, 1);				// 길찾기 NavGrid 번들링 (타일)
+	SetCollisionBox(def.collisionCells, def.collisionCells);	// 벽 충돌 박스 (셀, 위치 중심)
+	SetRadius(def.radius);								// 원형 충돌 반경 (투사체 명중 / 쿼드트리)
+	SetMaxHp(def.maxHp);
+	SetHp(def.maxHp);
 }

@@ -14,6 +14,11 @@ Player::Player()
 
 	// 벽 충돌 박스(셀 단위, 위치 중심). 스프라이트 8x8 전체를 덮는다. 클라 예측과 공유.
 	SetCollisionBox(MoveMath::PLAYER_COLLISION_CELLS_WIDE, MoveMath::PLAYER_COLLISION_CELLS_HIGH);
+
+	// 원형 충돌 반경(투사체 명중 / 쿼드트리) + 체력. // TODO PlayerData 테이블로 이관.
+	SetRadius(2);
+	SetMaxHp(100);
+	SetHp(100);
 }
 
 void Player::FillObjectInfo(Protocol::ObjectInfo* info)

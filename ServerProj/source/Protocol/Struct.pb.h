@@ -539,6 +539,7 @@ class CreatureState final :
     kSpeedFieldNumber = 5,
     kVelSubXFieldNumber = 6,
     kVelSubYFieldNumber = 7,
+    kRadiusFieldNumber = 8,
   };
   // .Protocol.Vector2 pos = 1;
   bool has_pos() const;
@@ -612,6 +613,15 @@ class CreatureState final :
   void _internal_set_velsuby(int32_t value);
   public:
 
+  // int32 radius = 8;
+  void clear_radius();
+  int32_t radius() const;
+  void set_radius(int32_t value);
+  private:
+  int32_t _internal_radius() const;
+  void _internal_set_radius(int32_t value);
+  public:
+
   // @@protoc_insertion_point(class_scope:Protocol.CreatureState)
  private:
   class _Internal;
@@ -627,6 +637,7 @@ class CreatureState final :
     int32_t speed_;
     int32_t velsubx_;
     int32_t velsuby_;
+    int32_t radius_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -1575,6 +1586,26 @@ inline void CreatureState::_internal_set_velsuby(int32_t value) {
 inline void CreatureState::set_velsuby(int32_t value) {
   _internal_set_velsuby(value);
   // @@protoc_insertion_point(field_set:Protocol.CreatureState.velSubY)
+}
+
+// int32 radius = 8;
+inline void CreatureState::clear_radius() {
+  _impl_.radius_ = 0;
+}
+inline int32_t CreatureState::_internal_radius() const {
+  return _impl_.radius_;
+}
+inline int32_t CreatureState::radius() const {
+  // @@protoc_insertion_point(field_get:Protocol.CreatureState.radius)
+  return _internal_radius();
+}
+inline void CreatureState::_internal_set_radius(int32_t value) {
+  
+  _impl_.radius_ = value;
+}
+inline void CreatureState::set_radius(int32_t value) {
+  _internal_set_radius(value);
+  // @@protoc_insertion_point(field_set:Protocol.CreatureState.radius)
 }
 
 // -------------------------------------------------------------------

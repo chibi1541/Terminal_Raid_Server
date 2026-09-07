@@ -54,6 +54,10 @@ public:
 	int32			GetLastVisitedNodes() const	{ return _lastVisited; }
 	std::wstring	Describe() const;
 
+	// 개체를 하나라도 품은 노드의 셀 경계를 모은다 (루트부터 재귀, 최대 maxNodes 개).
+	// 클라 쿼드트리 디버그 오버레이(S_DEBUG_QUADTREE)용.
+	void			CollectNodeBounds(OUT Vector<Bounds>& out, int32 maxNodes) const;
+
 private:
 	Node*	AllocNode(const Bounds& bounds, int32 depth);
 	void	FreeNode(Node* node);	// 자식까지 재귀로 풀에 반납
@@ -75,6 +79,7 @@ private:
 	};
 
 	void	CollectStats(const Node* node, OUT Stats& stats) const;
+	void	CollectBounds(const Node* node, OUT Vector<Bounds>& out, int32 maxNodes) const;
 
 private:
 	Node*	_root = nullptr;

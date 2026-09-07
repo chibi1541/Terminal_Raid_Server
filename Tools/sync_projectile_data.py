@@ -4,10 +4,10 @@
 
     python Server/Tools/sync_projectile_data.py
 
-원본 : Server/Config/ProjectileData.xml   (여기만 손으로 고친다)
+원본 : Server/Data/ProjectileData.xml   (여기만 손으로 고친다)
 복제 : Client/Assets/Actor/ProjectileData.xml
 
-서버는 ../Config/ProjectileData.xml 로 직접 읽고,
+서버는 ../Data/ProjectileData.xml 로 직접 읽고,
 클라는 ActorData.xml(인덱스)이 가리키는 ../Assets/Actor/ProjectileData.xml 로 읽는다.
 두 exe 의 작업 디렉터리가 달라 한 파일을 공유할 수 없으므로 복사한다.
 
@@ -17,7 +17,7 @@
 import os
 
 REPO_ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", ".."))
-SRC = os.path.join(REPO_ROOT, "Server", "Config", "ProjectileData.xml")
+SRC = os.path.join(REPO_ROOT, "Server", "Data", "ProjectileData.xml")
 DST = os.path.join(REPO_ROOT, "Client", "Assets", "Actor", "ProjectileData.xml")
 
 

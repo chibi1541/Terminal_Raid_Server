@@ -56,6 +56,7 @@ bool ProjectileData::LoadFromFile(const WCHAR* path)
 		def.speedCellsPerSec = node.GetInt32Attr(L"speedCellsPerSec", 60);
 		def.rangeCells = node.GetInt32Attr(L"rangeCells", 40);
 		def.radius = node.GetInt32Attr(L"radius", 1);
+		def.damage = node.GetInt32Attr(L"damage", 10);
 		def.fireIntervalMs = node.GetInt32Attr(L"fireIntervalMs", 250);
 		def.spawnForwardCells = node.GetInt32Attr(L"spawnForwardCells", 3);
 

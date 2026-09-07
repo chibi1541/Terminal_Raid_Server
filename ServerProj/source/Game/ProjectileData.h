@@ -8,7 +8,7 @@
 /*-----------
 	ProjectileData
 
-	투사체 정의 테이블. 서버-클라 공통 (Server/Config/ProjectileData.xml,
+	투사체 정의 테이블. 서버-클라 공통 (Server/Data/ProjectileData.xml,
 	sync_projectile_data.py 가 클라로 복제).
 
 	id 는 Enum.proto 의 ProjectileType (문자열 -> ProjectileType_Parse).
@@ -23,6 +23,7 @@ struct ProjectileDef
 	int32	speedCellsPerSec = 60;
 	int32	rangeCells = 40;
 	int32	radius = 1;				// 충돌 반경 (셀). 1 = 지름 3.
+	int32	damage = 10;			// 명중 시 대상에게 줄 피해.
 
 	int32	fireIntervalMs = 250;	// 최소 발사 간격 (서버 강제).
 	int32	spawnForwardCells = 3;	// 발사 기준점(플레이어 몸통 중심)에서 조준 방향으로 이만큼 앞에서 스폰.
