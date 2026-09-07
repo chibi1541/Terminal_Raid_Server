@@ -11,8 +11,8 @@
 	     attackPower    : 공격력 (몬스터 투사체 / 근접 피해).
 	     moveSpeedCells : 이동 속도 (셀/초). -->
 	<Monster id="Monster_Zombie"      animClip="Zombie"      aiTree="monster_basic"
-	         footprintTiles="2" collisionCells="8"  radius="4" maxHp="60"  attackPower="8"  moveSpeedCells="8" />
+	         footprintTiles="4" collisionCells="16"  radius="8" maxHp="60"  attackPower="8"  moveSpeedCells="30" />
 	<Monster id="Monster_Necromancer" animClip="Necromancer" aiTree="monster_basic"
-	         footprintTiles="3" collisionCells="12" radius="6" maxHp="140" attackPower="16" moveSpeedCells="6" />
+	         footprintTiles="6" collisionCells="24" radius="12" maxHp="140" attackPower="16" moveSpeedCells="25" />
 
 </MonsterData>
