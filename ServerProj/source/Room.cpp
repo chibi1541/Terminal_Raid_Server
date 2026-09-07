@@ -32,6 +32,11 @@ void Room::BeginPlay()
 	_lastTickWallClockMs = now;
 	_nextTickScheduleMs = now + TICK_INTERVAL_MS;
 
+	// 레벨 몬스터 배치 : 보스 + 사분면 좀비 무리. (플레이어 접속 전이라 S_SPAWN 은 아무에게도
+	// 안 가지만, 이후 입장하는 클라는 SendEnterRoom 스냅샷으로 전부 받는다)
+	_monsterSpawner.SetRoom(this);
+	_monsterSpawner.SpawnInitial();
+
 	DoTimer(TICK_INTERVAL_MS, &Room::Tick);
 
 	LOG_INFO(L"[room] begin play (%u x %u)", GetWidth(), GetHeight());
@@ -92,6 +97,10 @@ void Room::Tick()
 	// Death 클립 재생을 마친 몬스터 시체를 룸에서 뺀다.
 	SweepDeadMonsters();
 
+	// 좀비 수가 절반 이하로 줄었으면 인터벌마다 1 마리씩 보충한다.
+	// (Enter/AttachBehavior 로 _objects/_behaviors 를 건드리므로 이번 틱의 순회가 전부 끝난 뒤에 부른다)
+	_monsterSpawner.Tick(GetTickDeltaTime());
+
 	// 쿼드트리 디버그 오버레이 (~5Hz, 구독 세션 없으면 비용 0).
 	BroadcastDebugQuadtree();
 
@@ -132,7 +141,14 @@ void Room::Enter(GameObjectRef object, bool useRandomSpawnPos)
 	}
 
 	if (useRandomSpawnPos)
-		object->SetPos(FindSpawnPos());
+	{
+		// 실제 접속한 플레이어는 왼쪽 게이트 앞에서 시작한다.
+		// 세션 없는 더미(디버그 spawn / spawnmany)는 종전대로 무작위 산개.
+		const bool realPlayer = (object->GetObjType() == Protocol::OBJECT_PLAYER) &&
+			(static_pointer_cast<Player>(object)->GetSession() != nullptr);
+
+		object->SetPos(realPlayer ? _monsterSpawner.GetPlayerStartPos() : FindSpawnPos());
+	}
 
 	object->SetRoom(static_pointer_cast<Room>(shared_from_this()));
 

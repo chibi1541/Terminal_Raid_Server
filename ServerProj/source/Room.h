@@ -4,6 +4,7 @@
 #include "Game/Level.h"
 #include "Game/JpsPathFinder.h"
 #include "Game/QuadTree.h"
+#include "Game/MonsterSpawner.h"
 #include "AI/BehaviorTreeManager.h"
 #include "AI/BtInstance.h"
 
@@ -279,6 +280,9 @@ private:
 
 	JpsPathFinder	_pathFinder;
 	QuadTree		_collisionTree;
+
+	// 레벨 몬스터 배치 + 개체 수 유지. BeginPlay 에서 초기 스폰, Tick 끝에서 리젠 체크.
+	MonsterSpawner	_monsterSpawner;
 
 	// Tick() 에서만 증가하지만 C_PING 핸들러(IOCP 워커)가 읽으므로 atomic.
 	Atomic<uint64>	_tickCount = 0;
