@@ -538,10 +538,8 @@ void Room::BroadcastMoves()
 	Broadcast(ClientPacketHandler::MakeSendBuffer(pkt), 0);
 }
 
-void Room::HandleMove(GameObjectRef object, uint32 inputSeq, uint32 clientTick, int32 dir)
+void Room::HandleMove(GameObjectRef object, uint32 inputSeq, uint32 clientTimeMs, int32 dir)
 {
-	(void)clientTick;	// 지금은 로깅/재조정용으로만 의미. 서버 시뮬은 서버 틱 기준.
-
 	if (object == nullptr)
 		return;
 
@@ -552,6 +550,56 @@ void Room::HandleMove(GameObjectRef object, uint32 inputSeq, uint32 clientTick, 
 		return;
 
 	m.lastProcessedInputSeq = inputSeq;
+
+	// --- 클라 이동 입력 검증 (anti-cheat) ---
+	//
+	// 방향-홀드 모델에서 직전 방향이 유지된 시간은 두 관점으로 잰다.
+	//  - 클라 주장 : clientTimeMs - 직전 입력의 clientTimeMs  (클라 단조 시계)
+	//  - 서버 실측 : now - 직전 입력을 처리한 서버 시각        (서버 단조 시계)
+	// 클라가 두 입력 사이에 "실제로 흐른 시간"보다 더 오래 눌렀다고 우길 수는 없다.
+	// 네트워크 지연이 그 사이에 줄었다면 최대 편도 지터(MOVE_JITTER_MARGIN_MS)만큼 여유를 준다.
+	// 그 창을 벗어난 초과분은 moveTimeCreditMs 에 쌓고, 계속 쌓이면 어뷰징으로 본다.
+	// (길게 누르면 heldMsServer 도 그만큼 커지므로 정상 홀드는 자연히 통과한다)
+	// (seq 0 = 디버그 호출은 클라 시계가 없으므로 건너뛴다)
+	if (inputSeq != 0)
+	{
+		const uint64 now = ::GetTickCount64();
+
+		if (m.hasInputTimeBase)
+		{
+			const uint32 heldMsClient = clientTimeMs - m.lastInputClientTimeMs;	// uint32 wrap-safe
+			const uint64 heldMsServer = now - m.lastInputWallMs;
+
+			const uint64 allowedMs = heldMsServer + MOVE_JITTER_MARGIN_MS;
+
+			if (heldMsClient > allowedMs)
+			{
+				const int64 overshootMs = static_cast<int64>(heldMsClient) - static_cast<int64>(allowedMs);
+				m.moveTimeCreditMs += overshootMs;
+
+				LOG_WARN(L"[move-check] objectId=%llu 클라 주장 %ums > 허용 %llums (실측 %llums + 여유 %dms), 초과 %lldms 누적 %lldms",
+					object->GetObjId(), heldMsClient, allowedMs, heldMsServer,
+					static_cast<int32>(MOVE_JITTER_MARGIN_MS), overshootMs, m.moveTimeCreditMs);
+
+				if (m.moveTimeCreditMs > MOVE_ABUSE_THRESHOLD_MS)
+				{
+					LOG_WARN(L"[move-check] objectId=%llu 이동 시간 어뷰징 의심 - 누적 초과 %lldms (임계 %dms)",
+						object->GetObjId(), m.moveTimeCreditMs, static_cast<int32>(MOVE_ABUSE_THRESHOLD_MS));
+				}
+			}
+			else if (m.moveTimeCreditMs > 0)
+			{
+				// 정상 구간에서는 그동안 쌓인 의심분을 서서히 돌려준다 (일시적 지터의 오탐 방지).
+				m.moveTimeCreditMs -= static_cast<int64>(allowedMs - heldMsClient);
+				if (m.moveTimeCreditMs < 0)
+					m.moveTimeCreditMs = 0;
+			}
+		}
+
+		m.lastInputClientTimeMs = clientTimeMs;
+		m.lastInputWallMs = now;
+		m.hasInputTimeBase = true;
+	}
 
 	// 범위 밖 dir 은 정지로 취급한다.
 	Protocol::DirectionType newDir = Protocol::DIR_NONE;

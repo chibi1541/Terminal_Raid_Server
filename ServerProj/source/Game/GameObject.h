@@ -40,6 +40,14 @@ struct MovementComponent
 	uint32					lastProcessedInputSeq = 0;	// 클라 예측 ack 훅
 	bool					dirty = false;				// 이번 틱에 복제할 값(셀/dir/state)이 바뀜
 
+	// --- 클라 이동 입력 검증(anti-cheat) ---
+	// 방향-홀드 모델에서 한 방향이 유지된 구간을, 클라가 주장하는 시간(clientTimeMs 차이)과
+	// 서버가 실측한 패킷 도착 간격으로 대조한다. 클라가 시간을 부풀리면 여기서 잡힌다.
+	uint32					lastInputClientTimeMs = 0;	// 마지막 C_MOVE 가 실어온 클라 단조 ms
+	uint64					lastInputWallMs = 0;		// 그 C_MOVE 를 서버가 처리한 시각(GetTickCount64)
+	int64					moveTimeCreditMs = 0;		// (클라 주장 - 서버 허용) 누적. 양수로 계속 쌓이면 어뷰징
+	bool					hasInputTimeBase = false;	// 첫 입력 전에는 대조 기준이 없다
+
 	int32 EffectiveSpeed() const
 	{
 		return speed > 0 ? speed : DEFAULT_MOVE_SPEED_CELLS * POS_SCALE;

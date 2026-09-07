@@ -30,6 +30,10 @@ class Room : public JobQueue
 		MOVE_KEYFRAME_INTERVAL	= 10,	// 이 틱마다 움직이는 액터를 강제로 브로드캐스트 (500ms 드리프트 보정)
 		PROJECTILE_LIFETIME_TICKS	= 100,	// 투사체 기본 수명 (5초 @ 20Hz)
 		MAX_CATCHUP_TICKS		= 5,	// 이 배수(5틱=250ms)만큼 밀리면 따라잡기 포기하고 리셋
+
+		// 클라 이동 입력 검증(anti-cheat). HandleMove 가 클라 주장 시간 vs 서버 실측 시간을 대조한다.
+		MOVE_JITTER_MARGIN_MS	= 200,	// 편도 지연 지터 허용치. 이 안쪽 차이는 정상으로 본다
+		MOVE_ABUSE_THRESHOLD_MS	= 3000,	// moveTimeCreditMs 누적이 이 값을 넘으면 어뷰징으로 강한 경고
 	};
 
 public:
@@ -64,7 +68,7 @@ public:
 
 	// 플레이어 입력. 방향 홀드 - dir 이 DIR_NONE 이면 정지.
 	// C_MOVE 핸들러가 DoAsync 로 넘긴다.
-	void	HandleMove(GameObjectRef object, uint32 inputSeq, uint32 clientTick, int32 dir);
+	void	HandleMove(GameObjectRef object, uint32 inputSeq, uint32 clientTimeMs, int32 dir);
 
 	// 목표 셀까지 JPS 경로를 깔고 추종 시작. 디버그 goto / 향후 AI 리프가 공유한다.
 	bool	OrderMoveTo(uint64 objectId, int32 cellX, int32 cellY);
