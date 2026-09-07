@@ -193,12 +193,16 @@ inline bool PlayerColor_Parse(
 enum ProjectileType : int {
   Projectile_None = 0,
   Projectile_Pellet = 1,
+  Projectile_ArcaneMote = 2,
+  Projectile_EmberDot = 3,
+  Projectile_Fire = 4,
+  Projectile_VoidSphere = 5,
   ProjectileType_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
   ProjectileType_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
 };
 bool ProjectileType_IsValid(int value);
 constexpr ProjectileType ProjectileType_MIN = Projectile_None;
-constexpr ProjectileType ProjectileType_MAX = Projectile_Pellet;
+constexpr ProjectileType ProjectileType_MAX = Projectile_VoidSphere;
 constexpr int ProjectileType_ARRAYSIZE = ProjectileType_MAX + 1;
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* ProjectileType_descriptor();

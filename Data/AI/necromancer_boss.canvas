@@ -1,0 +1,147 @@
+{
+	"nodes": [
+		{
+			"id": "bb",
+			"type": "text",
+			"x": -1200,
+			"y": -560,
+			"width": 340,
+			"height": 220,
+			"text": "# Blackboard\n\n- burstIndex: 0\n- burstTimer: 0.0\n- restTimer: 0.0\n- targetId: 0\n- repathTimer: 0.0"
+		},
+		{
+			"id": "root",
+			"type": "text",
+			"x": -260,
+			"y": -560,
+			"width": 340,
+			"height": 110,
+			"text": "# Selector [root] necromancer boss"
+		},
+		{
+			"id": "seqMove",
+			"type": "text",
+			"x": -720,
+			"y": -360,
+			"width": 300,
+			"height": 110,
+			"text": "# Sequence reposition (between patterns)"
+		},
+		{
+			"id": "seqFire",
+			"type": "text",
+			"x": -260,
+			"y": -360,
+			"width": 300,
+			"height": 110,
+			"text": "# Sequence fire pattern"
+		},
+		{
+			"id": "seqRest",
+			"type": "text",
+			"x": 200,
+			"y": -360,
+			"width": 300,
+			"height": 110,
+			"text": "# Sequence rest then reset"
+		},
+		{
+			"id": "chkIdle",
+			"type": "text",
+			"x": -1000,
+			"y": -140,
+			"width": 280,
+			"height": 140,
+			"text": "# CheckBlackboard\nkey: burstIndex\nop: ==\nvalue: 0"
+		},
+		{
+			"id": "acquire",
+			"type": "text",
+			"x": -820,
+			"y": -140,
+			"width": 300,
+			"height": 140,
+			"text": "# FindTargetInRadius\nradius: 240\ntargetKey: targetId"
+		},
+		{
+			"id": "tooFar",
+			"type": "text",
+			"x": -640,
+			"y": -140,
+			"width": 300,
+			"height": 140,
+			"text": "# TargetOutOfRange\ntargetKey: targetId\nrange: 45"
+		},
+		{
+			"id": "step",
+			"type": "text",
+			"x": -460,
+			"y": -140,
+			"width": 320,
+			"height": 180,
+			"text": "# MoveToTarget\ntargetKey: targetId\nrepathTimer: repathTimer\narriveRange: 30\nrepathInterval: 0.4\ngiveUpRange: 0"
+		},
+		{
+			"id": "chkFire",
+			"type": "text",
+			"x": -420,
+			"y": -140,
+			"width": 260,
+			"height": 140,
+			"text": "# CheckBlackboard\nkey: burstIndex\nop: <\nvalue: 8"
+		},
+		{
+			"id": "wait",
+			"type": "text",
+			"x": -180,
+			"y": -140,
+			"width": 260,
+			"height": 140,
+			"text": "# Wait\nduration: 1.5\ntimer: burstTimer"
+		},
+		{
+			"id": "burst",
+			"type": "text",
+			"x": 80,
+			"y": -140,
+			"width": 340,
+			"height": 180,
+			"text": "# FireRadialBurst\nprojectileType: Projectile_Fire\nrays: 16\nburstIndexKey: burstIndex\ntotalBursts: 8"
+		},
+		{
+			"id": "rest",
+			"type": "text",
+			"x": 120,
+			"y": -140,
+			"width": 260,
+			"height": 140,
+			"text": "# Wait\nduration: 3.0\ntimer: restTimer"
+		},
+		{
+			"id": "reset",
+			"type": "text",
+			"x": 400,
+			"y": -140,
+			"width": 280,
+			"height": 140,
+			"text": "# SetBlackboard\nkey: burstIndex\nvalue: 0"
+		}
+	],
+	"edges": [
+		{ "id": "r0", "fromNode": "root", "fromSide": "bottom", "toNode": "seqMove", "toSide": "top", "label": "[0]" },
+		{ "id": "r1", "fromNode": "root", "fromSide": "bottom", "toNode": "seqFire", "toSide": "top", "label": "[1]" },
+		{ "id": "r2", "fromNode": "root", "fromSide": "bottom", "toNode": "seqRest", "toSide": "top", "label": "[2]" },
+
+		{ "id": "m0", "fromNode": "seqMove", "fromSide": "bottom", "toNode": "chkIdle", "toSide": "top", "label": "[0]" },
+		{ "id": "m1", "fromNode": "seqMove", "fromSide": "bottom", "toNode": "acquire", "toSide": "top", "label": "[1]" },
+		{ "id": "m2", "fromNode": "seqMove", "fromSide": "bottom", "toNode": "tooFar", "toSide": "top", "label": "[2]" },
+		{ "id": "m3", "fromNode": "seqMove", "fromSide": "bottom", "toNode": "step", "toSide": "top", "label": "[3]" },
+
+		{ "id": "f0", "fromNode": "seqFire", "fromSide": "bottom", "toNode": "chkFire", "toSide": "top", "label": "[0]" },
+		{ "id": "f1", "fromNode": "seqFire", "fromSide": "bottom", "toNode": "wait", "toSide": "top", "label": "[1]" },
+		{ "id": "f2", "fromNode": "seqFire", "fromSide": "bottom", "toNode": "burst", "toSide": "top", "label": "[2]" },
+
+		{ "id": "s0", "fromNode": "seqRest", "fromSide": "bottom", "toNode": "rest", "toSide": "top", "label": "[0]" },
+		{ "id": "s1", "fromNode": "seqRest", "fromSide": "bottom", "toNode": "reset", "toSide": "top", "label": "[1]" }
+	]
+}

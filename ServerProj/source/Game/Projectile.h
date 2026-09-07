@@ -29,8 +29,9 @@ public:
 	void	Launch(Protocol::DirectionType dir, int32 cellsPerSec,
 				   uint64 roomTickNow, int32 lifetimeTicks, uint64 ownerId, int32 damage);
 
-	// 종류. 클라가 이 타입으로 ProjectileData 를 조회해 애니메이션을 정한다. FillObjectInfo 가 싣는다.
-	void					SetProjectileType(Protocol::ProjectileType type)	{ _type = type; }
+	// 종류를 정한다. 이 타입의 ProjectileData 로 충돌 반경(_radius)까지 함께 설정한다.
+	// 클라는 이 타입으로 애니메이션/반경 원을 정한다 (FillObjectInfo 가 싣는다).
+	void					SetProjectileType(Protocol::ProjectileType type);
 	Protocol::ProjectileType	GetProjectileType() const						{ return _type; }
 
 	uint64	GetExpireTick() const	{ return _expireTick; }

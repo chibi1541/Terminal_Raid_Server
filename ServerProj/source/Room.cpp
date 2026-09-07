@@ -934,6 +934,39 @@ GameObjectRef Room::SpawnProjectileVec(int32 spawnFpX, int32 spawnFpY,
 	return proj;
 }
 
+void Room::SpawnProjectileAimed(uint64 ownerId, int32 originCellX, int32 originCellY,
+								float dirX, float dirY, Protocol::ProjectileType type)
+{
+	const float len = ::sqrtf(dirX * dirX + dirY * dirY);
+	if (len < 0.0001f)
+		return;
+
+	const float nx = dirX / len;
+	const float ny = dirY / len;
+
+	const ProjectileDef& def = ProjectileData::Get().Find(type);
+
+	const float scale = static_cast<float>(MoveMath::POS_SCALE);
+
+	// 스폰 위치 = 원점 + 방향 * spawnForwardCells (서브셀 정밀).
+	const float ox = static_cast<float>(originCellX) + nx * def.spawnForwardCells;
+	const float oy = static_cast<float>(originCellY) + ny * def.spawnForwardCells;
+	const int32 spawnFpX = static_cast<int32>(ox * scale) + MoveMath::POS_SCALE / 2;
+	const int32 spawnFpY = static_cast<int32>(oy * scale) + MoveMath::POS_SCALE / 2;
+
+	const int32 velSubX = static_cast<int32>(nx * def.speedCellsPerSec * scale);
+	const int32 velSubY = static_cast<int32>(ny * def.speedCellsPerSec * scale);
+
+	// 사거리 -> 수명 틱 (HandleAttack 과 동일).
+	const int32 lifetimeTicks = (def.speedCellsPerSec > 0)
+		? static_cast<int32>((static_cast<int64>(def.rangeCells) * 1000
+			/ def.speedCellsPerSec + TICK_INTERVAL_MS - 1) / TICK_INTERVAL_MS) + 2
+		: PROJECTILE_LIFETIME_TICKS;
+
+	SpawnProjectileVec(spawnFpX, spawnFpY, velSubX, velSubY,
+		ownerId, def.rangeCells, lifetimeTicks, def.damage, type);
+}
+
 void Room::HandleAttack(GameObjectRef object, Protocol::Vector2 aimCell,
 						Protocol::Vector2 muzzleCell, uint32 clientTimeMs)
 {

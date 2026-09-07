@@ -12,7 +12,7 @@
 	     moveSpeedCells : 이동 속도 (셀/초). -->
 	<Monster id="Monster_Zombie"      animClip="Zombie"      aiTree="monster_basic"
 	         footprintTiles="4" collisionCells="16"  radius="8" maxHp="60"  attackPower="8"  moveSpeedCells="30" />
-	<Monster id="Monster_Necromancer" animClip="Necromancer" aiTree="monster_basic"
+	<Monster id="Monster_Necromancer" animClip="Necromancer" aiTree="necromancer_boss"
 	         footprintTiles="6" collisionCells="24" radius="12" maxHp="140" attackPower="16" moveSpeedCells="25" />
 
 </MonsterData>

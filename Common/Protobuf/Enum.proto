@@ -58,6 +58,10 @@ enum ProjectileType
 {
 	Projectile_None = 0;
 	Projectile_Pellet = 1;
+	Projectile_ArcaneMote = 2;
+	Projectile_EmberDot = 3;
+	Projectile_Fire = 4;
+	Projectile_VoidSphere = 5;
 }
 
 // 몬스터 종류. Data/MonsterData.xml 의 <Monster id> 가 이 이름을 쓴다 (MonsterType_Parse).

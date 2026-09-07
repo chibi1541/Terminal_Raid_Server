@@ -4,6 +4,7 @@
 #include "Room.h"
 #include "Game/GameObject.h"
 #include "Game/ObjectIdGenerator.h"
+#include "Game/ProjectileData.h"
 
 #include <cmath>
 
@@ -325,8 +326,13 @@ namespace
 
 			if (timer >= _repathInterval || noPath)
 			{
-				context.room->OrderMoveTo(context.self->GetObjId(), target->GetPosX(), target->GetPosY());
+				const bool ok = context.room->OrderMoveTo(
+					context.self->GetObjId(), target->GetPosX(), target->GetPosY());
 				context.blackboard->SetFloat(_timerSlot, 0.0f);
+
+				// 경로를 못 짰고 지금도 경로가 없다 = 도달 불가. 무한 Running 방지.
+				if (ok == false && context.self->Movement().HasPath() == false)
+					return BtStatus::Failure;
 			}
 			else
 			{
@@ -429,6 +435,91 @@ namespace
 		const int32 _timerSlot;
 		const float _cooldown;
 		const int32 _damage;
+	};
+
+	/*--- TargetOutOfRange : targetId 대상이 range 셀 "밖"이면 Success (대상 없으면 Failure) ---*/
+	// TargetInRange 의 거울. 보스 리포지션 게이트("플레이어가 멀면 조금 이동")에 쓴다.
+	class TargetOutOfRangeLeaf : public BtLeaf
+	{
+	public:
+		TargetOutOfRangeLeaf(int32 targetSlot, int32 range)
+			: _targetSlot(targetSlot), _rangeSq(static_cast<int64>(range) * range) {}
+
+		virtual BtStatus Execute(BtContext& context) const override
+		{
+			GameObject* target = ResolveTarget(context, _targetSlot);
+			if (target == nullptr || context.self == nullptr)
+				return BtStatus::Failure;
+
+			return (CellDistSq(*context.self, *target) > _rangeSq)
+				? BtStatus::Success : BtStatus::Failure;
+		}
+
+		virtual std::wstring Describe() const override
+		{
+			WCHAR buffer[96];
+			::swprintf_s(buffer, L"(targetSlot=%d)", _targetSlot);
+			return buffer;
+		}
+
+	private:
+		const int32 _targetSlot;
+		const int64 _rangeSq;
+	};
+
+	/*--- FireRadialBurst : self 중심 rays 방향으로 투사체를 한 번에 발사 ---*/
+	//
+	// 보스 패턴용. burstIndexKey 슬롯의 값으로 패턴 전체를 회전시킨다 (선형 스윕):
+	//   offset = (2π / rays) * burstIndex / totalBursts
+	// totalBursts 번 쏘면 정확히 한 칸(2π/rays) 회전해 첫 발과 맞물린다.
+	// 매 호출 burstIndex 를 1 증가시키고 항상 Success.
+	class FireRadialBurstLeaf : public BtLeaf
+	{
+	public:
+		FireRadialBurstLeaf(Protocol::ProjectileType type, int32 rays, int32 burstSlot, int32 totalBursts)
+			: _type(type), _rays(rays), _burstSlot(burstSlot)
+			, _totalBursts((totalBursts > 0) ? totalBursts : 1) {}
+
+		virtual BtStatus Execute(BtContext& context) const override
+		{
+			if (context.room == nullptr || context.self == nullptr)
+				return BtStatus::Failure;
+
+			const int64 burstIndex = context.blackboard->GetInt(_burstSlot);
+
+			const double gap = 6.283185307179586 / static_cast<double>(_rays);
+			const double offset = gap * static_cast<double>(burstIndex) / static_cast<double>(_totalBursts);
+
+			const int32 cx = context.self->GetPosX();
+			const int32 cy = context.self->GetPosY();
+
+			for (int32 i = 0; i < _rays; i++)
+			{
+				const double a = offset + gap * static_cast<double>(i);
+				context.room->SpawnProjectileAimed(context.self->GetObjId(), cx, cy,
+					static_cast<float>(::cos(a)), static_cast<float>(::sin(a)), _type);
+			}
+
+			// 시전 모션 트리거 (방향은 아래쪽 고정 - 방사형이라 조준 방향 개념이 없다).
+			context.room->NotifyAttackStart(context.self->GetObjId(), Protocol::DIR_DOWN);
+
+			context.blackboard->SetInt(_burstSlot, burstIndex + 1);
+			return BtStatus::Success;
+		}
+
+		virtual std::wstring Describe() const override
+		{
+			WCHAR buffer[128];
+			::swprintf_s(buffer, L"(type=%d rays=%d burstSlot=%d total=%d)",
+				static_cast<int32>(_type), _rays, _burstSlot, _totalBursts);
+			return buffer;
+		}
+
+	private:
+		const Protocol::ProjectileType	_type;
+		const int32						_rays;
+		const int32						_burstSlot;
+		const int32						_totalBursts;
 	};
 }
 
@@ -557,5 +648,33 @@ void BtNodeRegistry::RegisterBuiltins()
 				targetSlot, timerSlot,
 				params.GetFloat("cooldown", 1.0f),
 				static_cast<int32>(params.GetInt("damage", 0)));
+		});
+
+	Register("TargetOutOfRange",
+		[](const BtParams& params, const BehaviorTree& tree) -> BtLeaf*
+		{
+			const int32 targetSlot = ResolveSlot(params, tree, "targetKey");
+			if (targetSlot < 0)
+				return nullptr;
+
+			return new TargetOutOfRangeLeaf(
+				targetSlot, static_cast<int32>(params.GetFloat("range", 40.0f)));
+		});
+
+	Register("FireRadialBurst",
+		[](const BtParams& params, const BehaviorTree& tree) -> BtLeaf*
+		{
+			const int32 burstSlot = ResolveSlot(params, tree, "burstIndexKey");
+			if (burstSlot < 0)
+				return nullptr;
+
+			Protocol::ProjectileType type = Protocol::Projectile_None;
+			Protocol::ProjectileType_Parse(params.GetString("projectileType", "Projectile_Fire"), &type);
+			if (type == Protocol::Projectile_None)
+				return nullptr;
+
+			return new FireRadialBurstLeaf(type,
+				static_cast<int32>(params.GetInt("rays", 16)), burstSlot,
+				static_cast<int32>(params.GetInt("totalBursts", 8)));
 		});
 }

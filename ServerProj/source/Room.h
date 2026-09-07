@@ -92,6 +92,12 @@ public:
 									   int32 rangeCells, int32 lifetimeTicks, int32 damage,
 									   Protocol::ProjectileType type);
 
+	// (originCellX, originCellY) 에서 (dirX, dirY) 방향(내부에서 정규화)으로 투사체 하나 발사.
+	// 속도/사거리/피해/수명은 ProjectileData(type) 에서 파생. 몬스터 AI 리프(FireRadialBurst)가 쓴다.
+	// HandleAttack 의 스폰 산수와 같은 식.
+	void			SpawnProjectileAimed(uint64 ownerId, int32 originCellX, int32 originCellY,
+										 float dirX, float dirY, Protocol::ProjectileType type);
+
 	// 디버그 : 이동 루프만 count 틱 수동으로 굴린다. (bt step 과 같은 방식)
 	void	DebugStepMovement(int32 count);
 

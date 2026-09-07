@@ -43,15 +43,18 @@ const char descriptor_table_protodef_Enum_2eproto[] PROTOBUF_SECTION_VARIABLE(pr
   "\020\000\022\016\n\nFIELD_ITEM\020\001\022\022\n\016FIELD_OBSTACLE\020\002*p"
   "\n\013PlayerColor\022\017\n\013COLOR_WHITE\020\000\022\017\n\013COLOR_"
   "GREEN\020\001\022\r\n\tCOLOR_RED\020\002\022\016\n\nCOLOR_BLUE\020\003\022\016"
-  "\n\nCOLOR_CYAN\020\004\022\020\n\014COLOR_PURPLE\020\005*<\n\016Proj"
-  "ectileType\022\023\n\017Projectile_None\020\000\022\025\n\021Proje"
-  "ctile_Pellet\020\001*L\n\013MonsterType\022\020\n\014Monster"
-  "_None\020\000\022\022\n\016Monster_Zombie\020\001\022\027\n\023Monster_N"
-  "ecromancer\020\002b\006proto3"
+  "\n\nCOLOR_CYAN\020\004\022\020\n\014COLOR_PURPLE\020\005*\240\001\n\016Pro"
+  "jectileType\022\023\n\017Projectile_None\020\000\022\025\n\021Proj"
+  "ectile_Pellet\020\001\022\031\n\025Projectile_ArcaneMote"
+  "\020\002\022\027\n\023Projectile_EmberDot\020\003\022\023\n\017Projectil"
+  "e_Fire\020\004\022\031\n\025Projectile_VoidSphere\020\005*L\n\013M"
+  "onsterType\022\020\n\014Monster_None\020\000\022\022\n\016Monster_"
+  "Zombie\020\001\022\027\n\023Monster_Necromancer\020\002b\006proto"
+  "3"
   ;
 static ::_pbi::once_flag descriptor_table_Enum_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_Enum_2eproto = {
-    false, false, 740, descriptor_table_protodef_Enum_2eproto,
+    false, false, 841, descriptor_table_protodef_Enum_2eproto,
     "Enum.proto",
     &descriptor_table_Enum_2eproto_once, nullptr, 0, 0,
     schemas, file_default_instances, TableStruct_Enum_2eproto::offsets,
@@ -161,6 +164,10 @@ bool ProjectileType_IsValid(int value) {
   switch (value) {
     case 0:
     case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
       return true;
     default:
       return false;

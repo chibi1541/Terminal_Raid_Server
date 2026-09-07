@@ -11,9 +11,29 @@
 	     damage            : 명중 시 대상에게 줄 피해.
 	     fireIntervalMs    : 이 투사체로 쏠 때 최소 발사 간격 (ms). 서버가 강제.
 	     spawnForwardCells : 발사 기준점(플레이어 몸통 중심)에서 조준 방향으로 이만큼 앞에서 스폰. -->
-	<Projectile id="Projectile_Pellet"
+	<Projectile id="Projectile_ArcaneMote"
 	            animSet="Projectile" animClip="ArcaneMote"
+	            speedCellsPerSec="60" rangeCells="40" radius="1" damage="15"
+	            fireIntervalMs="250" spawnForwardCells="3" />
+				
+	<Projectile id="Projectile_Pellet"
+	            animSet="Projectile" animClip="Pellet"
+	            speedCellsPerSec="60" rangeCells="40" radius="1" damage="8"
+	            fireIntervalMs="250" spawnForwardCells="3" />
+				
+	<Projectile id="Projectile_EmberDot"
+	            animSet="Projectile" animClip="EmberDot"
 	            speedCellsPerSec="60" rangeCells="40" radius="1" damage="10"
 	            fireIntervalMs="250" spawnForwardCells="3" />
+				
+	<Projectile id="Projectile_Fire"
+	            animSet="Projectile" animClip="Fire"
+	            speedCellsPerSec="60" rangeCells="60" radius="4" damage="20"
+	            fireIntervalMs="250" spawnForwardCells="2" />
+
+	<Projectile id="Projectile_VoidSphere"
+	            animSet="Projectile" animClip="VoidSphere"
+	            speedCellsPerSec="40" rangeCells="80" radius="6" damage="30"
+	            fireIntervalMs="400" spawnForwardCells="4" />
 
 </ProjectileData>

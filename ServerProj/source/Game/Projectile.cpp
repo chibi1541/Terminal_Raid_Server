@@ -1,6 +1,7 @@
 ﻿#include "pch.h"
 #include "Game/Projectile.h"
 #include "Game/ObjectIdGenerator.h"
+#include "Game/ProjectileData.h"
 
 Projectile::Projectile()
 {
@@ -9,10 +10,18 @@ Projectile::Projectile()
 	// objectId 상위 16비트가 타입이므로 타입을 정한 직후에 발급한다. (Player 와 동일)
 	SetObjId(ObjectIdGenerator::GenerateObjectId(GetObjType()));
 
-	// 체력 개념은 없지만 IsAlive() 로 살아있어야 룸 로직에 참여한다.
+	// 체력 개념은 없지만 IsAlive() 로 룸 로직에 참여한다. 반경은 SetProjectileType 이 덮는다.
 	SetMaxHp(1);
 	SetHp(1);
-	SetRadius(1);	// 3x3 (지름 3)
+	SetRadius(1);
+}
+
+void Projectile::SetProjectileType(Protocol::ProjectileType type)
+{
+	_type = type;
+
+	// 충돌 반경은 종류가 정한다 (ProjectileData.xml 의 radius). 명중 판정 / 클라 반경 원 시각화 공통.
+	SetRadius(ProjectileData::Get().Find(type).radius);
 }
 
 void Projectile::FillObjectInfo(Protocol::ObjectInfo* info)
