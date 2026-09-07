@@ -10,7 +10,9 @@
 	     radius            : 충돌 반경 (셀). 1 = 지름 3 (3x3).
 	     damage            : 명중 시 대상에게 줄 피해.
 	     fireIntervalMs    : 이 투사체로 쏠 때 최소 발사 간격 (ms). 서버가 강제.
-	     spawnForwardCells : 발사 기준점(플레이어 몸통 중심)에서 조준 방향으로 이만큼 앞에서 스폰. -->
+	     spawnForwardCells : 발사 기준점(플레이어 몸통 중심)에서 조준 방향으로 이만큼 앞에서 스폰.
+	     ignoreWalls       : true 면 벽/프롭을 통과. 사거리/수명으로만 소멸. -->
+
 	<Projectile id="Projectile_ArcaneMote"
 	            animSet="Projectile" animClip="ArcaneMote"
 	            speedCellsPerSec="60" rangeCells="40" radius="1" damage="15"
@@ -34,6 +36,6 @@
 	<Projectile id="Projectile_VoidSphere"
 	            animSet="Projectile" animClip="VoidSphere"
 	            speedCellsPerSec="40" rangeCells="80" radius="6" damage="30"
-	            fireIntervalMs="400" spawnForwardCells="4" />
+	            fireIntervalMs="400" spawnForwardCells="4" ignoreWalls="true" />
 
 </ProjectileData>

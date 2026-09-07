@@ -495,16 +495,25 @@ void Room::UpdateMovement()
 			const int32 beforeCX = object->GetPosX();
 			const int32 beforeCY = object->GetPosY();
 
+			Projectile* proj = (object->GetObjType() == Protocol::OBJECT_PROJECTILE)
+				? static_cast<Projectile*>(object) : nullptr;
+			const bool ignoreWalls = (proj != nullptr) && proj->IgnoresWalls();
+
 			// 투사체는 슬라이드 안 함 - 막힌 셀 만나면 그 자리에서 멈추고 hitWall.
+			// ignoreWalls 투사체는 벽 검사를 안 해 통과한다 (사거리/수명/월드 밖으로만 소멸).
 			const bool hitWall = MoveMath::IntegrateVec(m.fpX, m.fpY, m.velSubX, m.velSubY,
 				static_cast<int32>(_lastDeltaMs),
-				[&](int32 cx, int32 cy) { return _level.IsCellBlocked(cx, cy); });
+				[&](int32 cx, int32 cy) { return ignoreWalls ? false : _level.IsCellBlocked(cx, cy); });
 			object->SyncCellFromFixed();
 
-			if (object->GetObjType() == Protocol::OBJECT_PROJECTILE)
+			if (proj != nullptr)
 			{
-				Projectile* proj = static_cast<Projectile*>(object);
-				if (hitWall || proj->IsOutOfRange())
+				const int32 px = proj->GetPosX();
+				const int32 py = proj->GetPosY();
+				const bool outOfWorld = px < 0 || py < 0
+					|| px >= _level.GetWidth() || py >= _level.GetHeight();
+
+				if (hitWall || proj->IsOutOfRange() || outOfWorld)
 					proj->MarkExpired();	// SweepExpiredProjectiles 가 이 틱 끝에 걷어간다
 			}
 

@@ -20,8 +20,10 @@ void Projectile::SetProjectileType(Protocol::ProjectileType type)
 {
 	_type = type;
 
-	// 충돌 반경은 종류가 정한다 (ProjectileData.xml 의 radius). 명중 판정 / 클라 반경 원 시각화 공통.
-	SetRadius(ProjectileData::Get().Find(type).radius);
+	// 충돌 반경 / 벽 통과 여부는 종류가 정한다 (ProjectileData.xml).
+	const ProjectileDef& def = ProjectileData::Get().Find(type);
+	SetRadius(def.radius);
+	_ignoreWalls = def.ignoreWalls;
 }
 
 void Projectile::FillObjectInfo(Protocol::ObjectInfo* info)

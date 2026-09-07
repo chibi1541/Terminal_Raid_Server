@@ -467,18 +467,52 @@ namespace
 		const int64 _rangeSq;
 	};
 
+	/*--- SelfHpBelow : self 의 hp 가 maxHp 의 fraction 이하이면 Success ---*/
+	// 보스 페이즈 전환 게이트 (hp 50% 이하 -> 2차 패턴).
+	class SelfHpBelowLeaf : public BtLeaf
+	{
+	public:
+		explicit SelfHpBelowLeaf(float fraction) : _fraction(fraction) {}
+
+		virtual BtStatus Execute(BtContext& context) const override
+		{
+			if (context.self == nullptr || context.self->GetMaxHp() <= 0)
+				return BtStatus::Failure;
+
+			const float ratio = static_cast<float>(context.self->GetHp())
+				/ static_cast<float>(context.self->GetMaxHp());
+
+			return (ratio <= _fraction) ? BtStatus::Success : BtStatus::Failure;
+		}
+
+		virtual std::wstring Describe() const override
+		{
+			WCHAR buffer[64];
+			::swprintf_s(buffer, L"(fraction=%.2f)", _fraction);
+			return buffer;
+		}
+
+	private:
+		const float _fraction;
+	};
+
 	/*--- FireRadialBurst : self 중심 rays 방향으로 투사체를 한 번에 발사 ---*/
 	//
 	// 보스 패턴용. burstIndexKey 슬롯의 값으로 패턴 전체를 회전시킨다 (선형 스윕):
 	//   offset = (2π / rays) * burstIndex / totalBursts
 	// totalBursts 번 쏘면 정확히 한 칸(2π/rays) 회전해 첫 발과 맞물린다.
+	// secondaryEvery > 0 이면 burstIndex % secondaryEvery == 0 인 발사에서 secondaryType 을
+	// secondaryRays 갈래로 함께 쏜다 (primary 사이에 절반 오프셋으로 끼워 "섞어서").
 	// 매 호출 burstIndex 를 1 증가시키고 항상 Success.
 	class FireRadialBurstLeaf : public BtLeaf
 	{
 	public:
-		FireRadialBurstLeaf(Protocol::ProjectileType type, int32 rays, int32 burstSlot, int32 totalBursts)
+		FireRadialBurstLeaf(Protocol::ProjectileType type, int32 rays, int32 burstSlot, int32 totalBursts,
+							Protocol::ProjectileType secondaryType, int32 secondaryRays, int32 secondaryEvery)
 			: _type(type), _rays(rays), _burstSlot(burstSlot)
-			, _totalBursts((totalBursts > 0) ? totalBursts : 1) {}
+			, _totalBursts((totalBursts > 0) ? totalBursts : 1)
+			, _secondaryType(secondaryType), _secondaryRays(secondaryRays)
+			, _secondaryEvery(secondaryEvery) {}
 
 		virtual BtStatus Execute(BtContext& context) const override
 		{
@@ -487,21 +521,22 @@ namespace
 
 			const int64 burstIndex = context.blackboard->GetInt(_burstSlot);
 
-			const double gap = 6.283185307179586 / static_cast<double>(_rays);
-			const double offset = gap * static_cast<double>(burstIndex) / static_cast<double>(_totalBursts);
-
 			const int32 cx = context.self->GetPosX();
 			const int32 cy = context.self->GetPosY();
+			const uint64 selfId = context.self->GetObjId();
 
-			for (int32 i = 0; i < _rays; i++)
+			FireRing(context, selfId, cx, cy, _type, _rays, burstIndex, _totalBursts, 0.0);
+
+			if (_secondaryEvery > 0 && _secondaryRays > 0
+				&& _secondaryType != Protocol::Projectile_None
+				&& (burstIndex % _secondaryEvery) == 0)
 			{
-				const double a = offset + gap * static_cast<double>(i);
-				context.room->SpawnProjectileAimed(context.self->GetObjId(), cx, cy,
-					static_cast<float>(::cos(a)), static_cast<float>(::sin(a)), _type);
+				// 절반 오프셋(0.5)으로 primary 사이에 끼운다.
+				FireRing(context, selfId, cx, cy, _secondaryType, _secondaryRays, burstIndex, _totalBursts, 0.5);
 			}
 
 			// 시전 모션 트리거 (방향은 아래쪽 고정 - 방사형이라 조준 방향 개념이 없다).
-			context.room->NotifyAttackStart(context.self->GetObjId(), Protocol::DIR_DOWN);
+			context.room->NotifyAttackStart(selfId, Protocol::DIR_DOWN);
 
 			context.blackboard->SetInt(_burstSlot, burstIndex + 1);
 			return BtStatus::Success;
@@ -509,17 +544,38 @@ namespace
 
 		virtual std::wstring Describe() const override
 		{
-			WCHAR buffer[128];
-			::swprintf_s(buffer, L"(type=%d rays=%d burstSlot=%d total=%d)",
-				static_cast<int32>(_type), _rays, _burstSlot, _totalBursts);
+			WCHAR buffer[160];
+			::swprintf_s(buffer, L"(type=%d rays=%d total=%d sec=%d secRays=%d secEvery=%d)",
+				static_cast<int32>(_type), _rays, _totalBursts,
+				static_cast<int32>(_secondaryType), _secondaryRays, _secondaryEvery);
 			return buffer;
 		}
 
 	private:
+		// ratioOffset : gap 의 몇 배만큼 링 전체를 더 돌릴지 (secondary 를 primary 사이에 끼울 때 0.5).
+		static void FireRing(BtContext& context, uint64 selfId, int32 cx, int32 cy,
+							 Protocol::ProjectileType type, int32 rays, int64 burstIndex,
+							 int32 totalBursts, double ratioOffset)
+		{
+			const double gap = 6.283185307179586 / static_cast<double>(rays);
+			const double sweep = gap * static_cast<double>(burstIndex) / static_cast<double>(totalBursts);
+			const double base = sweep + gap * ratioOffset;
+
+			for (int32 i = 0; i < rays; i++)
+			{
+				const double a = base + gap * static_cast<double>(i);
+				context.room->SpawnProjectileAimed(selfId, cx, cy,
+					static_cast<float>(::cos(a)), static_cast<float>(::sin(a)), type);
+			}
+		}
+
 		const Protocol::ProjectileType	_type;
 		const int32						_rays;
 		const int32						_burstSlot;
 		const int32						_totalBursts;
+		const Protocol::ProjectileType	_secondaryType;
+		const int32						_secondaryRays;
+		const int32						_secondaryEvery;
 	};
 }
 
@@ -673,8 +729,21 @@ void BtNodeRegistry::RegisterBuiltins()
 			if (type == Protocol::Projectile_None)
 				return nullptr;
 
+			// 선택 : hp 낮을 때 섞어 쓰는 2차 투사체.
+			Protocol::ProjectileType secondaryType = Protocol::Projectile_None;
+			Protocol::ProjectileType_Parse(params.GetString("secondaryType", ""), &secondaryType);
+
 			return new FireRadialBurstLeaf(type,
 				static_cast<int32>(params.GetInt("rays", 16)), burstSlot,
-				static_cast<int32>(params.GetInt("totalBursts", 8)));
+				static_cast<int32>(params.GetInt("totalBursts", 8)),
+				secondaryType,
+				static_cast<int32>(params.GetInt("secondaryRays", 0)),
+				static_cast<int32>(params.GetInt("secondaryEvery", 0)));
+		});
+
+	Register("SelfHpBelow",
+		[](const BtParams& params, const BehaviorTree& tree) -> BtLeaf*
+		{
+			return new SelfHpBelowLeaf(params.GetFloat("fraction", 0.5f));
 		});
 }

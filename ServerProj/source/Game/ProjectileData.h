@@ -27,6 +27,8 @@ struct ProjectileDef
 
 	int32	fireIntervalMs = 250;	// 최소 발사 간격 (서버 강제).
 	int32	spawnForwardCells = 3;	// 발사 기준점(플레이어 몸통 중심)에서 조준 방향으로 이만큼 앞에서 스폰.
+
+	bool	ignoreWalls = false;	// true 면 벽/프롭을 통과한다. 사거리/수명으로만 소멸.
 };
 
 class ProjectileData

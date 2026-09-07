@@ -37,6 +37,7 @@ public:
 	uint64	GetExpireTick() const	{ return _expireTick; }
 	uint64	GetOwnerId() const		{ return _ownerId; }
 	int32	GetDamage() const		{ return _damage; }
+	bool	IgnoresWalls() const	{ return _ignoreWalls; }
 
 	// 즉시 소멸 예약 (벽 히트 등). 다음 SweepExpiredProjectiles 가 걷어간다.
 	void	MarkExpired()			{ _expireTick = 0; }
@@ -52,6 +53,7 @@ private:
 	int32	_originFpX = 0;
 	int32	_originFpY = 0;
 	int64	_maxDistSqSub = 0;	// 0 = 무제한
+	bool	_ignoreWalls = false;
 };
 
 using ProjectileRef = shared_ptr<Projectile>;
