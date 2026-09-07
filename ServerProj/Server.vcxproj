@@ -121,6 +121,7 @@
     <ClCompile Include="source\AI\BtTypes.cpp" />
     <ClCompile Include="source\Debug\GameCommands.cpp" />
     <ClCompile Include="source\Game\ProjectileData.cpp" />
+    <ClCompile Include="source\Game\CharacterData.cpp" />
     <ClCompile Include="source\Game\MonsterData.cpp" />
     <ClCompile Include="source\Game\GameObject.cpp" />
     <ClCompile Include="source\Game\JpsPathFinder.cpp" />
@@ -170,6 +171,7 @@
     <ClInclude Include="source\Debug\GameCommands.h" />
     <ClInclude Include="source\Game\Bounds.h" />
     <ClInclude Include="source\Game\ProjectileData.h" />
+    <ClInclude Include="source\Game\CharacterData.h" />
     <ClInclude Include="source\Game\MonsterData.h" />
     <ClInclude Include="source\Game\GameObject.h" />
     <ClInclude Include="source\Game\JpsPathFinder.h" />

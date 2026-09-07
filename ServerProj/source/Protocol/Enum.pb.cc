@@ -22,7 +22,7 @@ namespace _pbi = _pb::internal;
 
 namespace Protocol {
 }  // namespace Protocol
-static const ::_pb::EnumDescriptor* file_level_enum_descriptors_Enum_2eproto[6];
+static const ::_pb::EnumDescriptor* file_level_enum_descriptors_Enum_2eproto[7];
 static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_Enum_2eproto = nullptr;
 const uint32_t TableStruct_Enum_2eproto::offsets[1] = {};
 static constexpr ::_pbi::MigrationSchema* schemas = nullptr;
@@ -45,11 +45,13 @@ const char descriptor_table_protodef_Enum_2eproto[] PROTOBUF_SECTION_VARIABLE(pr
   "GREEN\020\001\022\r\n\tCOLOR_RED\020\002\022\016\n\nCOLOR_BLUE\020\003\022\016"
   "\n\nCOLOR_CYAN\020\004\022\020\n\014COLOR_PURPLE\020\005*<\n\016Proj"
   "ectileType\022\023\n\017Projectile_None\020\000\022\025\n\021Proje"
-  "ctile_Pellet\020\001b\006proto3"
+  "ctile_Pellet\020\001*L\n\013MonsterType\022\020\n\014Monster"
+  "_None\020\000\022\022\n\016Monster_Zombie\020\001\022\027\n\023Monster_N"
+  "ecromancer\020\002b\006proto3"
   ;
 static ::_pbi::once_flag descriptor_table_Enum_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_Enum_2eproto = {
-    false, false, 662, descriptor_table_protodef_Enum_2eproto,
+    false, false, 740, descriptor_table_protodef_Enum_2eproto,
     "Enum.proto",
     &descriptor_table_Enum_2eproto_once, nullptr, 0, 0,
     schemas, file_default_instances, TableStruct_Enum_2eproto::offsets,
@@ -159,6 +161,21 @@ bool ProjectileType_IsValid(int value) {
   switch (value) {
     case 0:
     case 1:
+      return true;
+    default:
+      return false;
+  }
+}
+
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* MonsterType_descriptor() {
+  ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_Enum_2eproto);
+  return file_level_enum_descriptors_Enum_2eproto[6];
+}
+bool MonsterType_IsValid(int value) {
+  switch (value) {
+    case 0:
+    case 1:
+    case 2:
       return true;
     default:
       return false;

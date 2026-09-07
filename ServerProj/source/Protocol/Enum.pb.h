@@ -215,6 +215,32 @@ inline bool ProjectileType_Parse(
   return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<ProjectileType>(
     ProjectileType_descriptor(), name, value);
 }
+enum MonsterType : int {
+  Monster_None = 0,
+  Monster_Zombie = 1,
+  Monster_Necromancer = 2,
+  MonsterType_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
+  MonsterType_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
+};
+bool MonsterType_IsValid(int value);
+constexpr MonsterType MonsterType_MIN = Monster_None;
+constexpr MonsterType MonsterType_MAX = Monster_Necromancer;
+constexpr int MonsterType_ARRAYSIZE = MonsterType_MAX + 1;
+
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* MonsterType_descriptor();
+template<typename T>
+inline const std::string& MonsterType_Name(T enum_t_value) {
+  static_assert(::std::is_same<T, MonsterType>::value ||
+    ::std::is_integral<T>::value,
+    "Incorrect type passed to function MonsterType_Name.");
+  return ::PROTOBUF_NAMESPACE_ID::internal::NameOfEnum(
+    MonsterType_descriptor(), enum_t_value);
+}
+inline bool MonsterType_Parse(
+    ::PROTOBUF_NAMESPACE_ID::ConstStringParam name, MonsterType* value) {
+  return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<MonsterType>(
+    MonsterType_descriptor(), name, value);
+}
 // ===================================================================
 
 
@@ -266,6 +292,11 @@ template <> struct is_proto_enum< ::Protocol::ProjectileType> : ::std::true_type
 template <>
 inline const EnumDescriptor* GetEnumDescriptor< ::Protocol::ProjectileType>() {
   return ::Protocol::ProjectileType_descriptor();
+}
+template <> struct is_proto_enum< ::Protocol::MonsterType> : ::std::true_type {};
+template <>
+inline const EnumDescriptor* GetEnumDescriptor< ::Protocol::MonsterType>() {
+  return ::Protocol::MonsterType_descriptor();
 }
 
 PROTOBUF_NAMESPACE_CLOSE

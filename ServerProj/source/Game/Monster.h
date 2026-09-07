@@ -1,5 +1,6 @@
-﻿#pragma once
+#pragma once
 #include "Game/GameObject.h"
+#include "Protocol/Enum.pb.h"
 
 /*-----------
 	Monster
@@ -15,13 +16,15 @@ public:
 	virtual void FillObjectInfo(Protocol::ObjectInfo* info) override;
 
 public:
-	const string&	GetMonsterTypeName() const		{ return _monsterTypeName; }
+	Protocol::MonsterType	GetMonsterType() const	{ return _monsterType; }
+	const string&			GetMonsterTypeName() const	{ return _monsterTypeName; }	// 디버그 표시용
 
-	// 타입명과 함께 길찾기 풋프린트도 같이 정해진다 (임시 타입별 고정값 테이블 참고).
-	void			SetMonsterTypeName(const string& name);
+	// MonsterData 테이블을 조회해 풋프린트 / 충돌 박스 / 반경 / 체력 / 공격력 / 이동속도를 정한다.
+	void					SetMonsterType(Protocol::MonsterType type);
 
 private:
-	string	_monsterTypeName;	// 디버그 표시 / 향후 몬스터 종류 식별용
+	Protocol::MonsterType	_monsterType = Protocol::Monster_None;
+	string					_monsterTypeName;	// MonsterType_Name(type) 캐시 (디버그 표시)
 };
 
 using MonsterRef = shared_ptr<Monster>;

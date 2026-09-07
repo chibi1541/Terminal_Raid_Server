@@ -166,6 +166,17 @@ public:
 	void SetHp(int32 hp);
 	void SetMaxHp(int32 maxHp);
 
+	// 공격력 (Character/MonsterData 에서 옴). 몬스터 AI 공격 / 향후 근접 판정이 쓴다.
+	int32 GetAttackPower() const			{ return _attackPower; }
+	void  SetAttackPower(int32 power)		{ _attackPower = (power >= 0) ? power : 0; }
+
+	// 이동 속도를 "셀/초" 로 지정한다. 내부(_move.speed)는 서브유닛/초 (1셀=256).
+	// 0 이면 MovementComponent::EffectiveSpeed 의 기본값(DEFAULT_MOVE_SPEED)으로 굴러간다.
+	void  SetMoveSpeedCells(int32 cellsPerSec)
+	{
+		_move.speed = (cellsPerSec > 0) ? cellsPerSec * POS_SCALE : 0;
+	}
+
 	// hp 를 깎는다. 브로드캐스트는 하지 않는 순수 상태 변경 - Room::DealDamage 가 그 몫이다.
 	// damage <= 0 이거나 이미 죽었으면 아무 일도 안 하고 false. 이 호출로 사망했으면(hp==0) true.
 	bool ApplyDamage(int32 damage);
@@ -188,6 +199,7 @@ private:
 	int32					_radius = 0;
 	int32					_hp = 100;
 	int32					_maxHp = 100;
+	int32					_attackPower = 0;
 	int32					_footprintTilesWide = 1;
 	int32					_footprintTilesHigh = 1;
 	int32					_collisionCellsWide = 1;

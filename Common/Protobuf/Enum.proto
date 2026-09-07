@@ -52,10 +52,18 @@ enum PlayerColor
 	COLOR_CYAN = 4;
 	COLOR_PURPLE = 5;
 }
-// 투사체 종류. CombatData.xml 의 <Projectile id> / <Weapon projectile> 가 이 이름을 쓴다.
+// 투사체 종류. Data/ProjectileData.xml 의 <Projectile id> 가 이 이름을 쓴다.
 // 문자열 -> enum 은 protobuf 가 만드는 ProjectileType_Parse 로 변환한다.
 enum ProjectileType
 {
 	Projectile_None = 0;
 	Projectile_Pellet = 1;
+}
+
+// 몬스터 종류. Data/MonsterData.xml 의 <Monster id> 가 이 이름을 쓴다 (MonsterType_Parse).
+enum MonsterType
+{
+	Monster_None = 0;
+	Monster_Zombie = 1;
+	Monster_Necromancer = 2;
 }

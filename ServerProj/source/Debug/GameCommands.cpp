@@ -45,6 +45,27 @@ namespace
 		return true;
 	}
 
+	// 몬스터 종류 키워드 -> MonsterType. "zombie" / "necromancer" (대소문자 무관) 또는
+	// 전체 enum 이름("Monster_Zombie") 을 받는다. 실패하면 Monster_None.
+	Protocol::MonsterType ParseMonsterType(const std::wstring& text)
+	{
+		std::string narrow;
+		for (wchar_t ch : text)
+			narrow += (ch < 128) ? static_cast<char>(::tolower(ch)) : '?';
+
+		if (narrow == "zombie" || narrow == "monster_zombie")
+			return Protocol::Monster_Zombie;
+		if (narrow == "necromancer" || narrow == "monster_necromancer")
+			return Protocol::Monster_Necromancer;
+
+		Protocol::MonsterType parsed = Protocol::Monster_None;
+		std::string exact;
+		for (wchar_t ch : text)
+			exact += (ch < 128) ? static_cast<char>(ch) : '?';
+		Protocol::MonsterType_Parse(exact, &parsed);
+		return parsed;
+	}
+
 	// 8방향 키워드 -> DirectionType. 실패하면 false.
 	bool ParseDir8(const std::wstring& text, OUT Protocol::DirectionType& out)
 	{
@@ -179,8 +200,8 @@ void GameCommands::Register()
 				player->GetObjId(), player->GetPosX(), player->GetPosY(), player->GetRadius());
 		}, CommandRunMode::GameThread);
 
-	GCommandRegistry->Register(L"spawnmonster", L"spawnmonster <name> [x] [y] [radius]",
-		L"add a monster to the room (connected clients get S_SPAWN)",
+	GCommandRegistry->Register(L"spawnmonster", L"spawnmonster <type> [x] [y] [radius]",
+		L"add a monster to the room (type : zombie / necromancer). connected clients get S_SPAWN",
 		[](CommandContext& context)
 		{
 			if (GRoom == nullptr)
@@ -191,15 +212,21 @@ void GameCommands::Register()
 
 			if (context.ArgCount() < 2)
 			{
-				context.Reply(L"usage : spawnmonster <name> [x] [y] [radius]");
+				context.Reply(L"usage : spawnmonster <type> [x] [y] [radius]  (type : zombie / necromancer)");
+				return;
+			}
+
+			const Protocol::MonsterType monsterType = ParseMonsterType(context.Arg(1));
+			if (monsterType == Protocol::Monster_None)
+			{
+				context.Reply(L"unknown monster type : %s (zombie / necromancer)", context.Arg(1).c_str());
 				return;
 			}
 
 			MonsterRef monster = MakeShared<Monster>();
 
-			// 명령 인자는 wstring이라 이름을 좁은 문자열로 옮긴다.
-			// 디버그용이므로 ASCII가 아닌 글자는 '?'로 떨군다.
-			monster->SetMonsterTypeName(ToNarrow(context.Arg(1)));
+			// 타입으로 MonsterData 테이블을 조회해 스탯/충돌 사이즈가 함께 정해진다.
+			monster->SetMonsterType(monsterType);
 
 			bool useRandomSpawnPos = true;
 

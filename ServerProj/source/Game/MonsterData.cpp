@@ -14,6 +14,13 @@ namespace
 		}
 		return result;
 	}
+
+	Protocol::MonsterType ParseType(const WCHAR* text)
+	{
+		Protocol::MonsterType value = Protocol::Monster_None;
+		Protocol::MonsterType_Parse(ToNarrow(text), &value);
+		return value;
+	}
 }
 
 MonsterData& MonsterData::Get()
@@ -33,30 +40,38 @@ bool MonsterData::LoadFromFile(const WCHAR* path)
 		return false;
 	}
 
+	const Protocol::MonsterType parsedDefault = ParseType(root.GetStringAttr(L"defaultMonster"));
+	if (parsedDefault != Protocol::Monster_None)
+		_defaultType = parsedDefault;
+
 	_defs.clear();
 
 	for (XmlNode& node : root.FindChildren(L"Monster"))
 	{
 		MonsterDef def;
-		def.id = ToNarrow(node.GetStringAttr(L"id"));
-		if (def.id.empty())
+		def.type = ParseType(node.GetStringAttr(L"id"));
+		if (def.type == Protocol::Monster_None)
 			continue;
 
+		def.animClip = ToNarrow(node.GetStringAttr(L"animClip", L"Zombie"));
 		def.footprintTiles = node.GetInt32Attr(L"footprintTiles", 2);
 		def.collisionCells = node.GetInt32Attr(L"collisionCells", 8);
 		def.radius = node.GetInt32Attr(L"radius", 4);
-		def.maxHp = node.GetInt32Attr(L"maxHp", 50);
+		def.maxHp = node.GetInt32Attr(L"maxHp", 60);
+		def.attackPower = node.GetInt32Attr(L"attackPower", 8);
+		def.moveSpeedCells = node.GetInt32Attr(L"moveSpeedCells", 8);
 
-		_defs[def.id] = def;
+		_defs[static_cast<int>(def.type)] = def;
 	}
 
-	LOG_INFO(L"[monster] loaded %s : %d defs", path, static_cast<int32>(_defs.size()));
+	LOG_INFO(L"[monster] loaded %s : %d defs, default=%d",
+		path, static_cast<int32>(_defs.size()), static_cast<int32>(_defaultType));
 
 	return true;
 }
 
-const MonsterDef& MonsterData::Find(const std::string& id) const
+const MonsterDef& MonsterData::Find(Protocol::MonsterType type) const
 {
-	const auto it = _defs.find(id);
+	const auto it = _defs.find(static_cast<int>(type));
 	return (it != _defs.end()) ? it->second : _fallback;
 }
