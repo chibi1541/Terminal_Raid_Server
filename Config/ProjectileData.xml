@@ -9,11 +9,10 @@
 	     rangeCells        : 사정거리 (셀). 서버가 lifetime 을 여기서 파생.
 	     radius            : 충돌 반경 (셀). 1 = 지름 3 (3x3).
 	     fireIntervalMs    : 이 투사체로 쏠 때 최소 발사 간격 (ms). 서버가 강제.
-	     spawnForwardCells : 발사 기준점에서 조준 방향으로 이만큼 앞에서 스폰.
-	     spawnUpCells      : 플레이어 정위치에서 화면상 위로 이만큼이 발사 기준점. -->
+	     spawnForwardCells : 발사 기준점(플레이어 몸통 중심)에서 조준 방향으로 이만큼 앞에서 스폰. -->
 	<Projectile id="Projectile_Pellet"
 	            animSet="Projectile" animClip="ArcaneMote"
 	            speedCellsPerSec="60" rangeCells="40" radius="1"
-	            fireIntervalMs="250" spawnForwardCells="3" spawnUpCells="6" />
+	            fireIntervalMs="250" spawnForwardCells="3" />
 
 </ProjectileData>

@@ -58,7 +58,6 @@ bool ProjectileData::LoadFromFile(const WCHAR* path)
 		def.radius = node.GetInt32Attr(L"radius", 1);
 		def.fireIntervalMs = node.GetInt32Attr(L"fireIntervalMs", 250);
 		def.spawnForwardCells = node.GetInt32Attr(L"spawnForwardCells", 3);
-		def.spawnUpCells = node.GetInt32Attr(L"spawnUpCells", 6);
 
 		_defs[static_cast<int>(def.type)] = def;
 	}

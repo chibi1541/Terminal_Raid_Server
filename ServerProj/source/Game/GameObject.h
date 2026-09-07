@@ -151,6 +151,17 @@ public:
 		_footprintTilesHigh = (tilesHigh > 0) ? tilesHigh : 1;
 	}
 
+	// 벽 충돌 박스. "셀" 단위 (타일 아님), 위치가 중심. 스프라이트 전체를 덮는다.
+	// Room::IsActorBoxBlocked / 클라 예측이 이 값으로 MoveMath::BoxBlockedCells 를 부른다.
+	// 기본 1x1 = 선 셀 한 칸 (기존 동작).
+	int32 GetCollisionCellsWide() const	{ return _collisionCellsWide; }
+	int32 GetCollisionCellsHigh() const	{ return _collisionCellsHigh; }
+	void SetCollisionBox(int32 cellsWide, int32 cellsHigh)
+	{
+		_collisionCellsWide = (cellsWide > 0) ? cellsWide : 1;
+		_collisionCellsHigh = (cellsHigh > 0) ? cellsHigh : 1;
+	}
+
 	// hp는 항상 [0, maxHp] 안으로 잘린다. 음수 체력이나 과회복이 새어나가지 않게.
 	void SetHp(int32 hp);
 	void SetMaxHp(int32 maxHp);
@@ -179,6 +190,8 @@ private:
 	int32					_maxHp = 100;
 	int32					_footprintTilesWide = 1;
 	int32					_footprintTilesHigh = 1;
+	int32					_collisionCellsWide = 1;
+	int32					_collisionCellsHigh = 1;
 
 	weak_ptr<Room>			_room;
 };

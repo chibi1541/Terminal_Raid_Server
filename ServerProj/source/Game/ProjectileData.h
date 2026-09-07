@@ -25,8 +25,7 @@ struct ProjectileDef
 	int32	radius = 1;				// 충돌 반경 (셀). 1 = 지름 3.
 
 	int32	fireIntervalMs = 250;	// 최소 발사 간격 (서버 강제).
-	int32	spawnForwardCells = 3;
-	int32	spawnUpCells = 6;
+	int32	spawnForwardCells = 3;	// 발사 기준점(플레이어 몸통 중심)에서 조준 방향으로 이만큼 앞에서 스폰.
 };
 
 class ProjectileData

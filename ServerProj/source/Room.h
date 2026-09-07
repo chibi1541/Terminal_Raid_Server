@@ -229,9 +229,9 @@ private:
 	// 다시 적분한다. HandleMove 가 방향을 바꾸기 직전에 부른다.
 	void	IntegrateHeld(GameObject* object, Protocol::DirectionType dir, int32 heldMs);
 
-	// centerX/Y 를 중심으로 object 의 풋프린트 박스 전체가 벽에 막혔는지 검사.
-	// 풋프린트 미설정(1x1) 객체는 지금처럼 셀 1칸만 본다 - 기존 동작 그대로.
-	bool	IsFootprintBlocked(const GameObject* object, int32 centerX, int32 centerY) const;
+	// centerX/Y 를 중심으로 object 의 충돌 박스(셀 단위, GetCollisionCells*) 전체가 벽에 막혔는지 검사.
+	// 충돌 박스 미설정(1x1) 객체는 셀 1칸만 본다 - 기존 동작 그대로.
+	bool	IsActorBoxBlocked(const GameObject* object, int32 centerX, int32 centerY) const;
 
 	// 길찾기 경로가 바뀐 오브젝트의 상태를 wantPaths 세션들에게 보낸다.
 	// cleared = true 면 경로 종료 통지(waypoints 비움). includeSearchNodes 면 직전 JPS

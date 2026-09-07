@@ -40,5 +40,13 @@ void Monster::FillObjectInfo(Protocol::ObjectInfo* info)
 void Monster::SetMonsterTypeName(const string& name)
 {
 	_monsterTypeName = name;
-	SetFootprint(LookupFootprintTilesWide(name), 1);
+
+	const int32 tilesWide = LookupFootprintTilesWide(name);
+
+	// 길찾기 NavGrid 번들링(타일 단위).
+	SetFootprint(tilesWide, 1);
+
+	// 벽 충돌 박스(셀 단위, 위치 중심). 임시로 타일폭 * 4(셀/타일) 정사각.
+	// 몬스터별 정확한 박스/반경/HP 는 이후 MonsterData 테이블로 옮긴다.
+	SetCollisionBox(tilesWide * 4, tilesWide * 4);
 }

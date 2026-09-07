@@ -23,10 +23,16 @@ namespace MoveMath
 	constexpr int32_t DIAG_NUM = 181;
 	constexpr int32_t DIAG_DEN = 256;
 
-	// 플레이어가 차지하는 타일 수 (가로 x 세로). 서버 Player::Player 와 클라 예측이 공유한다.
-	// 셀 박스 = (WIDE*tileSize) x (HIGH*tileSize), 중심은 캐릭터 위치.
+	// 플레이어가 차지하는 타일 수 (가로 x 세로). ★ 길찾기 NavGrid 번들링 전용 ★
+	// (Level::GetNavGridForFootprint). 벽 충돌 박스는 아래 PLAYER_COLLISION_CELLS_* 를 쓴다.
 	constexpr int32_t PLAYER_FOOTPRINT_TILES_WIDE = 2;
 	constexpr int32_t PLAYER_FOOTPRINT_TILES_HIGH = 1;
+
+	// 액터-벽 충돌 박스 (셀 단위, 캐릭터 위치가 중심). 스프라이트 전체를 덮는다.
+	// 풋프린트-타일과 달리 tileSize 를 곱하지 않는다 - 서버/클라 tileSize 개념 차이에 안 흔들리게.
+	// 플레이어 스프라이트는 8x8 셀.
+	constexpr int32_t PLAYER_COLLISION_CELLS_WIDE = 8;
+	constexpr int32_t PLAYER_COLLISION_CELLS_HIGH = 8;
 
 	// 단위 방향벡터 (ux, uy ∈ {-1, 0, 1}) 로 speedSubunitsPerSec 속도로 elapsedMs 동안
 	// 이동한 고정소수점 변위를 (outDx, outDy) 에 채운다.
@@ -101,18 +107,15 @@ namespace MoveMath
 		fpY = ny;
 	}
 
-	// centerCell 을 중심으로 (tilesWide x tilesHigh) 타일 박스 안에 막힌 셀이 하나라도 있으면 true.
-	// = 서버 Room::IsFootprintBlocked. tilesWide/High <= 1 이면 단일 셀만 본다.
+	// centerCell 을 중심으로 (cellsWide x cellsHigh) 셀 박스 안에 막힌 셀이 하나라도 있으면 true.
+	// = 서버 Room::IsActorBoxBlocked. cellsWide/High <= 1 이면 단일 셀만 본다.
 	// isCellBlocked(cellX, cellY) -> true 면 그 셀 통행 불가.
 	template <typename CellBlockedFn>
-	inline bool FootprintBlocked(int32_t centerX, int32_t centerY,
-		int32_t tilesWide, int32_t tilesHigh, int32_t tileSize, CellBlockedFn&& isCellBlocked)
+	inline bool BoxBlockedCells(int32_t centerX, int32_t centerY,
+		int32_t cellsWide, int32_t cellsHigh, CellBlockedFn&& isCellBlocked)
 	{
-		if (tilesWide <= 1 && tilesHigh <= 1)
+		if (cellsWide <= 1 && cellsHigh <= 1)
 			return isCellBlocked(centerX, centerY);
-
-		const int32_t cellsWide = tilesWide * tileSize;
-		const int32_t cellsHigh = tilesHigh * tileSize;
 
 		// 캐릭터 위치를 중심으로 대칭. 짝수라 안 나뉘면 오른쪽/아래쪽에 한 칸 더(서버와 동일).
 		const int32_t minX = centerX - cellsWide / 2;

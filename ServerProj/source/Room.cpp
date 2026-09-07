@@ -377,7 +377,7 @@ bool Room::IntegrateActor(GameObject* object, int32 stepX, int32 stepY)
 
 	// 좌표 산수(슬라이드/코너컷)는 클라와 공유. 여기는 풋프린트 콜백만 엮는다.
 	MoveMath::SlideStep(m.fpX, m.fpY, stepX, stepY,
-		[&](int32 tx, int32 ty) { return IsFootprintBlocked(object, tx, ty); });
+		[&](int32 tx, int32 ty) { return IsActorBoxBlocked(object, tx, ty); });
 
 	object->SyncCellFromFixed();
 
@@ -403,17 +403,16 @@ void Room::IntegrateHeld(GameObject* object, Protocol::DirectionType dir, int32 
 	m.fpY = m.anchorFpY;
 
 	MoveMath::IntegrateSlide(m.fpX, m.fpY, ux, uy, m.EffectiveSpeed(), heldMs,
-		[&](int32 cx, int32 cy) { return IsFootprintBlocked(object, cx, cy); });
+		[&](int32 cx, int32 cy) { return IsActorBoxBlocked(object, cx, cy); });
 
 	object->SyncCellFromFixed();
 }
 
-bool Room::IsFootprintBlocked(const GameObject* object, int32 centerX, int32 centerY) const
+bool Room::IsActorBoxBlocked(const GameObject* object, int32 centerX, int32 centerY) const
 {
-	// 박스 산수는 클라 예측과 공유(MoveMath::FootprintBlocked). 여기는 셀 판정만 엮는다.
-	return MoveMath::FootprintBlocked(centerX, centerY,
-		object->GetFootprintTilesWide(), object->GetFootprintTilesHigh(),
-		_level.GetTileSize(),
+	// 박스 산수는 클라 예측과 공유(MoveMath::BoxBlockedCells). 여기는 셀 판정만 엮는다.
+	return MoveMath::BoxBlockedCells(centerX, centerY,
+		object->GetCollisionCellsWide(), object->GetCollisionCellsHigh(),
 		[&](int32 x, int32 y) { return _level.IsCellBlocked(x, y); });
 }
 
@@ -509,7 +508,7 @@ void Room::UpdateMovement()
 
 		MoveMath::IntegrateSlide(m.fpX, m.fpY, ux, uy, m.EffectiveSpeed(),
 			static_cast<int32>(_lastDeltaMs),
-			[&](int32 cx, int32 cy) { return IsFootprintBlocked(object, cx, cy); });
+			[&](int32 cx, int32 cy) { return IsActorBoxBlocked(object, cx, cy); });
 		object->SyncCellFromFixed();
 
 		const bool cellChanged =
@@ -932,6 +931,8 @@ void Room::HandleAttack(GameObjectRef object, Protocol::Vector2 aimCell,
 	}
 
 	// muzzle 을 플레이어 권위 위치 근처로 클램프 (스폰 위치 조작 방지).
+	// 클라는 이제 muzzle 로 몸통 중심(= 자기 위치)을 그대로 보낸다 - 회전 보정 없음.
+	// 예측 오차만큼의 여유(kMuzzleMarginCells)만 허용한다.
 	const float px = static_cast<float>(object->GetPosX());
 	const float py = static_cast<float>(object->GetPosY());
 	float mx = static_cast<float>(muzzleCell.x());
@@ -940,12 +941,12 @@ void Room::HandleAttack(GameObjectRef object, Protocol::Vector2 aimCell,
 	const float mdx = mx - px;
 	const float mdy = my - py;
 	const float mDist = ::sqrtf(mdx * mdx + mdy * mdy);
-	const float maxMuzzle = static_cast<float>(proj.spawnUpCells) + 3.0f;	// 예측 오차 여유
+	const float kMuzzleMarginCells = 4.0f;
 
-	if (mDist > maxMuzzle && mDist > 0.001f)
+	if (mDist > kMuzzleMarginCells && mDist > 0.001f)
 	{
-		mx = px + mdx / mDist * static_cast<float>(proj.spawnUpCells);
-		my = py + mdy / mDist * static_cast<float>(proj.spawnUpCells);
+		mx = px + mdx / mDist * kMuzzleMarginCells;
+		my = py + mdy / mDist * kMuzzleMarginCells;
 	}
 
 	// 조준 방향.
