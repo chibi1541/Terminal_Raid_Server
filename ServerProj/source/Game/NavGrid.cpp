@@ -2,44 +2,66 @@
 #include "Game/NavGrid.h"
 
 void NavGrid::Build(const Vector<uint8>& cells, int32 cellWidth, int32 cellHeight,
-					 int32 tileWidth, int32 tileHeight)
+					 int32 boxCellsWide, int32 boxCellsHigh)
 {
-	_tileWidth = (tileWidth > 0) ? tileWidth : 1;
-	_tileHeight = (tileHeight > 0) ? tileHeight : 1;
+	const int32 boxW = (boxCellsWide > 0) ? boxCellsWide : 1;
+	const int32 boxH = (boxCellsHigh > 0) ? boxCellsHigh : 1;
 
-	// 나머지 셀이 남으면 그 타일도 하나로 친다. 어차피 잘린 타일은 아래에서 막힌 것으로 판정된다.
-	_width = (cellWidth + _tileWidth - 1) / _tileWidth;
-	_height = (cellHeight + _tileHeight - 1) / _tileHeight;
+	// 격자 = 셀 그대로. 다운샘플 없음.
+	_width = cellWidth;
+	_height = cellHeight;
 
 	_walkable.clear();
 	_walkable.resize(static_cast<size_t>(_width) * _height, 0);
 
-	for (int32 ty = 0; ty < _height; ty++)
+	if (_width <= 0 || _height <= 0)
+		return;
+
+	// 요약면적표(summed-area table) : prefix[(y)*(w+1) + (x)] = [0,x) x [0,y) 안의 막힌 셀 개수.
+	// 이걸로 임의 박스의 "막힌 셀 몇 개" 를 O(1) 로 물어본다 → box 크기와 무관하게 O(cells) 빌드.
+	const int32 pw = _width + 1;
+	Vector<int32> prefix;
+	prefix.resize(static_cast<size_t>(pw) * (_height + 1), 0);
+
+	for (int32 y = 0; y < _height; y++)
 	{
-		for (int32 tx = 0; tx < _width; tx++)
+		for (int32 x = 0; x < _width; x++)
 		{
-			bool walkable = true;
+			const int32 blocked = (cells[static_cast<size_t>(y) * _width + x] != 0) ? 1 : 0;
+			prefix[static_cast<size_t>(y + 1) * pw + (x + 1)] =
+				prefix[static_cast<size_t>(y) * pw + (x + 1)]
+				+ prefix[static_cast<size_t>(y + 1) * pw + x]
+				- prefix[static_cast<size_t>(y) * pw + x]
+				+ blocked;
+		}
+	}
 
-			for (int32 oy = 0; oy < _tileHeight && walkable; oy++)
-			{
-				for (int32 ox = 0; ox < _tileWidth; ox++)
-				{
-					const int32 cellX = tx * _tileWidth + ox;
-					const int32 cellY = ty * _tileHeight + oy;
+	// [x0,x1] x [y0,y1] (양끝 포함) 안의 막힌 셀 개수.
+	auto rectBlocked = [&](int32 x0, int32 y0, int32 x1, int32 y1) -> int32
+	{
+		return prefix[static_cast<size_t>(y1 + 1) * pw + (x1 + 1)]
+			- prefix[static_cast<size_t>(y0) * pw + (x1 + 1)]
+			- prefix[static_cast<size_t>(y1 + 1) * pw + x0]
+			+ prefix[static_cast<size_t>(y0) * pw + x0];
+	};
 
-					// 레벨 범위 밖 = 장애물
-					const bool blocked = (cellX >= cellWidth || cellY >= cellHeight)
-						|| (cells[static_cast<size_t>(cellY) * cellWidth + cellX] != 0);
+	for (int32 y = 0; y < _height; y++)
+	{
+		for (int32 x = 0; x < _width; x++)
+		{
+			// MoveMath::BoxBlockedCells 와 정확히 같은 앵커 : 중심 - box/2, 폭 box (짝수는 우/하로 한 칸 편향).
+			const int32 minX = x - boxW / 2;
+			const int32 maxX = minX + boxW - 1;
+			const int32 minY = y - boxH / 2;
+			const int32 maxY = minY + boxH - 1;
 
-					if (blocked)
-					{
-						walkable = false;
-						break;
-					}
-				}
-			}
+			bool walkable;
+			if (minX < 0 || minY < 0 || maxX >= _width || maxY >= _height)
+				walkable = false;	// 박스가 맵 밖으로 걸침 = 벽 (레벨 경계 = 장애물)
+			else
+				walkable = (rectBlocked(minX, minY, maxX, maxY) == 0);
 
-			_walkable[static_cast<size_t>(ty) * _width + tx] = walkable ? 1 : 0;
+			_walkable[static_cast<size_t>(y) * _width + x] = walkable ? 1 : 0;
 		}
 	}
 }
@@ -65,20 +87,12 @@ TilePos NavGrid::FromIndex(int32 index) const
 	return pos;
 }
 
-TilePos NavGrid::CellToTile(int32 cellX, int32 cellY) const
-{
-	TilePos pos;
-	pos.x = cellX / _tileWidth;
-	pos.y = cellY / _tileHeight;
-
-	return pos;
-}
-
 Protocol::Vector2 NavGrid::TileToCellCenter(TilePos tile) const
 {
+	// 셀 격자라 항등.
 	Protocol::Vector2 pos;
-	pos.set_x(tile.x * _tileWidth + _tileWidth / 2);
-	pos.set_y(tile.y * _tileHeight + _tileHeight / 2);
+	pos.set_x(tile.x);
+	pos.set_y(tile.y);
 
 	return pos;
 }

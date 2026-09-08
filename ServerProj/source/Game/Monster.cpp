@@ -26,8 +26,7 @@ void Monster::SetMonsterType(Protocol::MonsterType type)
 
 	const MonsterDef& def = MonsterData::Get().Find(type);
 
-	SetFootprint(def.footprintTiles, 1);					// 길찾기 NavGrid 번들링 (타일)
-	SetCollisionBox(def.collisionCells, def.collisionCells);	// 벽 충돌 박스 (셀, 위치 중심)
+	SetCollisionBox(def.collisionCells, def.collisionCells);	// 벽 충돌 박스 (셀, 위치 중심) + 길찾기 팽창 기준
 	SetRadius(def.radius);								// 원형 충돌 반경 (투사체 명중 / 쿼드트리)
 	SetMaxHp(def.maxHp);
 	SetHp(def.maxHp);

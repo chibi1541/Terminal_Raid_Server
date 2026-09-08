@@ -58,11 +58,11 @@ bool Level::LoadFromFile(const WCHAR* path)
 	_height = height;
 	_tileSize = tileSize;
 	_cells = std::move(cells);
-	_navGrid.Build(_cells, _width, _height, _tileSize, _tileSize);
+	_navGrid.Build(_cells, _width, _height, 1, 1);	// 기본 격자 = 원시 셀 통행맵. 액터별 박스 격자는 GetNavGridForCollisionBox.
 
-	LOG_INFO(L"[level] loaded %s (id=%s) : %d x %d cells, tileSize %d -> %d x %d tiles",
+	LOG_INFO(L"[level] loaded %s (id=%s) : %d x %d cells (nav grid = cell space)",
 		path, _levelId.empty() ? L"(none)" : _levelId.c_str(),
-		_width, _height, _tileSize, _navGrid.GetWidth(), _navGrid.GetHeight());
+		_width, _height);
 
 	return true;
 }
@@ -90,10 +90,9 @@ void Level::BuildEmpty(int32 width, int32 height, int32 tileSize)
 		_cells[static_cast<size_t>(y) * _width + (_width - 1)] = 1;
 	}
 
-	_navGrid.Build(_cells, _width, _height, _tileSize, _tileSize);
+	_navGrid.Build(_cells, _width, _height, 1, 1);
 
-	LOG_WARN(L"[level] built empty fallback : %d x %d cells -> %d x %d tiles",
-		_width, _height, _navGrid.GetWidth(), _navGrid.GetHeight());
+	LOG_WARN(L"[level] built empty fallback : %d x %d cells", _width, _height);
 }
 
 bool Level::IsCellBlocked(int32 x, int32 y) const
@@ -104,24 +103,23 @@ bool Level::IsCellBlocked(int32 x, int32 y) const
 	return _cells[static_cast<size_t>(y) * _width + x] != 0;
 }
 
-const NavGrid& Level::GetNavGridForFootprint(int32 footprintTilesWide, int32 footprintTilesHigh)
+const NavGrid& Level::GetNavGridForCollisionBox(int32 cellsWide, int32 cellsHigh)
 {
-	footprintTilesWide = (footprintTilesWide > 0) ? footprintTilesWide : 1;
-	footprintTilesHigh = (footprintTilesHigh > 0) ? footprintTilesHigh : 1;
+	cellsWide = (cellsWide > 0) ? cellsWide : 1;
+	cellsHigh = (cellsHigh > 0) ? cellsHigh : 1;
 
-	if (footprintTilesWide == 1 && footprintTilesHigh == 1)
+	if (cellsWide == 1 && cellsHigh == 1)
 		return _navGrid;
 
-	const uint64 key = (static_cast<uint64>(footprintTilesWide) << 32)
-		| static_cast<uint32>(footprintTilesHigh);
+	const uint64 key = (static_cast<uint64>(cellsWide) << 32) | static_cast<uint32>(cellsHigh);
 
-	auto it = _footprintNavGrids.find(key);
-	if (it != _footprintNavGrids.end())
+	auto it = _navGridCache.find(key);
+	if (it != _navGridCache.end())
 		return it->second;
 
+	// 액터 충돌 박스로 장애물을 팽창시켜 구운 셀 격자. 요약면적표라 박스 크기와 무관하게 O(cells).
 	NavGrid grid;
-	grid.Build(_cells, _width, _height,
-		_tileSize * footprintTilesWide, _tileSize * footprintTilesHigh);
+	grid.Build(_cells, _width, _height, cellsWide, cellsHigh);
 
-	return _footprintNavGrids.emplace(key, std::move(grid)).first->second;
+	return _navGridCache.emplace(key, std::move(grid)).first->second;
 }

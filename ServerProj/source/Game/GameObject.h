@@ -140,19 +140,9 @@ public:
 	void SetRadius(int32 radius)				{ _radius = (radius >= 0) ? radius : 0; }
 	void ClearRoom()							{ _room.reset(); }
 
-	// 길찾기용 풋프린트. "맵 타일" 단위 (Level::_tileSize 가 정의하는 그 타일).
-	// 원형 충돌/쿼드트리에 쓰는 _radius 와는 별개 - 길찾기 샘플링 단위만 바꾼다.
-	// 기본 1x1 = Level 이 원래 굽는 기본 NavGrid 그대로.
-	int32 GetFootprintTilesWide() const	{ return _footprintTilesWide; }
-	int32 GetFootprintTilesHigh() const	{ return _footprintTilesHigh; }
-	void SetFootprint(int32 tilesWide, int32 tilesHigh)
-	{
-		_footprintTilesWide = (tilesWide > 0) ? tilesWide : 1;
-		_footprintTilesHigh = (tilesHigh > 0) ? tilesHigh : 1;
-	}
-
 	// 벽 충돌 박스. "셀" 단위 (타일 아님), 위치가 중심. 스프라이트 전체를 덮는다.
-	// Room::IsActorBoxBlocked / 클라 예측이 이 값으로 MoveMath::BoxBlockedCells 를 부른다.
+	// Room::IsActorBoxBlocked / 클라 예측이 이 값으로 MoveMath::BoxBlockedCells 를 부르고,
+	// 길찾기 NavGrid(Level::GetNavGridForCollisionBox)도 이 박스로 장애물을 팽창시킨다 - 이동/길찾기 단일 기준.
 	// 기본 1x1 = 선 셀 한 칸 (기존 동작).
 	int32 GetCollisionCellsWide() const	{ return _collisionCellsWide; }
 	int32 GetCollisionCellsHigh() const	{ return _collisionCellsHigh; }
@@ -205,8 +195,6 @@ private:
 	int32					_hp = 100;
 	int32					_maxHp = 100;
 	int32					_attackPower = 0;
-	int32					_footprintTilesWide = 1;
-	int32					_footprintTilesHigh = 1;
 	int32					_collisionCellsWide = 1;
 	int32					_collisionCellsHigh = 1;
 	uint64					_stunUntilTick = 0;

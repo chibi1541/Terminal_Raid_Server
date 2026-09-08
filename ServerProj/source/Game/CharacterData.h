@@ -21,8 +21,7 @@ struct CharacterDef
 
 	std::string	animClip = "Knight";	// 서버는 안 쓴다 (클라 재생용). 로그/디버그에만.
 
-	int32	footprintTiles = 2;		// 길찾기 NavGrid 번들링 (타일).
-	int32	collisionCells = 8;		// 벽 충돌 박스 한 변 (셀, 위치 중심). 스프라이트 8x8.
+	int32	collisionCells = 8;		// 벽 충돌 박스 한 변 (셀, 위치 중심). 스프라이트 8x8. 이동 충돌 + 길찾기 팽창 공용.
 	int32	radius = 2;				// 원형 충돌 반경 (셀). 투사체 명중 / 쿼드트리.
 	int32	maxHp = 100;
 	int32	attackPower = 10;

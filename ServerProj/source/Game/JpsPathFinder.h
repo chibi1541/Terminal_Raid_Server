@@ -19,7 +19,7 @@ class JpsPathFinder
 	{
 		COST_STRAIGHT		= 10,
 		COST_DIAGONAL		= 14,	// √2의 정수 근사. float를 피해 힙 비교를 정확하게 유지한다
-		DEFAULT_MAX_NODE	= 1024,
+		DEFAULT_MAX_NODE	= 8192,	// 셀 공간 격자(380x280) - 긴/미로형 경로 확장 여유
 	};
 
 public:

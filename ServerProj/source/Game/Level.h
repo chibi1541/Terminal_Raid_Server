@@ -44,18 +44,19 @@ public:
 
 	const NavGrid&	GetNavGrid() const { return _navGrid; }
 
-	// footprintTilesWide/High : 액터가 차지하는 맵 타일 개수 (1,1 = 기본 grid 그대로 반환).
-	// 처음 요청받은 크기만 그때 구워서 캐싱한다. 몬스터 타입이 몇 종류 안 되므로 상한을 두지 않는다.
-	const NavGrid&	GetNavGridForFootprint(int32 footprintTilesWide, int32 footprintTilesHigh);
+	// cellsWide/High : 이 격자를 쓸 액터의 충돌 박스 한 변(셀). (1,1 = 기본 grid = 원시 셀맵).
+	// 셀 (x,y) walkable = 그 셀에 박스를 놓았을 때 벽에 안 걸림 (= MoveMath::BoxBlockedCells).
+	// 처음 요청받은 크기만 그때 구워서 캐싱한다. 액터 타입이 몇 종류 안 되므로 상한을 두지 않는다.
+	const NavGrid&	GetNavGridForCollisionBox(int32 cellsWide, int32 cellsHigh);
 
 private:
 	std::wstring	_levelId;
 	int32			_width = 0;
 	int32			_height = 0;
-	int32			_tileSize = 3;
+	int32			_tileSize = 3;	// S_DEBUG_LEVEL 전송용. 길찾기에선 미사용 (셀 공간 전환).
 	Vector<uint8>	_cells;		// 0 = 통행 가능, 1 = 장애물
 	NavGrid			_navGrid;
 
-	// 풋프린트별로 구운 NavGrid 캐시. 키 = (footprintTilesWide << 32) | footprintTilesHigh.
-	HashMap<uint64, NavGrid>	_footprintNavGrids;
+	// 충돌 박스 크기별로 구운 NavGrid 캐시. 키 = (cellsWide << 32) | cellsHigh.
+	HashMap<uint64, NavGrid>	_navGridCache;
 };

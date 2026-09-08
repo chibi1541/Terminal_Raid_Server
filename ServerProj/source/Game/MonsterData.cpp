@@ -55,7 +55,6 @@ bool MonsterData::LoadFromFile(const WCHAR* path)
 
 		def.animClip = ToNarrow(node.GetStringAttr(L"animClip", L"Zombie"));
 		def.aiTree = ToNarrow(node.GetStringAttr(L"aiTree", L"monster_basic"));
-		def.footprintTiles = node.GetInt32Attr(L"footprintTiles", 2);
 		def.collisionCells = node.GetInt32Attr(L"collisionCells", 8);
 		def.radius = node.GetInt32Attr(L"radius", 4);
 		def.maxHp = node.GetInt32Attr(L"maxHp", 60);

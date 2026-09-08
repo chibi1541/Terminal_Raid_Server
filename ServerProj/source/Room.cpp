@@ -487,12 +487,9 @@ void Room::UpdateMovement()
 		// 경로 추종 : 현재 웨이포인트에 닿았으면 다음으로, dir 을 웨이포인트 방향에 맞춘다.
 		if (m.HasPath())
 		{
-			// 이 경로는 이 액터의 풋프린트로 구운 NavGrid 기준으로 짜였다.
-			// 웨이포인트 중심 좌표도 반드시 같은 grid 로 뽑아야 어긋나지 않는다.
-			const NavGrid& grid = _level.GetNavGridForFootprint(
-				object->GetFootprintTilesWide(), object->GetFootprintTilesHigh());
-
-			Protocol::Vector2 wp = grid.TileToCellCenter(m.path[m.pathIndex]);
+			// path 원소는 이제 셀 좌표 그대로 (NavGrid 가 셀 공간).
+			auto toCell = [](const TilePos& t) { Protocol::Vector2 v; v.set_x(t.x); v.set_y(t.y); return v; };
+			Protocol::Vector2 wp = toCell(m.path[m.pathIndex]);
 
 			if (object->GetPosX() == wp.x() && object->GetPosY() == wp.y())
 			{
@@ -508,7 +505,7 @@ void Room::UpdateMovement()
 					continue;
 				}
 
-				wp = grid.TileToCellCenter(m.path[m.pathIndex]);
+				wp = toCell(m.path[m.pathIndex]);
 
 				// 웨이포인트 전진 - 디버그 오버레이의 "현재 목표"를 갱신한다. (매 틱이 아님)
 				BroadcastDebugPath(object, /*cleared*/ false, /*includeSearchNodes*/ false);
@@ -747,17 +744,18 @@ bool Room::OrderMoveTo(uint64 objectId, int32 cellX, int32 cellY)
 	if (object == nullptr)
 		return false;
 
-	const NavGrid& grid = _level.GetNavGridForFootprint(
-		object->GetFootprintTilesWide(), object->GetFootprintTilesHigh());
+	// 이 액터의 충돌 박스로 팽창시켜 구운 셀 격자. 이동 충돌(IsActorBoxBlocked)과 완전히 같은 통행 판정.
+	const NavGrid& grid = _level.GetNavGridForCollisionBox(
+		object->GetCollisionCellsWide(), object->GetCollisionCellsHigh());
 
-	const TilePos startTile = grid.CellToTile(object->GetPosX(), object->GetPosY());
-	const TilePos goalTile  = grid.CellToTile(cellX, cellY);
+	const TilePos startCell{ object->GetPosX(), object->GetPosY() };
+	const TilePos goalCell{ cellX, cellY };
 
 	TilePos snappedStart;
 	TilePos snappedGoal;
-	if (grid.FindNearestWalkable(startTile, SNAP_MAX_RADIUS, OUT snappedStart) == false)
+	if (grid.FindNearestWalkable(startCell, SNAP_MAX_RADIUS, OUT snappedStart) == false)
 		return false;
-	if (grid.FindNearestWalkable(goalTile, SNAP_MAX_RADIUS, OUT snappedGoal) == false)
+	if (grid.FindNearestWalkable(goalCell, SNAP_MAX_RADIUS, OUT snappedGoal) == false)
 		return false;
 
 	MovementComponent& m = object->Movement();
@@ -849,8 +847,6 @@ void Room::BroadcastDebugPath(GameObject* object, bool cleared, bool includeSear
 		return;
 
 	const MovementComponent& m = object->Movement();
-	const NavGrid& grid = _level.GetNavGridForFootprint(
-		object->GetFootprintTilesWide(), object->GetFootprintTilesHigh());
 
 	Protocol::S_DEBUG_PATH pkt;
 	pkt.set_objectid(object->GetObjId());
@@ -859,12 +855,17 @@ void Room::BroadcastDebugPath(GameObject* object, bool cleared, bool includeSear
 
 	if (cleared == false)
 	{
-		for (const TilePos& tile : m.path)
+		// path 원소는 이제 셀 좌표. 셀 격자라 경로가 최대 ~맵 폭(수백 칸)까지 늘 수 있어
+		// 청크 제한(클라 RecvBuffer 4096) 안에 들어가도록 다운샘플한다 (양끝 + 현재 인덱스는 유지).
+		const int32 count = static_cast<int32>(m.path.size());
+		const int32 stride = (count > 400) ? ((count / 400) + 1) : 1;
+		for (int32 i = 0; i < count; i++)
 		{
-			const Protocol::Vector2 c = grid.TileToCellCenter(tile);
+			if (i % stride != 0 && i != count - 1 && i != m.pathIndex)
+				continue;
 			Protocol::Vector2* out = pkt.add_waypoints()->mutable_cell();
-			out->set_x(c.x());
-			out->set_y(c.y());
+			out->set_x(m.path[i].x);
+			out->set_y(m.path[i].y);
 		}
 	}
 
@@ -876,10 +877,9 @@ void Room::BroadcastDebugPath(GameObject* object, bool cleared, bool includeSear
 		{
 			if (emitted++ >= 400)
 				break;
-			const Protocol::Vector2 c = grid.TileToCellCenter(tile);
 			Protocol::Vector2* out = pkt.add_searchnodes()->mutable_cell();
-			out->set_x(c.x());
-			out->set_y(c.y());
+			out->set_x(tile.x);
+			out->set_y(tile.y);
 		}
 	}
 

@@ -23,13 +23,9 @@ namespace MoveMath
 	constexpr int32_t DIAG_NUM = 181;
 	constexpr int32_t DIAG_DEN = 256;
 
-	// 플레이어가 차지하는 타일 수 (가로 x 세로). ★ 길찾기 NavGrid 번들링 전용 ★
-	// (Level::GetNavGridForFootprint). 벽 충돌 박스는 아래 PLAYER_COLLISION_CELLS_* 를 쓴다.
-	constexpr int32_t PLAYER_FOOTPRINT_TILES_WIDE = 2;
-	constexpr int32_t PLAYER_FOOTPRINT_TILES_HIGH = 1;
-
 	// 액터-벽 충돌 박스 (셀 단위, 캐릭터 위치가 중심). 스프라이트 전체를 덮는다.
-	// 풋프린트-타일과 달리 tileSize 를 곱하지 않는다 - 서버/클라 tileSize 개념 차이에 안 흔들리게.
+	// 이동 충돌(BoxBlockedCells)과 길찾기 장애물 팽창(서버 Level::GetNavGridForCollisionBox)의
+	// 공용 단일 기준. tileSize 를 곱하지 않는다 - 서버/클라 tileSize 개념 차이에 안 흔들리게.
 	// 플레이어 스프라이트는 8x8 셀.
 	constexpr int32_t PLAYER_COLLISION_CELLS_WIDE = 8;
 	constexpr int32_t PLAYER_COLLISION_CELLS_HIGH = 8;

@@ -24,7 +24,6 @@ void Player::SetCharacterType(Protocol::CharacterType type)
 
 	const CharacterDef& def = CharacterData::Get().Find(type);
 
-	SetFootprint(def.footprintTiles, 1);	// 길찾기 NavGrid 번들링 (타일)
 	SetRadius(def.radius);				// 원형 충돌 반경 (투사체 명중 / 쿼드트리)
 	SetMaxHp(def.maxHp);
 	SetHp(def.maxHp);

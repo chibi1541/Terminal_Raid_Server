@@ -54,7 +54,6 @@ bool CharacterData::LoadFromFile(const WCHAR* path)
 			continue;
 
 		def.animClip = ToNarrow(node.GetStringAttr(L"animClip", L"Knight"));
-		def.footprintTiles = node.GetInt32Attr(L"footprintTiles", 2);
 		def.collisionCells = node.GetInt32Attr(L"collisionCells", 8);
 		def.radius = node.GetInt32Attr(L"radius", 2);
 		def.maxHp = node.GetInt32Attr(L"maxHp", 100);
