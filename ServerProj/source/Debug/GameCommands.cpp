@@ -653,8 +653,8 @@ void GameCommands::Register()
 				context.Reply(L"level load failed, fell back to empty map. check the log");
 		}, CommandRunMode::GameThread);
 
-	GCommandRegistry->Register(L"path", L"path <startTileX> <startTileY> [objectId]",
-		L"find a path from a tile to a player using JPS (first player if objectId omitted)",
+	GCommandRegistry->Register(L"path", L"path <startCellX> <startCellY> [objectId]",
+		L"find a path from a cell to a player using JPS (first player if objectId omitted)",
 		[](CommandContext& context)
 		{
 			if (GRoom == nullptr)
@@ -670,7 +670,7 @@ void GameCommands::Register()
 				ParseInt32(context.Arg(1), OUT startX) == false ||
 				ParseInt32(context.Arg(2), OUT startY) == false)
 			{
-				context.Reply(L"usage : path <startTileX> <startTileY> [objectId]");
+				context.Reply(L"usage : path <startCellX> <startCellY> [objectId]");
 				return;
 			}
 
@@ -724,7 +724,7 @@ void GameCommands::Register()
 			}
 
 			WCHAR buffer[256];
-			::swprintf_s(buffer, L"path %d tiles, jump points %d taken / %d opened, expanded %d nodes, %.1f us",
+			::swprintf_s(buffer, L"path %d cells, jump points %d taken / %d opened, expanded %d nodes, %.1f us",
 				static_cast<int32>(path.size()), GRoom->GetLastPathJumpPointCount(),
 				GRoom->GetLastOpenedCount(), GRoom->GetLastExpandedCount(), elapsedUs);
 
@@ -734,12 +734,12 @@ void GameCommands::Register()
 			// 안 그러면 요청한 좌표와 결과가 달라 보여 알고리즘을 의심하게 된다.
 			if (usedStart != rawStart)
 			{
-				::swprintf_s(buffer, L"\nstart (%d, %d) -> (%d, %d) snapped (requested tile is blocked)",
+				::swprintf_s(buffer, L"\nstart (%d, %d) -> (%d, %d) snapped (requested cell is blocked)",
 					rawStart.x, rawStart.y, usedStart.x, usedStart.y);
 				header += buffer;
 			}
 
-			::swprintf_s(buffer, L"\ngoal  objectId %llu -> tile (%d, %d)",
+			::swprintf_s(buffer, L"\ngoal  objectId %llu -> cell (%d, %d)",
 				targetId, usedGoal.x, usedGoal.y);
 			header += buffer;
 

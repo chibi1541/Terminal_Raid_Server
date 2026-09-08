@@ -157,10 +157,12 @@ message DebugPathNode
 message S_DEBUG_PATH
 {
 	uint64 objectId = 1;
-	repeated DebugPathNode waypoints = 2;	// m.path 타일들의 셀 중심. 비어 있으면 경로 없음
+	repeated DebugPathNode waypoints = 2;	// m.path 셀들. 비어 있으면 경로 없음
 	uint32 currentIndex = 3;					// m.pathIndex (지금 향하는 웨이포인트)
-	repeated DebugPathNode searchNodes = 4;	// JPS 가 open 에 넣은 점프 포인트 (goto·path 명령 때만)
+	repeated DebugPathNode searchNodes = 4;	// JPS 가 open 에 넣은 점프 포인트 (탐색 흔적)
 	bool cleared = 5;						// 경로 종료 통지
+	uint32 boxCells = 6;					// 이 경로를 구운 액터의 충돌 박스 한 변(셀). 길찾기 팽창 = 이동 충돌 박스와 동일
+	repeated DebugPathNode pathJumpNodes = 7;	// 최종 경로가 지나는 점프 포인트 (start..goal)
 }
 
 // 클라 -> 서버 : 공격(발사) 요청.

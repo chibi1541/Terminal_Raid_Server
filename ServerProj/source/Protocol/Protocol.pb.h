@@ -3464,9 +3464,11 @@ class S_DEBUG_PATH final :
   enum : int {
     kWaypointsFieldNumber = 2,
     kSearchNodesFieldNumber = 4,
+    kPathJumpNodesFieldNumber = 7,
     kObjectIdFieldNumber = 1,
     kCurrentIndexFieldNumber = 3,
     kClearedFieldNumber = 5,
+    kBoxCellsFieldNumber = 6,
   };
   // repeated .Protocol.DebugPathNode waypoints = 2;
   int waypoints_size() const;
@@ -3504,6 +3506,24 @@ class S_DEBUG_PATH final :
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Protocol::DebugPathNode >&
       searchnodes() const;
 
+  // repeated .Protocol.DebugPathNode pathJumpNodes = 7;
+  int pathjumpnodes_size() const;
+  private:
+  int _internal_pathjumpnodes_size() const;
+  public:
+  void clear_pathjumpnodes();
+  ::Protocol::DebugPathNode* mutable_pathjumpnodes(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Protocol::DebugPathNode >*
+      mutable_pathjumpnodes();
+  private:
+  const ::Protocol::DebugPathNode& _internal_pathjumpnodes(int index) const;
+  ::Protocol::DebugPathNode* _internal_add_pathjumpnodes();
+  public:
+  const ::Protocol::DebugPathNode& pathjumpnodes(int index) const;
+  ::Protocol::DebugPathNode* add_pathjumpnodes();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Protocol::DebugPathNode >&
+      pathjumpnodes() const;
+
   // uint64 objectId = 1;
   void clear_objectid();
   uint64_t objectid() const;
@@ -3531,6 +3551,15 @@ class S_DEBUG_PATH final :
   void _internal_set_cleared(bool value);
   public:
 
+  // uint32 boxCells = 6;
+  void clear_boxcells();
+  uint32_t boxcells() const;
+  void set_boxcells(uint32_t value);
+  private:
+  uint32_t _internal_boxcells() const;
+  void _internal_set_boxcells(uint32_t value);
+  public:
+
   // @@protoc_insertion_point(class_scope:Protocol.S_DEBUG_PATH)
  private:
   class _Internal;
@@ -3541,9 +3570,11 @@ class S_DEBUG_PATH final :
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Protocol::DebugPathNode > waypoints_;
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Protocol::DebugPathNode > searchnodes_;
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Protocol::DebugPathNode > pathjumpnodes_;
     uint64_t objectid_;
     uint32_t currentindex_;
     bool cleared_;
+    uint32_t boxcells_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -5762,6 +5793,66 @@ inline void S_DEBUG_PATH::_internal_set_cleared(bool value) {
 inline void S_DEBUG_PATH::set_cleared(bool value) {
   _internal_set_cleared(value);
   // @@protoc_insertion_point(field_set:Protocol.S_DEBUG_PATH.cleared)
+}
+
+// uint32 boxCells = 6;
+inline void S_DEBUG_PATH::clear_boxcells() {
+  _impl_.boxcells_ = 0u;
+}
+inline uint32_t S_DEBUG_PATH::_internal_boxcells() const {
+  return _impl_.boxcells_;
+}
+inline uint32_t S_DEBUG_PATH::boxcells() const {
+  // @@protoc_insertion_point(field_get:Protocol.S_DEBUG_PATH.boxCells)
+  return _internal_boxcells();
+}
+inline void S_DEBUG_PATH::_internal_set_boxcells(uint32_t value) {
+  
+  _impl_.boxcells_ = value;
+}
+inline void S_DEBUG_PATH::set_boxcells(uint32_t value) {
+  _internal_set_boxcells(value);
+  // @@protoc_insertion_point(field_set:Protocol.S_DEBUG_PATH.boxCells)
+}
+
+// repeated .Protocol.DebugPathNode pathJumpNodes = 7;
+inline int S_DEBUG_PATH::_internal_pathjumpnodes_size() const {
+  return _impl_.pathjumpnodes_.size();
+}
+inline int S_DEBUG_PATH::pathjumpnodes_size() const {
+  return _internal_pathjumpnodes_size();
+}
+inline void S_DEBUG_PATH::clear_pathjumpnodes() {
+  _impl_.pathjumpnodes_.Clear();
+}
+inline ::Protocol::DebugPathNode* S_DEBUG_PATH::mutable_pathjumpnodes(int index) {
+  // @@protoc_insertion_point(field_mutable:Protocol.S_DEBUG_PATH.pathJumpNodes)
+  return _impl_.pathjumpnodes_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Protocol::DebugPathNode >*
+S_DEBUG_PATH::mutable_pathjumpnodes() {
+  // @@protoc_insertion_point(field_mutable_list:Protocol.S_DEBUG_PATH.pathJumpNodes)
+  return &_impl_.pathjumpnodes_;
+}
+inline const ::Protocol::DebugPathNode& S_DEBUG_PATH::_internal_pathjumpnodes(int index) const {
+  return _impl_.pathjumpnodes_.Get(index);
+}
+inline const ::Protocol::DebugPathNode& S_DEBUG_PATH::pathjumpnodes(int index) const {
+  // @@protoc_insertion_point(field_get:Protocol.S_DEBUG_PATH.pathJumpNodes)
+  return _internal_pathjumpnodes(index);
+}
+inline ::Protocol::DebugPathNode* S_DEBUG_PATH::_internal_add_pathjumpnodes() {
+  return _impl_.pathjumpnodes_.Add();
+}
+inline ::Protocol::DebugPathNode* S_DEBUG_PATH::add_pathjumpnodes() {
+  ::Protocol::DebugPathNode* _add = _internal_add_pathjumpnodes();
+  // @@protoc_insertion_point(field_add:Protocol.S_DEBUG_PATH.pathJumpNodes)
+  return _add;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Protocol::DebugPathNode >&
+S_DEBUG_PATH::pathjumpnodes() const {
+  // @@protoc_insertion_point(field_list:Protocol.S_DEBUG_PATH.pathJumpNodes)
+  return _impl_.pathjumpnodes_;
 }
 
 // -------------------------------------------------------------------

@@ -302,9 +302,11 @@ PROTOBUF_CONSTEXPR S_DEBUG_PATH::S_DEBUG_PATH(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.waypoints_)*/{}
   , /*decltype(_impl_.searchnodes_)*/{}
+  , /*decltype(_impl_.pathjumpnodes_)*/{}
   , /*decltype(_impl_.objectid_)*/uint64_t{0u}
   , /*decltype(_impl_.currentindex_)*/0u
   , /*decltype(_impl_.cleared_)*/false
+  , /*decltype(_impl_.boxcells_)*/0u
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct S_DEBUG_PATHDefaultTypeInternal {
   PROTOBUF_CONSTEXPR S_DEBUG_PATHDefaultTypeInternal()
@@ -545,6 +547,8 @@ const uint32_t TableStruct_Protocol_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE
   PROTOBUF_FIELD_OFFSET(::Protocol::S_DEBUG_PATH, _impl_.currentindex_),
   PROTOBUF_FIELD_OFFSET(::Protocol::S_DEBUG_PATH, _impl_.searchnodes_),
   PROTOBUF_FIELD_OFFSET(::Protocol::S_DEBUG_PATH, _impl_.cleared_),
+  PROTOBUF_FIELD_OFFSET(::Protocol::S_DEBUG_PATH, _impl_.boxcells_),
+  PROTOBUF_FIELD_OFFSET(::Protocol::S_DEBUG_PATH, _impl_.pathjumpnodes_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::Protocol::C_ATTACK, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -597,9 +601,9 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 146, -1, -1, sizeof(::Protocol::S_DEBUG_LEVEL)},
   { 158, -1, -1, sizeof(::Protocol::DebugPathNode)},
   { 165, -1, -1, sizeof(::Protocol::S_DEBUG_PATH)},
-  { 176, -1, -1, sizeof(::Protocol::C_ATTACK)},
-  { 185, -1, -1, sizeof(::Protocol::DebugRect)},
-  { 195, -1, -1, sizeof(::Protocol::S_DEBUG_QUADTREE)},
+  { 178, -1, -1, sizeof(::Protocol::C_ATTACK)},
+  { 187, -1, -1, sizeof(::Protocol::DebugRect)},
+  { 197, -1, -1, sizeof(::Protocol::S_DEBUG_QUADTREE)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -664,20 +668,21 @@ const char descriptor_table_protodef_Protocol_2eproto[] PROTOBUF_SECTION_VARIABL
   "\r\n\005width\030\001 \001(\r\022\016\n\006height\030\002 \001(\r\022\020\n\010tileSi"
   "ze\030\003 \001(\r\022\020\n\010startRow\030\004 \001(\r\022\020\n\010rowCount\030\005"
   " \001(\r\022\023\n\013blockedBits\030\006 \001(\014\"0\n\rDebugPathNo"
-  "de\022\037\n\004cell\030\001 \001(\0132\021.Protocol.Vector2\"\241\001\n\014"
+  "de\022\037\n\004cell\030\001 \001(\0132\021.Protocol.Vector2\"\343\001\n\014"
   "S_DEBUG_PATH\022\020\n\010objectId\030\001 \001(\004\022*\n\twaypoi"
   "nts\030\002 \003(\0132\027.Protocol.DebugPathNode\022\024\n\014cu"
   "rrentIndex\030\003 \001(\r\022,\n\013searchNodes\030\004 \003(\0132\027."
-  "Protocol.DebugPathNode\022\017\n\007cleared\030\005 \001(\010\""
-  "k\n\010C_ATTACK\022\"\n\007aimCell\030\001 \001(\0132\021.Protocol."
-  "Vector2\022%\n\nmuzzleCell\030\002 \001(\0132\021.Protocol.V"
-  "ector2\022\024\n\014clientTimeMs\030\003 \001(\r\"C\n\tDebugRec"
-  "t\022\014\n\004minX\030\001 \001(\005\022\014\n\004minY\030\002 \001(\005\022\014\n\004maxX\030\003 "
-  "\001(\005\022\014\n\004maxY\030\004 \001(\005\"\215\001\n\020S_DEBUG_QUADTREE\022\""
-  "\n\005nodes\030\001 \003(\0132\023.Protocol.DebugRect\022\023\n\013ob"
-  "jectCount\030\002 \001(\r\022\023\n\013buildMicros\030\003 \001(\r\022\027\n\017"
-  "collisionMicros\030\004 \001(\r\022\022\n\nserverTick\030\005 \001("
-  "\rb\006proto3"
+  "Protocol.DebugPathNode\022\017\n\007cleared\030\005 \001(\010\022"
+  "\020\n\010boxCells\030\006 \001(\r\022.\n\rpathJumpNodes\030\007 \003(\013"
+  "2\027.Protocol.DebugPathNode\"k\n\010C_ATTACK\022\"\n"
+  "\007aimCell\030\001 \001(\0132\021.Protocol.Vector2\022%\n\nmuz"
+  "zleCell\030\002 \001(\0132\021.Protocol.Vector2\022\024\n\014clie"
+  "ntTimeMs\030\003 \001(\r\"C\n\tDebugRect\022\014\n\004minX\030\001 \001("
+  "\005\022\014\n\004minY\030\002 \001(\005\022\014\n\004maxX\030\003 \001(\005\022\014\n\004maxY\030\004 "
+  "\001(\005\"\215\001\n\020S_DEBUG_QUADTREE\022\"\n\005nodes\030\001 \003(\0132"
+  "\023.Protocol.DebugRect\022\023\n\013objectCount\030\002 \001("
+  "\r\022\023\n\013buildMicros\030\003 \001(\r\022\027\n\017collisionMicro"
+  "s\030\004 \001(\r\022\022\n\nserverTick\030\005 \001(\rb\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_Protocol_2eproto_deps[2] = {
   &::descriptor_table_Enum_2eproto,
@@ -685,7 +690,7 @@ static const ::_pbi::DescriptorTable* const descriptor_table_Protocol_2eproto_de
 };
 static ::_pbi::once_flag descriptor_table_Protocol_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_Protocol_2eproto = {
-    false, false, 1929, descriptor_table_protodef_Protocol_2eproto,
+    false, false, 1995, descriptor_table_protodef_Protocol_2eproto,
     "Protocol.proto",
     &descriptor_table_Protocol_2eproto_once, descriptor_table_Protocol_2eproto_deps, 2, 23,
     schemas, file_default_instances, TableStruct_Protocol_2eproto::offsets,
@@ -4822,15 +4827,17 @@ S_DEBUG_PATH::S_DEBUG_PATH(const S_DEBUG_PATH& from)
   new (&_impl_) Impl_{
       decltype(_impl_.waypoints_){from._impl_.waypoints_}
     , decltype(_impl_.searchnodes_){from._impl_.searchnodes_}
+    , decltype(_impl_.pathjumpnodes_){from._impl_.pathjumpnodes_}
     , decltype(_impl_.objectid_){}
     , decltype(_impl_.currentindex_){}
     , decltype(_impl_.cleared_){}
+    , decltype(_impl_.boxcells_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   ::memcpy(&_impl_.objectid_, &from._impl_.objectid_,
-    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.cleared_) -
-    reinterpret_cast<char*>(&_impl_.objectid_)) + sizeof(_impl_.cleared_));
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.boxcells_) -
+    reinterpret_cast<char*>(&_impl_.objectid_)) + sizeof(_impl_.boxcells_));
   // @@protoc_insertion_point(copy_constructor:Protocol.S_DEBUG_PATH)
 }
 
@@ -4841,9 +4848,11 @@ inline void S_DEBUG_PATH::SharedCtor(
   new (&_impl_) Impl_{
       decltype(_impl_.waypoints_){arena}
     , decltype(_impl_.searchnodes_){arena}
+    , decltype(_impl_.pathjumpnodes_){arena}
     , decltype(_impl_.objectid_){uint64_t{0u}}
     , decltype(_impl_.currentindex_){0u}
     , decltype(_impl_.cleared_){false}
+    , decltype(_impl_.boxcells_){0u}
     , /*decltype(_impl_._cached_size_)*/{}
   };
 }
@@ -4861,6 +4870,7 @@ inline void S_DEBUG_PATH::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
   _impl_.waypoints_.~RepeatedPtrField();
   _impl_.searchnodes_.~RepeatedPtrField();
+  _impl_.pathjumpnodes_.~RepeatedPtrField();
 }
 
 void S_DEBUG_PATH::SetCachedSize(int size) const {
@@ -4875,9 +4885,10 @@ void S_DEBUG_PATH::Clear() {
 
   _impl_.waypoints_.Clear();
   _impl_.searchnodes_.Clear();
+  _impl_.pathjumpnodes_.Clear();
   ::memset(&_impl_.objectid_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&_impl_.cleared_) -
-      reinterpret_cast<char*>(&_impl_.objectid_)) + sizeof(_impl_.cleared_));
+      reinterpret_cast<char*>(&_impl_.boxcells_) -
+      reinterpret_cast<char*>(&_impl_.objectid_)) + sizeof(_impl_.boxcells_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -4934,6 +4945,27 @@ const char* S_DEBUG_PATH::_InternalParse(const char* ptr, ::_pbi::ParseContext* 
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 40)) {
           _impl_.cleared_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // uint32 boxCells = 6;
+      case 6:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 48)) {
+          _impl_.boxcells_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // repeated .Protocol.DebugPathNode pathJumpNodes = 7;
+      case 7:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 58)) {
+          ptr -= 1;
+          do {
+            ptr += 1;
+            ptr = ctx->ParseMessage(_internal_add_pathjumpnodes(), ptr);
+            CHK_(ptr);
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<58>(ptr));
         } else
           goto handle_unusual;
         continue;
@@ -5000,6 +5032,20 @@ uint8_t* S_DEBUG_PATH::_InternalSerialize(
     target = ::_pbi::WireFormatLite::WriteBoolToArray(5, this->_internal_cleared(), target);
   }
 
+  // uint32 boxCells = 6;
+  if (this->_internal_boxcells() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(6, this->_internal_boxcells(), target);
+  }
+
+  // repeated .Protocol.DebugPathNode pathJumpNodes = 7;
+  for (unsigned i = 0,
+      n = static_cast<unsigned>(this->_internal_pathjumpnodes_size()); i < n; i++) {
+    const auto& repfield = this->_internal_pathjumpnodes(i);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+        InternalWriteMessage(7, repfield, repfield.GetCachedSize(), target, stream);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -5030,6 +5076,13 @@ size_t S_DEBUG_PATH::ByteSizeLong() const {
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
   }
 
+  // repeated .Protocol.DebugPathNode pathJumpNodes = 7;
+  total_size += 1UL * this->_internal_pathjumpnodes_size();
+  for (const auto& msg : this->_impl_.pathjumpnodes_) {
+    total_size +=
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+  }
+
   // uint64 objectId = 1;
   if (this->_internal_objectid() != 0) {
     total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_objectid());
@@ -5043,6 +5096,11 @@ size_t S_DEBUG_PATH::ByteSizeLong() const {
   // bool cleared = 5;
   if (this->_internal_cleared() != 0) {
     total_size += 1 + 1;
+  }
+
+  // uint32 boxCells = 6;
+  if (this->_internal_boxcells() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_boxcells());
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
@@ -5065,6 +5123,7 @@ void S_DEBUG_PATH::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::P
 
   _this->_impl_.waypoints_.MergeFrom(from._impl_.waypoints_);
   _this->_impl_.searchnodes_.MergeFrom(from._impl_.searchnodes_);
+  _this->_impl_.pathjumpnodes_.MergeFrom(from._impl_.pathjumpnodes_);
   if (from._internal_objectid() != 0) {
     _this->_internal_set_objectid(from._internal_objectid());
   }
@@ -5073,6 +5132,9 @@ void S_DEBUG_PATH::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::P
   }
   if (from._internal_cleared() != 0) {
     _this->_internal_set_cleared(from._internal_cleared());
+  }
+  if (from._internal_boxcells() != 0) {
+    _this->_internal_set_boxcells(from._internal_boxcells());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -5093,9 +5155,10 @@ void S_DEBUG_PATH::InternalSwap(S_DEBUG_PATH* other) {
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   _impl_.waypoints_.InternalSwap(&other->_impl_.waypoints_);
   _impl_.searchnodes_.InternalSwap(&other->_impl_.searchnodes_);
+  _impl_.pathjumpnodes_.InternalSwap(&other->_impl_.pathjumpnodes_);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(S_DEBUG_PATH, _impl_.cleared_)
-      + sizeof(S_DEBUG_PATH::_impl_.cleared_)
+      PROTOBUF_FIELD_OFFSET(S_DEBUG_PATH, _impl_.boxcells_)
+      + sizeof(S_DEBUG_PATH::_impl_.boxcells_)
       - PROTOBUF_FIELD_OFFSET(S_DEBUG_PATH, _impl_.objectid_)>(
           reinterpret_cast<char*>(&_impl_.objectid_),
           reinterpret_cast<char*>(&other->_impl_.objectid_));

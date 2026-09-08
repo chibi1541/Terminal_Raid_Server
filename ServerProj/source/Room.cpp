@@ -852,6 +852,8 @@ void Room::BroadcastDebugPath(GameObject* object, bool cleared, bool includeSear
 	pkt.set_objectid(object->GetObjId());
 	pkt.set_cleared(cleared);
 	pkt.set_currentindex(static_cast<uint32>(m.pathIndex));
+	// 이 경로를 구운 액터 충돌 박스 = 길찾기 장애물 팽창 = 이동 충돌 박스 (셀). 클라가 테두리로 그린다.
+	pkt.set_boxcells(static_cast<uint32>(object->GetCollisionCellsWide()));
 
 	if (cleared == false)
 	{
@@ -871,13 +873,21 @@ void Room::BroadcastDebugPath(GameObject* object, bool cleared, bool includeSear
 
 	if (includeSearchNodes)
 	{
-		// 청크 제한(클라 RecvBuffer 4096) 안에 들어가도록 상한을 둔다.
+		// JPS 탐색 흔적 (open 에 넣은 모든 점프 포인트). 청크 제한 안에 들도록 상한.
 		int32 emitted = 0;
 		for (const TilePos& tile : _pathFinder.GetLastOpenedJumpPoints())
 		{
 			if (emitted++ >= 400)
 				break;
 			Protocol::Vector2* out = pkt.add_searchnodes()->mutable_cell();
+			out->set_x(tile.x);
+			out->set_y(tile.y);
+		}
+
+		// 최종 경로가 실제로 지나는 점프 포인트 (start..goal). 클라가 오렌지 3x3 으로 강조.
+		for (const TilePos& tile : _pathFinder.GetLastPathJumpPoints())
+		{
+			Protocol::Vector2* out = pkt.add_pathjumpnodes()->mutable_cell();
 			out->set_x(tile.x);
 			out->set_y(tile.y);
 		}
