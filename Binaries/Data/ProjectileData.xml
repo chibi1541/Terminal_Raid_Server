@@ -1,0 +1,41 @@
+<ProjectileData defaultProjectile="Projectile_Pellet"
+                desc="투사체 정의. 서버-클라 공통. 원본은 여기, sync_projectile_data.py 로 클라에 복제.">
+
+	<!-- 투사체 한 종류.
+	     id                : Enum.proto 의 ProjectileType 값 이름 (ProjectileType_Parse 로 변환).
+	     animSet           : AnimationData.xml 의 Clip name (클립들이 모여있는 파일).
+	     animClip          : 그 파일 안 클립의 "논리 이름" (facing 접미사 없이).
+	     speedCellsPerSec  : 탄속 (셀/초).
+	     rangeCells        : 사정거리 (셀). 서버가 lifetime 을 여기서 파생.
+	     radius            : 충돌 반경 (셀). 1 = 지름 3 (3x3).
+	     damage            : 명중 시 대상에게 줄 피해.
+	     fireIntervalMs    : 이 투사체로 쏠 때 최소 발사 간격 (ms). 서버가 강제.
+	     spawnForwardCells : 발사 기준점(플레이어 몸통 중심)에서 조준 방향으로 이만큼 앞에서 스폰.
+	     ignoreWalls       : true 면 벽/프롭을 통과. 사거리/수명으로만 소멸. -->
+
+	<Projectile id="Projectile_ArcaneMote"
+	            animSet="Projectile" animClip="ArcaneMote"
+	            speedCellsPerSec="60" rangeCells="40" radius="1" damage="15"
+	            fireIntervalMs="250" spawnForwardCells="3" />
+				
+	<Projectile id="Projectile_Pellet"
+	            animSet="Projectile" animClip="Pellet"
+	            speedCellsPerSec="60" rangeCells="40" radius="1" damage="8"
+	            fireIntervalMs="250" spawnForwardCells="3" />
+				
+	<Projectile id="Projectile_EmberDot"
+	            animSet="Projectile" animClip="EmberDot"
+	            speedCellsPerSec="60" rangeCells="40" radius="1" damage="10"
+	            fireIntervalMs="250" spawnForwardCells="3" />
+				
+	<Projectile id="Projectile_Fire"
+	            animSet="Projectile" animClip="Fire"
+	            speedCellsPerSec="60" rangeCells="60" radius="4" damage="20"
+	            fireIntervalMs="250" spawnForwardCells="2" />
+
+	<Projectile id="Projectile_VoidSphere"
+	            animSet="Projectile" animClip="VoidSphere"
+	            speedCellsPerSec="40" rangeCells="80" radius="6" damage="30"
+	            fireIntervalMs="400" spawnForwardCells="4" ignoreWalls="true" />
+
+</ProjectileData>

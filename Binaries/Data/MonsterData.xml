@@ -1,0 +1,22 @@
+<MonsterData defaultMonster="Monster_Zombie"
+             desc="몬스터 정의. 서버-클라 공통. 원본은 여기, sync_actor_data.py 로 클라에 복제.">
+
+	<!-- id             : Enum.proto 의 MonsterType 값 이름 (MonsterType_Parse 로 변환).
+	     animClip       : AnimationData.xml 의 Clip / StateMachine name (클라 재생용).
+	     aiTree         : Data/AI/<이름>.canvas. spawnmonster 가 자동 부착. 빈 값이면 AI 없음.
+	     collisionCells : 벽 충돌 박스 한 변 (셀, 위치 중심 정사각). 스프라이트 전체를 덮게.
+	                      이동 충돌 + 길찾기 장애물 팽창 공용 기준 (Level::GetNavGridForCollisionBox).
+	     radius         : 원형 충돌 반경 (셀). 투사체 명중 판정 / 쿼드트리.
+	     maxHp          : 최대 체력.
+	     attackPower    : 공격력 (몬스터 투사체 / 근접 피해).
+	     moveSpeedCells : 이동 속도 (셀/초).
+	     hitStunMs      : 피격 경직 시간(ms). 0 = 경직 면역(보스). 클라 Hit 클립 길이에 맞춘다.
+	     deathFadeMs    : 사망 후 디스폰 지연(ms). Death 클립 재생 시간. 0 = 즉시 디스폰. -->
+	<Monster id="Monster_Zombie"      animClip="Zombie"      aiTree="monster_basic"
+	         collisionCells="16"  radius="8" maxHp="60"  attackPower="8"  moveSpeedCells="30"
+	         hitStunMs="350" deathFadeMs="600" />
+	<Monster id="Monster_Necromancer" animClip="Necromancer" aiTree="necromancer_boss"
+	         collisionCells="24" radius="12" maxHp="140" attackPower="16" moveSpeedCells="25"
+	         hitStunMs="0" deathFadeMs="900" />
+
+</MonsterData>
