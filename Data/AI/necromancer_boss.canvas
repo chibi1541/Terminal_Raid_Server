@@ -3,26 +3,35 @@
 		{
 			"id": "bb",
 			"type": "text",
-			"x": -1300,
-			"y": -600,
-			"width": 320,
-			"height": 200,
-			"text": "# Blackboard\n\n- burstIndex: 0\n- burstTimer: 0.0\n- idleTimer: 0.0\n- targetId: 0"
+			"x": -1400,
+			"y": -680,
+			"width": 340,
+			"height": 300,
+			"text": "# Blackboard\n\n- burstIndex: 0\n- burstTimer: 0.0\n- targetId: 0\n- patrolDwell: 0.0\n- patrolX: 0\n- patrolY: 0\n- homeX: 0\n- homeY: 0\n- homeSet: 0"
 		},
 		{
 			"id": "root",
 			"type": "text",
-			"x": -300,
-			"y": -600,
-			"width": 340,
+			"x": -320,
+			"y": -680,
+			"width": 380,
 			"height": 110,
-			"text": "# Selector [root] necromancer boss - stationary, sprays when player near"
+			"text": "# Selector [root] necromancer boss - patrol near spawn, spray when player in range"
+		},
+		{
+			"id": "recHome",
+			"type": "text",
+			"x": -820,
+			"y": -480,
+			"width": 300,
+			"height": 150,
+			"text": "# RecordHome\nhomeXKey: homeX\nhomeYKey: homeY\nhomeSetKey: homeSet"
 		},
 		{
 			"id": "p2seq",
 			"type": "text",
-			"x": -760,
-			"y": -400,
+			"x": -460,
+			"y": -480,
 			"width": 320,
 			"height": 110,
 			"text": "# Sequence phase 2 (hp <= 50%)"
@@ -30,97 +39,118 @@
 		{
 			"id": "p1seq",
 			"type": "text",
-			"x": -300,
-			"y": -400,
+			"x": 40,
+			"y": -480,
 			"width": 320,
 			"height": 110,
 			"text": "# Sequence phase 1"
 		},
 		{
-			"id": "idle",
+			"id": "patrol",
 			"type": "text",
-			"x": 160,
-			"y": -400,
-			"width": 300,
-			"height": 140,
-			"text": "# Wait\nduration: 0.3\ntimer: idleTimer"
+			"x": 480,
+			"y": -480,
+			"width": 340,
+			"height": 240,
+			"text": "# Patrol\nhomeXKey: homeX\nhomeYKey: homeY\nradius: 18\ndwell: 1.5\ndwellTimer: patrolDwell\npointXKey: patrolX\npointYKey: patrolY"
 		},
 		{
 			"id": "p2hp",
 			"type": "text",
-			"x": -1120,
-			"y": -180,
-			"width": 260,
-			"height": 130,
+			"x": -1200,
+			"y": -240,
+			"width": 240,
+			"height": 120,
 			"text": "# SelfHpBelow\nfraction: 0.5"
 		},
 		{
 			"id": "p2find",
 			"type": "text",
-			"x": -880,
-			"y": -180,
-			"width": 300,
-			"height": 140,
+			"x": -940,
+			"y": -240,
+			"width": 280,
+			"height": 130,
 			"text": "# FindTargetInRadius\nradius: 90\ntargetKey: targetId"
+		},
+		{
+			"id": "p2stop",
+			"type": "text",
+			"x": -640,
+			"y": -240,
+			"width": 200,
+			"height": 90,
+			"text": "# StopMoving"
 		},
 		{
 			"id": "p2wait",
 			"type": "text",
-			"x": -600,
-			"y": -180,
-			"width": 260,
-			"height": 130,
+			"x": -420,
+			"y": -240,
+			"width": 240,
+			"height": 120,
 			"text": "# Wait\nduration: 0.9\ntimer: burstTimer"
 		},
 		{
 			"id": "p2fire",
 			"type": "text",
-			"x": -340,
-			"y": -180,
+			"x": -160,
+			"y": -240,
 			"width": 380,
-			"height": 220,
+			"height": 240,
 			"text": "# FireRadialBurst\nprojectileType: Projectile_Fire\nrays: 16\nburstIndexKey: burstIndex\ntotalBursts: 8\nsecondaryType: Projectile_VoidSphere\nsecondaryRays: 8\nsecondaryEvery: 2"
 		},
 		{
 			"id": "p1find",
 			"type": "text",
-			"x": -320,
-			"y": -180,
-			"width": 300,
-			"height": 140,
+			"x": 260,
+			"y": -240,
+			"width": 280,
+			"height": 130,
 			"text": "# FindTargetInRadius\nradius: 90\ntargetKey: targetId"
+		},
+		{
+			"id": "p1stop",
+			"type": "text",
+			"x": 560,
+			"y": -240,
+			"width": 200,
+			"height": 90,
+			"text": "# StopMoving"
 		},
 		{
 			"id": "p1wait",
 			"type": "text",
-			"x": -40,
-			"y": -180,
-			"width": 260,
-			"height": 130,
+			"x": 780,
+			"y": -240,
+			"width": 240,
+			"height": 120,
 			"text": "# Wait\nduration: 0.9\ntimer: burstTimer"
 		},
 		{
 			"id": "p1fire",
 			"type": "text",
-			"x": 240,
-			"y": -180,
+			"x": 1040,
+			"y": -240,
 			"width": 340,
 			"height": 160,
 			"text": "# FireRadialBurst\nprojectileType: Projectile_Fire\nrays: 16\nburstIndexKey: burstIndex\ntotalBursts: 8"
 		}
 	],
 	"edges": [
-		{ "id": "r0", "fromNode": "root", "fromSide": "bottom", "toNode": "p2seq", "toSide": "top", "label": "[0]" },
-		{ "id": "r1", "fromNode": "root", "fromSide": "bottom", "toNode": "p1seq", "toSide": "top", "label": "[1]" },
-		{ "id": "r2", "fromNode": "root", "fromSide": "bottom", "toNode": "idle", "toSide": "top", "label": "[2]" },
+		{ "id": "e0", "fromNode": "root", "fromSide": "bottom", "toNode": "recHome", "toSide": "top", "label": "[0]" },
+		{ "id": "e1", "fromNode": "root", "fromSide": "bottom", "toNode": "p2seq", "toSide": "top", "label": "[1]" },
+		{ "id": "e2", "fromNode": "root", "fromSide": "bottom", "toNode": "p1seq", "toSide": "top", "label": "[2]" },
+		{ "id": "e3", "fromNode": "root", "fromSide": "bottom", "toNode": "patrol", "toSide": "top", "label": "[3]" },
 
 		{ "id": "a0", "fromNode": "p2seq", "fromSide": "bottom", "toNode": "p2hp", "toSide": "top", "label": "[0]" },
 		{ "id": "a1", "fromNode": "p2seq", "fromSide": "bottom", "toNode": "p2find", "toSide": "top", "label": "[1]" },
-		{ "id": "a2", "fromNode": "p2seq", "fromSide": "bottom", "toNode": "p2wait", "toSide": "top", "label": "[2]" },
-		{ "id": "a3", "fromNode": "p2seq", "fromSide": "bottom", "toNode": "p2fire", "toSide": "top", "label": "[3]" },
+		{ "id": "a2", "fromNode": "p2seq", "fromSide": "bottom", "toNode": "p2stop", "toSide": "top", "label": "[2]" },
+		{ "id": "a3", "fromNode": "p2seq", "fromSide": "bottom", "toNode": "p2wait", "toSide": "top", "label": "[3]" },
+		{ "id": "a4", "fromNode": "p2seq", "fromSide": "bottom", "toNode": "p2fire", "toSide": "top", "label": "[4]" },
 
 		{ "id": "b0", "fromNode": "p1seq", "fromSide": "bottom", "toNode": "p1find", "toSide": "top", "label": "[0]" },
-		{ "id": "b1", "fromNode": "p1seq", "fromSide": "bottom", "toNode": "p1wait", "toSide": "top", "label": "[1]" },
-		{ "id": "b2", "fromNode": "p1seq", "fromSide": "bottom", "toNode": "p1fire", "toSide": "top", "label": "[2]" }
+		{ "id": "b1", "fromNode": "p1seq", "fromSide": "bottom", "toNode": "p1stop", "toSide": "top", "label": "[1]" },
+		{ "id": "b2", "fromNode": "p1seq", "fromSide": "bottom", "toNode": "p1wait", "toSide": "top", "label": "[2]" },
+		{ "id": "b3", "fromNode": "p1seq", "fromSide": "bottom", "toNode": "p1fire", "toSide": "top", "label": "[3]" }
 	]
 }

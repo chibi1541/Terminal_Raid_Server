@@ -239,8 +239,8 @@ namespace
 	class FindTargetInRadiusLeaf : public BtLeaf
 	{
 	public:
-		FindTargetInRadiusLeaf(int32 radius, int32 targetSlot, int32 distSlot)
-			: _radius(radius), _targetSlot(targetSlot), _distSlot(distSlot) {}
+		FindTargetInRadiusLeaf(int32 radius, int32 targetSlot, int32 distSlot, bool clearOnMiss)
+			: _radius(radius), _targetSlot(targetSlot), _distSlot(distSlot), _clearOnMiss(clearOnMiss) {}
 
 		virtual BtStatus Execute(BtContext& context) const override
 		{
@@ -270,7 +270,10 @@ namespace
 
 			if (best == nullptr)
 			{
-				context.blackboard->SetInt(_targetSlot, 0);
+				// clearOnMiss=false : 근접 재교전 프로브처럼 "다른 슬롯 주인"의 targetId 를 건드리지
+				// 않고 존재 여부만 보고 싶을 때. 기본값은 true (기존 동작).
+				if (_clearOnMiss)
+					context.blackboard->SetInt(_targetSlot, 0);
 				return BtStatus::Failure;
 			}
 
@@ -292,6 +295,7 @@ namespace
 		const int32 _radius;
 		const int32 _targetSlot;
 		const int32 _distSlot;
+		const bool  _clearOnMiss;
 	};
 
 	/*--- MoveToTarget : targetId 로 JPS 경로를 깔고 추종. 도착하면 Success ---*/
@@ -496,6 +500,325 @@ namespace
 		const float _fraction;
 	};
 
+	/*================ 패트롤 / 리쉬 / 홈 앵커 (monster_basic + necromancer_boss) ================*/
+
+	// 두 셀 사이 거리 제곱. CellDistSq 의 좌표 버전 (한쪽이 GameObject 가 아니라 블랙보드 홈 좌표).
+	int64 DistSqCells(int32 ax, int32 ay, int32 bx, int32 by)
+	{
+		const int64 dx = static_cast<int64>(ax) - bx;
+		const int64 dy = static_cast<int64>(ay) - by;
+		return dx * dx + dy * dy;
+	}
+
+	// 이동을 즉시 멈춘다 (경로/방향/상태 → Idle). 공격·캐스팅 진입 시 이전 경로 슬라이드 제거용.
+	void StopSelf(GameObject& self)
+	{
+		MovementComponent& m = self.Movement();
+		if (m.HasPath() || m.state == MoveState::Moving || m.dir != Protocol::DIR_NONE)
+		{
+			m.ClearPath();
+			m.dir = Protocol::DIR_NONE;
+			m.state = MoveState::Idle;
+			m.dirty = true;
+		}
+	}
+
+	/*--- RecordHome : 첫 실행에 self 의 현재 셀을 home 슬롯에 기록. 항상 Failure ---*/
+	//
+	// 사이드 이펙트 전용. 루트 Selector 의 [0] 에 두면 첫 틱(몬스터가 아직 스폰 자리)에 캡처되고
+	// 이후엔 즉시 no-op. Failure 를 돌려줘서 셀렉터가 실제 분기로 계속 내려가게 한다.
+	class RecordHomeLeaf : public BtLeaf
+	{
+	public:
+		RecordHomeLeaf(int32 xSlot, int32 ySlot, int32 setSlot)
+			: _xSlot(xSlot), _ySlot(ySlot), _setSlot(setSlot) {}
+
+		virtual BtStatus Execute(BtContext& context) const override
+		{
+			if (context.self != nullptr && context.blackboard->GetInt(_setSlot) == 0)
+			{
+				context.blackboard->SetInt(_xSlot, context.self->GetPosX());
+				context.blackboard->SetInt(_ySlot, context.self->GetPosY());
+				context.blackboard->SetInt(_setSlot, 1);
+			}
+			return BtStatus::Failure;
+		}
+
+		virtual std::wstring Describe() const override
+		{
+			WCHAR buffer[96];
+			::swprintf_s(buffer, L"(xSlot=%d ySlot=%d setSlot=%d)", _xSlot, _ySlot, _setSlot);
+			return buffer;
+		}
+
+	private:
+		const int32 _xSlot;
+		const int32 _ySlot;
+		const int32 _setSlot;
+	};
+
+	/*--- StopMoving : 이동 정지 후 Success ---*/
+	class StopMovingLeaf : public BtLeaf
+	{
+	public:
+		virtual BtStatus Execute(BtContext& context) const override
+		{
+			if (context.self != nullptr)
+				StopSelf(*context.self);
+			return BtStatus::Success;
+		}
+
+		virtual std::wstring Describe() const override { return L"(stop)"; }
+	};
+
+	/*--- ChaseTarget : targetId 를 향해 경로를 깔고 따라간다 (non-blocking) ---*/
+	//
+	// MoveToTarget 과 달리 Running 을 물지 않는다 - 매 틱 Success/Failure 로 끝내야 stateful
+	// 셀렉터가 위(리쉬/근접공격) 분기를 매 틱 다시 본다. 이동 지속은 서버 경로 추종기가 맡는다.
+	//   대상 없음 / 홈에서 leashRange 초과 / 대상이 giveUpRange 초과  → Abort (Failure)
+	//   arriveRange 안                                              → Success
+	//   그 외                                                       → repath 스로틀 후 Success
+	// Abort 는 targetId 를 지우고 returningKey=1, returnTimerKey=999(ReturnHome 즉시 repath).
+	class ChaseTargetLeaf : public BtLeaf
+	{
+	public:
+		ChaseTargetLeaf(int32 targetSlot, int32 timerSlot, float repathInterval, int32 arriveRange,
+						int32 leashRange, int32 giveUpRange, int32 homeXSlot, int32 homeYSlot,
+						int32 returningSlot, int32 returnTimerSlot)
+			: _targetSlot(targetSlot), _timerSlot(timerSlot), _repathInterval(repathInterval)
+			, _arriveSq(static_cast<int64>(arriveRange) * arriveRange)
+			, _leashSq(static_cast<int64>(leashRange) * leashRange)
+			, _giveUpSq(static_cast<int64>(giveUpRange) * giveUpRange)
+			, _homeXSlot(homeXSlot), _homeYSlot(homeYSlot)
+			, _returningSlot(returningSlot), _returnTimerSlot(returnTimerSlot) {}
+
+		virtual BtStatus Execute(BtContext& context) const override
+		{
+			GameObject* target = ResolveTarget(context, _targetSlot);
+			if (target == nullptr || context.self == nullptr)
+				return Abort(context);
+
+			if (_leashSq > 0 && _homeXSlot >= 0 && _homeYSlot >= 0)
+			{
+				const int32 hx = static_cast<int32>(context.blackboard->GetInt(_homeXSlot));
+				const int32 hy = static_cast<int32>(context.blackboard->GetInt(_homeYSlot));
+				if (DistSqCells(context.self->GetPosX(), context.self->GetPosY(), hx, hy) > _leashSq)
+					return Abort(context);
+			}
+
+			const int64 distSq = CellDistSq(*context.self, *target);
+			if (distSq <= _arriveSq)
+				return BtStatus::Success;
+			if (_giveUpSq > 0 && distSq > _giveUpSq)
+				return Abort(context);
+
+			const float timer = context.blackboard->GetFloat(_timerSlot) + context.deltaTime;
+			const bool noPath = (context.self->Movement().HasPath() == false);
+
+			if (timer >= _repathInterval || noPath)
+			{
+				context.room->OrderMoveTo(context.self->GetObjId(), target->GetPosX(), target->GetPosY());
+				context.blackboard->SetFloat(_timerSlot, 0.0f);
+			}
+			else
+			{
+				context.blackboard->SetFloat(_timerSlot, timer);
+			}
+
+			return BtStatus::Success;
+		}
+
+		virtual std::wstring Describe() const override
+		{
+			WCHAR buffer[128];
+			::swprintf_s(buffer, L"(target=%d leashSq=%lld giveUpSq=%lld)",
+				_targetSlot, static_cast<long long>(_leashSq), static_cast<long long>(_giveUpSq));
+			return buffer;
+		}
+
+	private:
+		BtStatus Abort(BtContext& context) const
+		{
+			context.blackboard->SetInt(_targetSlot, 0);
+			if (_returningSlot >= 0)
+				context.blackboard->SetInt(_returningSlot, 1);
+			if (_returnTimerSlot >= 0)
+				context.blackboard->SetFloat(_returnTimerSlot, 999.0f);
+			return BtStatus::Failure;
+		}
+
+		const int32 _targetSlot;
+		const int32 _timerSlot;
+		const float _repathInterval;
+		const int64 _arriveSq;
+		const int64 _leashSq;
+		const int64 _giveUpSq;
+		const int32 _homeXSlot;
+		const int32 _homeYSlot;
+		const int32 _returningSlot;
+		const int32 _returnTimerSlot;
+	};
+
+	/*--- ReturnHome : home 셀로 복귀 (non-blocking). 도착하면 returningKey=0 + Success ---*/
+	class ReturnHomeLeaf : public BtLeaf
+	{
+	public:
+		ReturnHomeLeaf(int32 homeXSlot, int32 homeYSlot, int32 arriveRange,
+					   int32 timerSlot, float repathInterval, int32 returningSlot)
+			: _homeXSlot(homeXSlot), _homeYSlot(homeYSlot)
+			, _arriveSq(static_cast<int64>(arriveRange) * arriveRange)
+			, _timerSlot(timerSlot), _repathInterval(repathInterval), _returningSlot(returningSlot) {}
+
+		virtual BtStatus Execute(BtContext& context) const override
+		{
+			if (context.self == nullptr)
+				return BtStatus::Failure;
+
+			const int32 hx = static_cast<int32>(context.blackboard->GetInt(_homeXSlot));
+			const int32 hy = static_cast<int32>(context.blackboard->GetInt(_homeYSlot));
+
+			if (DistSqCells(context.self->GetPosX(), context.self->GetPosY(), hx, hy) <= _arriveSq)
+			{
+				context.blackboard->SetInt(_returningSlot, 0);
+				StopSelf(*context.self);
+				return BtStatus::Success;
+			}
+
+			const float timer = context.blackboard->GetFloat(_timerSlot) + context.deltaTime;
+			const bool noPath = (context.self->Movement().HasPath() == false);
+
+			if (timer >= _repathInterval || noPath)
+			{
+				const bool ok = context.room->OrderMoveTo(context.self->GetObjId(), hx, hy);
+				context.blackboard->SetFloat(_timerSlot, 0.0f);
+
+				// 홈으로 경로를 못 짬 - 포기하고 패트롤에 넘긴다 (패트롤이 반경 밖이면 home 직행).
+				if (ok == false && context.self->Movement().HasPath() == false)
+				{
+					context.blackboard->SetInt(_returningSlot, 0);
+					return BtStatus::Failure;
+				}
+			}
+			else
+			{
+				context.blackboard->SetFloat(_timerSlot, timer);
+			}
+
+			return BtStatus::Success;
+		}
+
+		virtual std::wstring Describe() const override
+		{
+			WCHAR buffer[96];
+			::swprintf_s(buffer, L"(homeSlot=%d,%d returningSlot=%d)", _homeXSlot, _homeYSlot, _returningSlot);
+			return buffer;
+		}
+
+	private:
+		const int32 _homeXSlot;
+		const int32 _homeYSlot;
+		const int64 _arriveSq;
+		const int32 _timerSlot;
+		const float _repathInterval;
+		const int32 _returningSlot;
+	};
+
+	/*--- Patrol : home 주변 radius 안의 무작위 지점을 dwell 간격으로 순회 (non-blocking) ---*/
+	class PatrolLeaf : public BtLeaf
+	{
+	public:
+		PatrolLeaf(int32 homeXSlot, int32 homeYSlot, int32 radius, float dwell,
+				   int32 dwellSlot, int32 pxSlot, int32 pySlot, int32 failSlot)
+			: _homeXSlot(homeXSlot), _homeYSlot(homeYSlot), _radius(radius), _dwell(dwell)
+			, _dwellSlot(dwellSlot), _pxSlot(pxSlot), _pySlot(pySlot), _failSlot(failSlot) {}
+
+		virtual BtStatus Execute(BtContext& context) const override
+		{
+			if (context.self == nullptr || context.room == nullptr)
+				return BtStatus::Failure;
+
+			// 아직 한 다리 걷는 중 - dwell 타이머 리셋하고 대기.
+			if (context.self->Movement().HasPath())
+			{
+				context.blackboard->SetFloat(_dwellSlot, 0.0f);
+				return BtStatus::Success;
+			}
+
+			const float dwell = context.blackboard->GetFloat(_dwellSlot) + context.deltaTime;
+			if (dwell < _dwell)
+			{
+				context.blackboard->SetFloat(_dwellSlot, dwell);
+				return BtStatus::Success;
+			}
+			context.blackboard->SetFloat(_dwellSlot, 0.0f);
+
+			const int32 hx = static_cast<int32>(context.blackboard->GetInt(_homeXSlot));
+			const int32 hy = static_cast<int32>(context.blackboard->GetInt(_homeYSlot));
+
+			const Level& level = context.room->GetLevel();
+			const int32 w = level.GetWidth();
+			const int32 h = level.GetHeight();
+
+			int32 px = hx;
+			int32 py = hy;
+
+			// 패트롤 반경 밖이면 곧장 home 으로. 안이면 무작위 지점 16회 시도.
+			const bool outside =
+				DistSqCells(context.self->GetPosX(), context.self->GetPosY(), hx, hy)
+				> static_cast<int64>(_radius) * _radius;
+
+			if (outside == false)
+			{
+				for (int32 i = 0; i < 16; i++)
+				{
+					int32 rx = hx + RandomRange32(-_radius, _radius);
+					int32 ry = hy + RandomRange32(-_radius, _radius);
+					rx = (rx < 0) ? 0 : ((rx >= w) ? w - 1 : rx);
+					ry = (ry < 0) ? 0 : ((ry >= h) ? h - 1 : ry);
+					if (level.IsCellBlocked(rx, ry) == false)
+					{
+						px = rx;
+						py = ry;
+						break;
+					}
+				}
+			}
+
+			context.blackboard->SetInt(_pxSlot, px);
+			context.blackboard->SetInt(_pySlot, py);
+
+			const bool ok = context.room->OrderMoveTo(context.self->GetObjId(), px, py);
+
+			if (_failSlot >= 0)
+			{
+				const int64 fails = ok ? 0 : (context.blackboard->GetInt(_failSlot) + 1);
+				context.blackboard->SetInt(_failSlot, fails);
+				if (ok == false && fails >= 3)
+					context.room->OrderMoveTo(context.self->GetObjId(), hx, hy);
+			}
+
+			return BtStatus::Success;
+		}
+
+		virtual std::wstring Describe() const override
+		{
+			WCHAR buffer[128];
+			::swprintf_s(buffer, L"(homeSlot=%d,%d r=%d dwell=%.1f)",
+				_homeXSlot, _homeYSlot, _radius, _dwell);
+			return buffer;
+		}
+
+	private:
+		const int32 _homeXSlot;
+		const int32 _homeYSlot;
+		const int32 _radius;
+		const float _dwell;
+		const int32 _dwellSlot;
+		const int32 _pxSlot;
+		const int32 _pySlot;
+		const int32 _failSlot;
+	};
+
 	/*--- FireRadialBurst : self 중심 rays 방향으로 투사체를 한 번에 발사 ---*/
 	//
 	// 보스 패턴용. burstIndexKey 슬롯의 값으로 패턴 전체를 회전시킨다 (선형 스윕):
@@ -663,7 +986,8 @@ void BtNodeRegistry::RegisterBuiltins()
 			const int32 distSlot = ResolveSlot(params, tree, "distKey");	// 선택 (-1 허용)
 
 			return new FindTargetInRadiusLeaf(
-				static_cast<int32>(params.GetFloat("radius", 60.0f)), targetSlot, distSlot);
+				static_cast<int32>(params.GetFloat("radius", 60.0f)), targetSlot, distSlot,
+				params.GetBool("clearOnMiss", true));
 		});
 
 	Register("MoveToTarget",
@@ -745,5 +1069,84 @@ void BtNodeRegistry::RegisterBuiltins()
 		[](const BtParams& params, const BehaviorTree& tree) -> BtLeaf*
 		{
 			return new SelfHpBelowLeaf(params.GetFloat("fraction", 0.5f));
+		});
+
+	/*--- 패트롤 / 리쉬 / 홈 앵커 (monster_basic.canvas + necromancer_boss.canvas) ---*/
+
+	Register("RecordHome",
+		[](const BtParams& params, const BehaviorTree& tree) -> BtLeaf*
+		{
+			const int32 xSlot = ResolveSlot(params, tree, "homeXKey");
+			const int32 ySlot = ResolveSlot(params, tree, "homeYKey");
+			const int32 setSlot = ResolveSlot(params, tree, "homeSetKey");
+			if (xSlot < 0 || ySlot < 0 || setSlot < 0)
+				return nullptr;
+
+			return new RecordHomeLeaf(xSlot, ySlot, setSlot);
+		});
+
+	Register("StopMoving",
+		[](const BtParams& params, const BehaviorTree& tree) -> BtLeaf*
+		{
+			return new StopMovingLeaf();
+		});
+
+	Register("ChaseTarget",
+		[](const BtParams& params, const BehaviorTree& tree) -> BtLeaf*
+		{
+			const int32 targetSlot = ResolveSlot(params, tree, "targetKey");
+			const int32 timerSlot = ResolveSlot(params, tree, "repathTimer");
+			if (targetSlot < 0 || timerSlot < 0)
+				return nullptr;
+
+			// 아래는 전부 선택 (미선언 시 -1 → 리쉬/복귀 연동 없이 순수 추적).
+			const int32 homeXSlot = ResolveSlot(params, tree, "homeXKey");
+			const int32 homeYSlot = ResolveSlot(params, tree, "homeYKey");
+			const int32 returningSlot = ResolveSlot(params, tree, "returningKey");
+			const int32 returnTimerSlot = ResolveSlot(params, tree, "returnTimerKey");
+
+			return new ChaseTargetLeaf(
+				targetSlot, timerSlot,
+				params.GetFloat("repathInterval", 0.35f),
+				static_cast<int32>(params.GetFloat("arriveRange", 5.0f)),
+				static_cast<int32>(params.GetFloat("leashRange", 0.0f)),
+				static_cast<int32>(params.GetFloat("giveUpRange", 0.0f)),
+				homeXSlot, homeYSlot, returningSlot, returnTimerSlot);
+		});
+
+	Register("ReturnHome",
+		[](const BtParams& params, const BehaviorTree& tree) -> BtLeaf*
+		{
+			const int32 homeXSlot = ResolveSlot(params, tree, "homeXKey");
+			const int32 homeYSlot = ResolveSlot(params, tree, "homeYKey");
+			const int32 timerSlot = ResolveSlot(params, tree, "repathTimer");
+			const int32 returningSlot = ResolveSlot(params, tree, "returningKey");
+			if (homeXSlot < 0 || homeYSlot < 0 || timerSlot < 0 || returningSlot < 0)
+				return nullptr;
+
+			return new ReturnHomeLeaf(
+				homeXSlot, homeYSlot,
+				static_cast<int32>(params.GetFloat("arriveRange", 4.0f)),
+				timerSlot, params.GetFloat("repathInterval", 0.5f), returningSlot);
+		});
+
+	Register("Patrol",
+		[](const BtParams& params, const BehaviorTree& tree) -> BtLeaf*
+		{
+			const int32 homeXSlot = ResolveSlot(params, tree, "homeXKey");
+			const int32 homeYSlot = ResolveSlot(params, tree, "homeYKey");
+			const int32 dwellSlot = ResolveSlot(params, tree, "dwellTimer");
+			const int32 pxSlot = ResolveSlot(params, tree, "pointXKey");
+			const int32 pySlot = ResolveSlot(params, tree, "pointYKey");
+			if (homeXSlot < 0 || homeYSlot < 0 || dwellSlot < 0 || pxSlot < 0 || pySlot < 0)
+				return nullptr;
+
+			const int32 failSlot = ResolveSlot(params, tree, "failCountKey");	// 선택
+
+			return new PatrolLeaf(
+				homeXSlot, homeYSlot,
+				static_cast<int32>(params.GetFloat("radius", 30.0f)),
+				params.GetFloat("dwell", 2.0f),
+				dwellSlot, pxSlot, pySlot, failSlot);
 		});
 }

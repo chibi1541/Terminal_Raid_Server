@@ -3,92 +3,176 @@
 		{
 			"id": "bb",
 			"type": "text",
-			"x": -1100,
-			"y": -520,
-			"width": 320,
-			"height": 220,
-			"text": "# Blackboard\n\n- targetId: 0\n- targetDist: 0.0\n- repathTimer: 0.0\n- atkTimer: 0.0\n- idleTimer: 0.0"
+			"x": -1400,
+			"y": -640,
+			"width": 340,
+			"height": 340,
+			"text": "# Blackboard\n\n- targetId: 0\n- targetDist: 0.0\n- repathTimer: 0.0\n- atkTimer: 0.0\n- returning: 0\n- returnTimer: 0.0\n- patrolDwell: 0.0\n- patrolX: 0\n- patrolY: 0\n- homeX: 0\n- homeY: 0\n- homeSet: 0"
 		},
 		{
 			"id": "root",
 			"type": "text",
-			"x": -200,
-			"y": -520,
-			"width": 320,
+			"x": -300,
+			"y": -640,
+			"width": 360,
 			"height": 110,
-			"text": "# Selector [root] monster basic AI"
+			"text": "# Selector [root] monster basic AI (patrol / leash / chase / attack)"
 		},
 		{
-			"id": "seqAtk",
+			"id": "recHome",
+			"type": "text",
+			"x": -1000,
+			"y": -440,
+			"width": 300,
+			"height": 150,
+			"text": "# RecordHome\nhomeXKey: homeX\nhomeYKey: homeY\nhomeSetKey: homeSet"
+		},
+		{
+			"id": "seqReengage",
 			"type": "text",
 			"x": -640,
-			"y": -320,
+			"y": -440,
 			"width": 300,
 			"height": 110,
-			"text": "# Sequence attack branch"
+			"text": "# Sequence melee reengage (close player overrides leash)"
+		},
+		{
+			"id": "seqLeash",
+			"type": "text",
+			"x": -300,
+			"y": -440,
+			"width": 260,
+			"height": 110,
+			"text": "# Sequence leash return"
 		},
 		{
 			"id": "seqChase",
 			"type": "text",
-			"x": -200,
-			"y": -320,
-			"width": 300,
+			"x": 0,
+			"y": -440,
+			"width": 260,
 			"height": 110,
-			"text": "# Sequence chase branch"
+			"text": "# Sequence chase"
 		},
 		{
-			"id": "wait",
+			"id": "seqPatrol",
 			"type": "text",
-			"x": 240,
-			"y": -320,
+			"x": 300,
+			"y": -440,
+			"width": 260,
+			"height": 110,
+			"text": "# Sequence patrol"
+		},
+		{
+			"id": "reFind",
+			"type": "text",
+			"x": -900,
+			"y": -220,
 			"width": 300,
-			"height": 140,
-			"text": "# Wait\nduration: 0.4\ntimer: idleTimer"
+			"height": 160,
+			"text": "# FindTargetInRadius\nradius: 10\ntargetKey: targetId\nclearOnMiss: false"
 		},
 		{
-			"id": "inRange",
+			"id": "reClear",
 			"type": "text",
-			"x": -800,
-			"y": -100,
-			"width": 300,
-			"height": 140,
-			"text": "# TargetInRange\ntargetKey: targetId\nrange: 6"
+			"x": -580,
+			"y": -220,
+			"width": 260,
+			"height": 130,
+			"text": "# SetBlackboard\nkey: returning\nvalue: 0"
 		},
 		{
-			"id": "attack",
+			"id": "reStop",
 			"type": "text",
-			"x": -460,
-			"y": -100,
+			"x": -300,
+			"y": -220,
+			"width": 200,
+			"height": 90,
+			"text": "# StopMoving"
+		},
+		{
+			"id": "reAtk",
+			"type": "text",
+			"x": -80,
+			"y": -220,
 			"width": 320,
 			"height": 180,
 			"text": "# AttackTarget\ntargetKey: targetId\ncooldown: 1.2\ncooldownTimer: atkTimer\ndamage: 0"
 		},
 		{
-			"id": "find",
+			"id": "leashChk",
 			"type": "text",
-			"x": -360,
-			"y": -100,
-			"width": 320,
-			"height": 160,
-			"text": "# FindTargetInRadius\nradius: 80\ntargetKey: targetId\ndistKey: targetDist"
+			"x": 280,
+			"y": -220,
+			"width": 260,
+			"height": 140,
+			"text": "# CheckBlackboard\nkey: returning\nop: ==\nvalue: 1"
 		},
 		{
-			"id": "move",
+			"id": "leashHome",
 			"type": "text",
-			"x": 0,
-			"y": -100,
+			"x": 560,
+			"y": -220,
 			"width": 340,
-			"height": 200,
-			"text": "# MoveToTarget\ntargetKey: targetId\nrepathTimer: repathTimer\nrepathInterval: 0.35\narriveRange: 5\ngiveUpRange: 110"
+			"height": 220,
+			"text": "# ReturnHome\nhomeXKey: homeX\nhomeYKey: homeY\narriveRange: 4\nrepathTimer: returnTimer\nrepathInterval: 0.5\nreturningKey: returning"
+		},
+		{
+			"id": "chFind",
+			"type": "text",
+			"x": 920,
+			"y": -220,
+			"width": 300,
+			"height": 160,
+			"text": "# FindTargetInRadius\nradius: 60\ntargetKey: targetId\ndistKey: targetDist"
+		},
+		{
+			"id": "chChase",
+			"type": "text",
+			"x": 1240,
+			"y": -220,
+			"width": 360,
+			"height": 280,
+			"text": "# ChaseTarget\ntargetKey: targetId\nrepathTimer: repathTimer\nrepathInterval: 0.35\narriveRange: 5\nleashRange: 95\ngiveUpRange: 130\nhomeXKey: homeX\nhomeYKey: homeY\nreturningKey: returning\nreturnTimerKey: returnTimer"
+		},
+		{
+			"id": "patChk",
+			"type": "text",
+			"x": 1620,
+			"y": -220,
+			"width": 260,
+			"height": 140,
+			"text": "# CheckBlackboard\nkey: returning\nop: ==\nvalue: 0"
+		},
+		{
+			"id": "patrol",
+			"type": "text",
+			"x": 1900,
+			"y": -220,
+			"width": 340,
+			"height": 240,
+			"text": "# Patrol\nhomeXKey: homeX\nhomeYKey: homeY\nradius: 35\ndwell: 2.0\ndwellTimer: patrolDwell\npointXKey: patrolX\npointYKey: patrolY"
 		}
 	],
 	"edges": [
-		{ "id": "e0", "fromNode": "root", "fromSide": "bottom", "toNode": "seqAtk", "toSide": "top", "label": "[0]" },
-		{ "id": "e1", "fromNode": "root", "fromSide": "bottom", "toNode": "seqChase", "toSide": "top", "label": "[1]" },
-		{ "id": "e2", "fromNode": "root", "fromSide": "bottom", "toNode": "wait", "toSide": "top", "label": "[2]" },
-		{ "id": "e3", "fromNode": "seqAtk", "fromSide": "bottom", "toNode": "inRange", "toSide": "top", "label": "[0]" },
-		{ "id": "e4", "fromNode": "seqAtk", "fromSide": "bottom", "toNode": "attack", "toSide": "top", "label": "[1]" },
-		{ "id": "e5", "fromNode": "seqChase", "fromSide": "bottom", "toNode": "find", "toSide": "top", "label": "[0]" },
-		{ "id": "e6", "fromNode": "seqChase", "fromSide": "bottom", "toNode": "move", "toSide": "top", "label": "[1]" }
+		{ "id": "e0", "fromNode": "root", "fromSide": "bottom", "toNode": "recHome", "toSide": "top", "label": "[0]" },
+		{ "id": "e1", "fromNode": "root", "fromSide": "bottom", "toNode": "seqReengage", "toSide": "top", "label": "[1]" },
+		{ "id": "e2", "fromNode": "root", "fromSide": "bottom", "toNode": "seqLeash", "toSide": "top", "label": "[2]" },
+		{ "id": "e3", "fromNode": "root", "fromSide": "bottom", "toNode": "seqChase", "toSide": "top", "label": "[3]" },
+		{ "id": "e4", "fromNode": "root", "fromSide": "bottom", "toNode": "seqPatrol", "toSide": "top", "label": "[4]" },
+
+		{ "id": "r0", "fromNode": "seqReengage", "fromSide": "bottom", "toNode": "reFind", "toSide": "top", "label": "[0]" },
+		{ "id": "r1", "fromNode": "seqReengage", "fromSide": "bottom", "toNode": "reClear", "toSide": "top", "label": "[1]" },
+		{ "id": "r2", "fromNode": "seqReengage", "fromSide": "bottom", "toNode": "reStop", "toSide": "top", "label": "[2]" },
+		{ "id": "r3", "fromNode": "seqReengage", "fromSide": "bottom", "toNode": "reAtk", "toSide": "top", "label": "[3]" },
+
+		{ "id": "l0", "fromNode": "seqLeash", "fromSide": "bottom", "toNode": "leashChk", "toSide": "top", "label": "[0]" },
+		{ "id": "l1", "fromNode": "seqLeash", "fromSide": "bottom", "toNode": "leashHome", "toSide": "top", "label": "[1]" },
+
+		{ "id": "c0", "fromNode": "seqChase", "fromSide": "bottom", "toNode": "chFind", "toSide": "top", "label": "[0]" },
+		{ "id": "c1", "fromNode": "seqChase", "fromSide": "bottom", "toNode": "chChase", "toSide": "top", "label": "[1]" },
+
+		{ "id": "p0", "fromNode": "seqPatrol", "fromSide": "bottom", "toNode": "patChk", "toSide": "top", "label": "[0]" },
+		{ "id": "p1", "fromNode": "seqPatrol", "fromSide": "bottom", "toNode": "patrol", "toSide": "top", "label": "[1]" }
 	]
 }
