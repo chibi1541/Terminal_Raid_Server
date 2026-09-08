@@ -1039,6 +1039,47 @@ bool Room::DealDamage(uint64 attackerId, uint64 targetId, int32 damage)
 	return true;
 }
 
+void Room::HandleRespawn(GameObjectRef object)
+{
+	if (object == nullptr || object->GetObjType() != Protocol::OBJECT_PLAYER)
+		return;
+
+	// 살아있는데 온 요청은 무시 (중복 클릭 / 어뷰징 방어).
+	if (object->IsAlive())
+		return;
+
+	// 풀피 부활 + 경직 해제.
+	object->SetHp(object->GetMaxHp());
+	object->SetStunUntilTick(0);
+
+	// 원래 스폰 위치(서쪽 게이트). 박스가 들어가는 가장 가까운 셀로 스냅.
+	Protocol::Vector2 spawn = _monsterSpawner.GetPlayerStartPos();
+	int32 sx = spawn.x();
+	int32 sy = spawn.y();
+	SnapCellForBox(object->GetCollisionCellsWide(), SNAP_MAX_RADIUS, sx, sy);
+	object->SetPos(sx, sy);
+
+	// 죽을 때 남은 이동/경로/재조정 앵커를 전부 초기화한다.
+	MovementComponent& m = object->Movement();
+	m.ClearPath();
+	m.dir = Protocol::DIR_NONE;
+	m.state = MoveState::Idle;
+	m.velSubX = 0;
+	m.velSubY = 0;
+	m.anchorFpX = m.fpX;	// SetPos 가 fpX/fpY 를 새 셀 중심으로 이미 세팅했다
+	m.anchorFpY = m.fpY;
+	m.hasInputTimeBase = false;
+	m.moveTimeCreditMs = 0;
+	m.dirty = true;
+
+	Protocol::S_RESPAWN pkt;
+	object->FillObjectInfo(pkt.mutable_object());
+	pkt.set_servertick(static_cast<uint32>(_tickCount));
+	Broadcast(ClientPacketHandler::MakeSendBuffer(pkt), 0);	// 본인 포함 전원
+
+	LOG_INFO(L"[room] respawn objectId=%llu -> (%d, %d)", object->GetObjId(), sx, sy);
+}
+
 void Room::NotifyAttackStart(uint64 objectId, Protocol::DirectionType dir)
 {
 	Protocol::S_ATTACK_START pkt;

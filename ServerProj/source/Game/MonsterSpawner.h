@@ -54,4 +54,9 @@ private:
 	int32			_zombieTarget = 0;	// 초기 총 좀비 수 = 리젠 목표치.
 	float			_regenTimer = 0.0f;	// 리젠 인터벌 카운트다운 (활성일 때만 감소).
 	bool			_regenActive = false;
+
+	// 보스 리스폰. 보스가 죽으면(_room->Find(_bossId) null / !IsAlive) 카운트다운을 시작하고
+	// 0 이 되면 SpawnBoss() 로 맵 중앙에 재스폰한다.
+	float			_bossRespawnTimer = 0.0f;
+	bool			_bossDead = false;
 };

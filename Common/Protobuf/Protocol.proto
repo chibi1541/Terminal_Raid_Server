@@ -193,3 +193,16 @@ message S_DEBUG_QUADTREE
 	uint32 collisionMicros = 4;		// 마지막 틱 ResolveProjectileHits 소요 us
 	uint32 serverTick = 5;
 }
+
+// 클라 → 서버 : 사망 후 리스폰 요청. 클라 사망 화면의 RESPAWN 버튼이 보낸다.
+message C_RESPAWN
+{
+}
+
+// 서버 → 클라 : 리스폰 통지. 부활한 개체의 전체 스냅샷을 실어 보낸다.
+// 클라는 ApplyObjectInfo 로 위치/hp 를 흡수하고 사망 상태(isDead)를 해제한다. 본인 포함 전원에게.
+message S_RESPAWN
+{
+	ObjectInfo object = 1;
+	uint32 serverTick = 2;
+}

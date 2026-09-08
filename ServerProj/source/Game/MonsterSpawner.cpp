@@ -44,6 +44,9 @@ namespace
 	// 리젠 활성 상태에서 이 간격마다 1 마리씩 보충한다.
 	constexpr float REGEN_INTERVAL_SEC = 4.0f;
 
+	// 보스 사망 후 이 시간이 지나면 맵 중앙에 재스폰한다.
+	constexpr float BOSS_RESPAWN_DELAY_SEC = 30.0f;
+
 	constexpr int32 FIND_CELL_MAX_TRY = 64;
 
 	int32 ZombieBoxCells()
@@ -101,7 +104,38 @@ void MonsterSpawner::SpawnInitial()
 
 void MonsterSpawner::Tick(float deltaTime)
 {
-	if (_room == nullptr || _zombieTarget <= 0)
+	if (_room == nullptr)
+		return;
+
+	// --- 보스 리스폰 ---
+	if (_bossId != 0)
+	{
+		GameObjectRef boss = _room->Find(_bossId);
+		const bool bossAlive = (boss != nullptr && boss->IsAlive());
+
+		if (bossAlive == false)
+		{
+			if (_bossDead == false)
+			{
+				_bossDead = true;
+				_bossRespawnTimer = BOSS_RESPAWN_DELAY_SEC;
+				LOG_INFO(L"[spawner] boss down - respawn in %.0fs", BOSS_RESPAWN_DELAY_SEC);
+			}
+			else
+			{
+				_bossRespawnTimer -= deltaTime;
+				if (_bossRespawnTimer <= 0.0f)
+				{
+					SpawnBoss();		// _bossId 를 새 id 로 덮어씀 + Enter(S_SPAWN) + AttachBehavior
+					_bossDead = false;
+					LOG_INFO(L"[spawner] boss respawned");
+				}
+			}
+		}
+	}
+
+	// --- 좀비 반수 리젠 ---
+	if (_zombieTarget <= 0)
 		return;
 
 	const int32 alive = CountAliveZombies();

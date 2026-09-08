@@ -130,6 +130,10 @@ public:
 	// 데미지 판정과 무관하게 "공격 모션이 시작됐다"만 알린다.
 	void	NotifyAttackStart(uint64 objectId, Protocol::DirectionType dir);
 
+	// 사망한 플레이어를 원래 스폰 위치에 풀피로 되살리고 S_RESPAWN 브로드캐스트.
+	// C_RESPAWN 이 룸 잡 큐로 넘긴다. 살아있는 개체가 온 요청은 무시한다.
+	void	HandleRespawn(GameObjectRef object);
+
 	uint32	GetWidth() const	{ return static_cast<uint32>(_level.GetWidth()); }
 	uint32	GetHeight() const	{ return static_cast<uint32>(_level.GetHeight()); }
 

@@ -156,6 +156,21 @@ bool Handle_C_DEBUG_CONFIG(PacketSessionRef& session, Protocol::C_DEBUG_CONFIG& 
 	return true;
 }
 
+bool Handle_C_RESPAWN(PacketSessionRef& session, Protocol::C_RESPAWN& pkt)
+{
+	GameSessionRef gameSession = static_pointer_cast<GameSession>(session);
+
+	PlayerRef player = gameSession->GetPlayer();
+
+	if (player == nullptr || GRoom == nullptr)
+		return true;
+
+	// 룸 상태는 룸 잡 큐에서만 만진다.
+	GRoom->DoAsync(&Room::HandleRespawn, static_pointer_cast<GameObject>(player));
+
+	return true;
+}
+
 bool Handle_C_EXIT_ROOM(PacketSessionRef& session, Protocol::C_EXIT_ROOM& pkt)
 {
 	GameSessionRef gameSession = static_pointer_cast<GameSession>(session);

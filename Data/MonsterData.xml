@@ -17,6 +17,6 @@
 	         hitStunMs="350" deathFadeMs="600" />
 	<Monster id="Monster_Necromancer" animClip="Necromancer" aiTree="necromancer_boss"
 	         collisionCells="24" radius="12" maxHp="140" attackPower="16" moveSpeedCells="25"
-	         hitStunMs="0" deathFadeMs="0" />
+	         hitStunMs="0" deathFadeMs="900" />
 
 </MonsterData>
