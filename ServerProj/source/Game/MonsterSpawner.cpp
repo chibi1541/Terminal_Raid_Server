@@ -45,6 +45,32 @@ namespace
 	constexpr float REGEN_INTERVAL_SEC = 4.0f;
 
 	constexpr int32 FIND_CELL_MAX_TRY = 64;
+
+	int32 ZombieBoxCells()
+	{
+		return MonsterData::Get().Find(Protocol::Monster_Zombie).collisionCells;
+	}
+}
+
+bool MonsterSpawner::PickZombieCell(int32 quadIndex, int32& outX, int32& outY)
+{
+	const QuadRect& quad = QUADS[quadIndex];
+	const int32 box = ZombieBoxCells();
+
+	// 단일 셀이 아니라 좀비 충돌 박스(16x16) 전체가 벽에 안 걸리는 셀만 고른다.
+	// = 길찾기 NavGrid 통행 판정. 안 그러면 묘비 바로 옆에 박스가 겹쳐 낀 채로 스폰된다.
+	for (int32 t = 0; t < FIND_CELL_MAX_TRY; t++)
+	{
+		const int32 x = RandomRange32(quad.minX, quad.maxX);
+		const int32 y = RandomRange32(quad.minY, quad.maxY);
+		if (_room->IsBoxWalkable(box, x, y))
+		{
+			outX = x;
+			outY = y;
+			return true;
+		}
+	}
+	return false;
 }
 
 void MonsterSpawner::SpawnInitial()
@@ -54,9 +80,7 @@ void MonsterSpawner::SpawnInitial()
 
 	SpawnBoss();
 
-	const Level& level = _room->GetLevel();
-
-	for (const QuadRect& quad : QUADS)
+	for (int32 q = 0; q < 4; q++)
 	{
 		const int32 count = RandomRange32(ZOMBIES_PER_QUAD_MIN, ZOMBIES_PER_QUAD_MAX);
 
@@ -64,23 +88,8 @@ void MonsterSpawner::SpawnInitial()
 		{
 			int32 x = 0;
 			int32 y = 0;
-			bool found = false;
-
-			for (int32 t = 0; t < FIND_CELL_MAX_TRY; t++)
-			{
-				x = RandomRange32(quad.minX, quad.maxX);
-				y = RandomRange32(quad.minY, quad.maxY);
-				if (level.IsCellBlocked(x, y) == false)
-				{
-					found = true;
-					break;
-				}
-			}
-
-			if (found == false)
-				continue;
-
-			SpawnZombieAt(x, y);
+			if (PickZombieCell(q, OUT x, OUT y))
+				SpawnZombieAt(x, y);
 		}
 	}
 
@@ -122,20 +131,11 @@ void MonsterSpawner::Tick(float deltaTime)
 
 	_regenTimer = REGEN_INTERVAL_SEC;
 
-	// 무작위 사분면의 통행 가능 셀에 한 마리.
-	const QuadRect& quad = QUADS[RandomRange32(0, 3)];
-	const Level& level = _room->GetLevel();
-
-	for (int32 t = 0; t < FIND_CELL_MAX_TRY; t++)
-	{
-		const int32 x = RandomRange32(quad.minX, quad.maxX);
-		const int32 y = RandomRange32(quad.minY, quad.maxY);
-		if (level.IsCellBlocked(x, y))
-			continue;
-
+	// 무작위 사분면에서 좀비 박스가 들어가는 셀에 한 마리.
+	int32 x = 0;
+	int32 y = 0;
+	if (PickZombieCell(RandomRange32(0, 3), OUT x, OUT y))
 		SpawnZombieAt(x, y);
-		break;
-	}
 }
 
 Protocol::Vector2 MonsterSpawner::GetPlayerStartPos() const
@@ -167,7 +167,14 @@ void MonsterSpawner::SpawnBoss()
 {
 	MonsterRef boss = MakeShared<Monster>();
 	boss->SetMonsterType(Protocol::Monster_Necromancer);
-	boss->SetPos(BOSS_CELL_X, BOSS_CELL_Y);
+
+	// 맵 중앙. 보스 충돌 박스(24x24)가 십자로 교차점에 딱 맞으므로 벽에 걸리면 근처로 스냅한다.
+	int32 bx = BOSS_CELL_X;
+	int32 by = BOSS_CELL_Y;
+	const int32 bossBox = MonsterData::Get().Find(Protocol::Monster_Necromancer).collisionCells;
+	if (_room->SnapCellForBox(bossBox, 48, bx, by) == false)
+		LOG_WARN(L"[spawner] boss box (%d) does not fit near map center (%d, %d)", bossBox, BOSS_CELL_X, BOSS_CELL_Y);
+	boss->SetPos(bx, by);
 
 	_room->Enter(static_pointer_cast<GameObject>(boss), false);
 

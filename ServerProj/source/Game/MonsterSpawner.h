@@ -33,6 +33,9 @@ public:
 	Protocol::Vector2	GetPlayerStartPos() const;
 
 private:
+	// 사분면 안에서 좀비 충돌 박스가 벽에 안 걸리는 무작위 셀을 고른다. 못 찾으면 false.
+	bool	PickZombieCell(int32 quadIndex, int32& outX, int32& outY);
+
 	// 좀비 하나를 (cellX, cellY) 에 스폰하고 AI 를 붙인다. 실패 시 0.
 	uint64	SpawnZombieAt(int32 cellX, int32 cellY);
 

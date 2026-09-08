@@ -144,6 +144,13 @@ public:
 
 	bool	LoadLevel();
 
+	// (cellX, cellY) 에 한 변 boxCells 인 정사각 충돌 박스를 놓았을 때 벽에 안 걸리는가.
+	// = 길찾기 NavGrid 통행 판정 = 이동 충돌(IsActorBoxBlocked) 과 동일. 스폰 위치 검증용.
+	bool	IsBoxWalkable(int32 boxCells, int32 cellX, int32 cellY);
+
+	// (cellX, cellY) 에서 boxCells 박스가 들어가는 가장 가까운 셀로 스냅 (in/out). maxRadiusCells 안에서 못 찾으면 false.
+	bool	SnapCellForBox(int32 boxCells, int32 maxRadiusCells, int32& cellX, int32& cellY);
+
 	// 출발지와 목적지가 막힌 타일이면 가장 가까운 통행 가능 타일로 스냅한다.
 	// outStart / outGoal에 실제로 사용된 타일이 담긴다.
 	bool	FindPathToObject(TilePos start, uint64 targetObjectId,

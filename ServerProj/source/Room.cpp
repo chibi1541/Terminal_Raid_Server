@@ -348,6 +348,24 @@ uint64 Room::FindFirstPlayerId()
 	return 0;
 }
 
+bool Room::IsBoxWalkable(int32 boxCells, int32 cellX, int32 cellY)
+{
+	return _level.GetNavGridForCollisionBox(boxCells, boxCells).IsWalkable(cellX, cellY);
+}
+
+bool Room::SnapCellForBox(int32 boxCells, int32 maxRadiusCells, int32& cellX, int32& cellY)
+{
+	const NavGrid& grid = _level.GetNavGridForCollisionBox(boxCells, boxCells);
+
+	TilePos out;
+	if (grid.FindNearestWalkable(TilePos{ cellX, cellY }, maxRadiusCells, OUT out) == false)
+		return false;
+
+	cellX = out.x;
+	cellY = out.y;
+	return true;
+}
+
 bool Room::FindPathToObject(TilePos start, uint64 targetObjectId,
 							OUT Vector<TilePos>& outPath, OUT TilePos& outStart, OUT TilePos& outGoal)
 {
