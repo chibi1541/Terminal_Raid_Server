@@ -18,4 +18,6 @@ public:
 	static uint64 GenerateObjectId(Protocol::ObjectType type);
 
 	static Protocol::ObjectType GetObjectType(uint64 objectId);
+
+	static uint64 GetObjectCount(uint64 objectId);
 };

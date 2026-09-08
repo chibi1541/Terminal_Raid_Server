@@ -17,3 +17,8 @@ Protocol::ObjectType ObjectIdGenerator::GetObjectType(uint64 objectId)
 {
 	return static_cast<Protocol::ObjectType>((objectId & OBJECT_TYPE_MASK) >> OBJECT_TYPE_SHIFT);
 }
+
+uint64 ObjectIdGenerator::GetObjectCount(uint64 objectId)
+{
+	return objectId & OBJECT_COUNT_MASK;
+}

@@ -14,8 +14,9 @@ Player::Player()
 	// 반드시 같아야 한다. CharacterData 의 collisionCells 도 이 값으로 맞춰 둔다.
 	SetCollisionBox(MoveMath::PLAYER_COLLISION_CELLS_WIDE, MoveMath::PLAYER_COLLISION_CELLS_HIGH);
 
-	// 기본 캐릭터로 스탯을 채운다 (아직 클라 캐릭터 선택이 없어 서버가 정한다).
-	SetCharacterType(CharacterData::Get().GetDefaultType());
+	// 임시로 id 카운트에 따라 캐릭터 타입을 정한다
+	Protocol::CharacterType charType = static_cast<Protocol::CharacterType>((ObjectIdGenerator::GetObjectCount(GetObjId()) % 3) + 1);
+	SetCharacterType(charType);
 }
 
 void Player::SetCharacterType(Protocol::CharacterType type)
