@@ -242,25 +242,13 @@ void JpsPathFinder::BuildPath(const NavGrid& grid, int32 goalIndex, OUT Vector<T
 	// goal -> start 순으로 쌓였으니 뒤집는다.
 	std::reverse(_jumpPoints.begin(), _jumpPoints.end());
 
-	outPath.push_back(_jumpPoints[0]);
-
-	// 점프 포인트 사이는 항상 직선이나 대각선이다. 한 칸씩 채워 타일 경로로 펼친다.
-	for (size_t i = 1; i < _jumpPoints.size(); i++)
-	{
-		const TilePos from = _jumpPoints[i - 1];
-		const TilePos to = _jumpPoints[i];
-
-		const int32 stepX = Sign(to.x - from.x);
-		const int32 stepY = Sign(to.y - from.y);
-
-		TilePos cursor = from;
-		while (cursor != to)
-		{
-			cursor.x += stepX;
-			cursor.y += stepY;
-			outPath.push_back(cursor);
-		}
-	}
+	// 경로는 점프 포인트만 담는다 (한 칸씩 펼치지 않는다).
+	//
+	// 점프 포인트 사이는 항상 직선이나 대각선이라 추종하는 쪽에서 DirTo 로 한 방향으로 쭉 가면 된다.
+	// 셀 격자로 바뀐 뒤 한 칸씩 펼치면 웨이포인트 간격(1셀)이 몬스터의 틱당 이동량(~1.5셀)보다
+	// 촘촘해져서 추종기가 웨이포인트를 지나치고 pathIndex 가 뒤처지며 버벅인다.
+	for (const TilePos& jp : _jumpPoints)
+		outPath.push_back(jp);
 }
 
 /*-------------

@@ -724,7 +724,7 @@ void GameCommands::Register()
 			}
 
 			WCHAR buffer[256];
-			::swprintf_s(buffer, L"path %d cells, jump points %d taken / %d opened, expanded %d nodes, %.1f us",
+			::swprintf_s(buffer, L"path %d nodes (jump points), %d taken / %d opened, expanded %d nodes, %.1f us",
 				static_cast<int32>(path.size()), GRoom->GetLastPathJumpPointCount(),
 				GRoom->GetLastOpenedCount(), GRoom->GetLastExpandedCount(), elapsedUs);
 

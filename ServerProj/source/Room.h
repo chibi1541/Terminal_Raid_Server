@@ -29,6 +29,7 @@ class Room : public JobQueue
 		TICK_INTERVAL_MS		= 50,
 		SPAWN_MAX_TRY			= 64,	// 통행 가능한 셀을 무작위로 찾을 때의 시도 횟수
 		SNAP_MAX_RADIUS			= 32,	// 막힌 셀을 통행 가능한 셀로 스냅할 때의 최대 반경(셀). 큰 박스(necro 24)가 벽에 붙어도 유효 중심을 찾도록 여유
+		PATH_ARRIVE_TOL_CELLS	= 2,	// 경로 웨이포인트(점프 포인트) 도착 허용오차(셀). 틱당 이동량(~1.5셀)보다 커야 지나침에도 pathIndex 가 따라간다
 		MOVE_KEYFRAME_INTERVAL	= 10,	// 이 틱마다 움직이는 액터를 강제로 브로드캐스트 (500ms 드리프트 보정)
 		PROJECTILE_LIFETIME_TICKS	= 100,	// 투사체 기본 수명 (5초 @ 20Hz)
 		MAX_CATCHUP_TICKS		= 5,	// 이 배수(5틱=250ms)만큼 밀리면 따라잡기 포기하고 리셋

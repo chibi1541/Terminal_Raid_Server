@@ -484,33 +484,59 @@ void Room::UpdateMovement()
 		if (m.state != MoveState::Moving)
 			continue;
 
-		// 경로 추종 : 현재 웨이포인트에 닿았으면 다음으로, dir 을 웨이포인트 방향에 맞춘다.
+		// 경로 추종. m.path 는 JPS 점프 포인트만 담는다 (한 칸씩 안 펼침). 점프 포인트 사이는
+		// 직선/대각이라 DirTo 로 한 방향으로 쭉 가면 되고, 도달했거나 지나친 웨이포인트는
+		// 한 틱에 여러 개라도 모두 건너뛴다 (틱당 이동량 > 웨이포인트 간격이어도 안 꼬임).
 		if (m.HasPath())
 		{
-			// path 원소는 이제 셀 좌표 그대로 (NavGrid 가 셀 공간).
 			auto toCell = [](const TilePos& t) { Protocol::Vector2 v; v.set_x(t.x); v.set_y(t.y); return v; };
-			Protocol::Vector2 wp = toCell(m.path[m.pathIndex]);
 
-			if (object->GetPosX() == wp.x() && object->GetPosY() == wp.y())
+			bool advanced = false;
+
+			while (m.HasPath())
 			{
-				m.pathIndex++;
+				const TilePos& node = m.path[m.pathIndex];
+				const int32 dx = node.x - object->GetPosX();
+				const int32 dy = node.y - object->GetPosY();
 
-				if (m.HasPath() == false)
+				// (a) 허용오차 안 = 도착.
+				const bool reached =
+					(dx >= -PATH_ARRIVE_TOL_CELLS && dx <= PATH_ARRIVE_TOL_CELLS &&
+					 dy >= -PATH_ARRIVE_TOL_CELLS && dy <= PATH_ARRIVE_TOL_CELLS);
+
+				// (b) 지나침 = 웨이포인트가 현재 진행 방향의 "뒤"에 있다.
+				//     고정소수점 이동이 웨이포인트 셀을 정확히 안 밟고 건너뛰는 경우를 잡는다.
+				bool passed = false;
+				if (reached == false && m.dir != Protocol::DIR_NONE)
 				{
-					m.ClearPath();
-					m.dir = Protocol::DIR_NONE;
-					m.state = MoveState::Idle;
-					m.dirty = true;
-					BroadcastDebugPath(object, /*cleared*/ true, /*includeSearchNodes*/ false);
-					continue;
+					int32 ux = 0;
+					int32 uy = 0;
+					DirUnit(m.dir, OUT ux, OUT uy);
+					passed = (dx * ux + dy * uy) < 0;
 				}
 
-				wp = toCell(m.path[m.pathIndex]);
+				if (reached == false && passed == false)
+					break;
 
-				// 웨이포인트 전진 - 디버그 오버레이의 "현재 목표"를 갱신한다. (매 틱이 아님)
-				BroadcastDebugPath(object, /*cleared*/ false, /*includeSearchNodes*/ false);
+				m.pathIndex++;
+				advanced = true;
 			}
 
+			if (m.HasPath() == false)
+			{
+				m.ClearPath();
+				m.dir = Protocol::DIR_NONE;
+				m.state = MoveState::Idle;
+				m.dirty = true;
+				BroadcastDebugPath(object, /*cleared*/ true, /*includeSearchNodes*/ false);
+				continue;
+			}
+
+			// 웨이포인트 전진 - 디버그 오버레이의 "현재 목표"를 갱신한다. (매 틱이 아님)
+			if (advanced)
+				BroadcastDebugPath(object, /*cleared*/ false, /*includeSearchNodes*/ false);
+
+			const Protocol::Vector2 wp = toCell(m.path[m.pathIndex]);
 			const Protocol::DirectionType want = DirTo(object->GetPos(), wp);
 			if (want != m.dir)
 			{
@@ -1320,9 +1346,8 @@ std::wstring Room::DescribeLevel()
 	const NavGrid& grid = _level.GetNavGrid();
 
 	WCHAR buffer[256];
-	::swprintf_s(buffer, L"level : %d x %d cells, tileSize %d -> %d x %d tiles",
-		_level.GetWidth(), _level.GetHeight(), _level.GetTileSize(),
-		grid.GetWidth(), grid.GetHeight());
+	::swprintf_s(buffer, L"level : %d x %d cells (nav grid = cell space, %d x %d nodes)",
+		_level.GetWidth(), _level.GetHeight(), grid.GetWidth(), grid.GetHeight());
 
 	std::wstring result = buffer;
 	result += L"\n  # = blocked, . = walkable";
