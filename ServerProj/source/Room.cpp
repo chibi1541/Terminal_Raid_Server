@@ -7,6 +7,7 @@
 #include "Game/ObjectIdGenerator.h"
 #include "GameSession.h"
 #include "Game/ProjectileData.h"
+#include "Game/PathFinderCommon.h"
 #include "Game/MonsterData.h"
 #include "Game/CharacterData.h"
 #include <algorithm>
@@ -387,7 +388,218 @@ bool Room::FindPathToObject(TilePos start, uint64 targetObjectId,
 	if (grid.FindNearestWalkable(rawGoal, SNAP_MAX_RADIUS, OUT outGoal) == false)
 		return false;
 
-	return _pathFinder.FindPath(grid, outStart, outGoal, OUT outPath);
+	_pathFinder->SetRecordSearchNodes(true);	// 콘솔 path 명령 - DescribePath 가 open 노드를 그린다
+	return _pathFinder->FindPath(grid, outStart, outGoal, OUT outPath);
+}
+
+void Room::SetPathFinder(EPathFinder kind)
+{
+	_pathFinderKind = kind;
+	_pathFinder = (kind == EPathFinder::Jps) ? static_cast<IPathFinder*>(&_jps)
+											 : static_cast<IPathFinder*>(&_astar);
+}
+
+bool Room::AnyPathSubscriber() const
+{
+	for (const auto& item : _objects)
+	{
+		GameObject* o = item.second.get();
+		if (o == nullptr || o->GetObjType() != Protocol::OBJECT_PLAYER)
+			continue;
+		if (GameSessionRef s = static_cast<Player*>(o)->GetSession())
+		{
+			if (s->WantsPaths())
+				return true;
+		}
+	}
+	return false;
+}
+
+namespace
+{
+	// finder 를 iters 회 돌려 min / 평균 us 를 잰다. 마지막 회의 경로/노드 수를 out 에 남긴다.
+	struct BenchResult
+	{
+		bool	ok = false;
+		int32	pathNodes = 0;
+		int32	expanded = 0;	// open 에서 꺼낸 노드 (JPS = 점프 포인트, A* = 셀)
+		int64	scanned = 0;	// 검사한 셀 수 (IsWalkable 호출) - 두 알고리즘 공통 척도
+		int32	pathCost = 0;
+		double	minUs = 0.0;
+		double	avgUs = 0.0;
+	};
+
+	BenchResult RunBench(IPathFinder& finder, const NavGrid& grid, TilePos start, TilePos goal, int32 iters)
+	{
+		BenchResult r;
+		finder.SetRecordSearchNodes(false);
+
+		LARGE_INTEGER freq = {};
+		::QueryPerformanceFrequency(OUT &freq);
+		const double toUs = (freq.QuadPart > 0) ? (1000000.0 / static_cast<double>(freq.QuadPart)) : 0.0;
+
+		double sum = 0.0;
+		double best = 0.0;
+		Vector<TilePos> path;
+
+		for (int32 i = 0; i < iters; i++)
+		{
+			LARGE_INTEGER t0 = {};
+			LARGE_INTEGER t1 = {};
+			::QueryPerformanceCounter(OUT &t0);
+			r.ok = finder.FindPath(grid, start, goal, OUT path);
+			::QueryPerformanceCounter(OUT &t1);
+
+			const double us = static_cast<double>(t1.QuadPart - t0.QuadPart) * toUs;
+			sum += us;
+			if (i == 0 || us < best)
+				best = us;
+		}
+
+		r.minUs = best;
+		r.avgUs = (iters > 0) ? (sum / iters) : 0.0;
+		r.pathNodes = static_cast<int32>(path.size());
+		r.expanded = finder.GetLastExpandedCount();
+		r.scanned = finder.GetLastScannedCount();
+		r.pathCost = PathTotalCost(path);
+		return r;
+	}
+}
+
+std::wstring Room::BenchPath(TilePos start, TilePos goal, int32 boxCells, int32 iters)
+{
+	if (boxCells < 1) boxCells = 1;
+	if (iters < 1) iters = 1;
+	if (iters > 2000) iters = 2000;
+
+	const NavGrid& grid = _level.GetNavGridForCollisionBox(boxCells, boxCells);
+
+	TilePos s;
+	TilePos g;
+	if (grid.FindNearestWalkable(start, SNAP_MAX_RADIUS, OUT s) == false ||
+		grid.FindNearestWalkable(goal, SNAP_MAX_RADIUS, OUT g) == false)
+	{
+		return L"pathbench : start or goal has no walkable cell within snap radius";
+	}
+
+	const BenchResult jps = RunBench(_jps, grid, s, g, iters);
+	const BenchResult ast = RunBench(_astar, grid, s, g, iters);
+
+	WCHAR buf[512];
+	std::wstring out;
+
+	::swprintf_s(buf, L"pathbench (%d,%d)->(%d,%d)  box %d  %d iters%ls",
+		s.x, s.y, g.x, g.y, boxCells, iters,
+		(s != start || g != goal) ? L"  (snapped)" : L"");
+	out = buf;
+
+	::swprintf_s(buf, L"\n  JPS : path %d | expanded %-6d | scanned %-8lld | %.1f us min  %.1f us avg | cost %d%ls",
+		jps.pathNodes, jps.expanded, static_cast<long long>(jps.scanned),
+		jps.minUs, jps.avgUs, jps.pathCost, jps.ok ? L"" : L"  (FAIL)");
+	out += buf;
+
+	::swprintf_s(buf, L"\n  A*  : path %d | expanded %-6d | scanned %-8lld | %.1f us min  %.1f us avg | cost %d%ls",
+		ast.pathNodes, ast.expanded, static_cast<long long>(ast.scanned),
+		ast.minUs, ast.avgUs, ast.pathCost, ast.ok ? L"" : L"  (FAIL)");
+	out += buf;
+
+	// scanned(= 검사한 셀 수)가 두 알고리즘을 사과 대 사과로 비교하는 값.
+	const double scanRatio = (jps.scanned > 0) ? (static_cast<double>(ast.scanned) / jps.scanned) : 0.0;
+	const double timeRatio = (jps.avgUs > 0.0) ? (ast.avgUs / jps.avgUs) : 0.0;
+	::swprintf_s(buf, L"\n  A* / JPS : scanned x%.2f , time x%.2f  (%ls)",
+		scanRatio, timeRatio,
+		(timeRatio > 1.0) ? L"JPS faster" : L"A* faster");
+	out += buf;
+
+	return out;
+}
+
+std::wstring Room::BenchPathRandom(int32 count, int32 boxCells)
+{
+	if (boxCells < 1) boxCells = 1;
+	if (count < 1) count = 1;
+	if (count > 2000) count = 2000;	// 룸 잡 큐를 오래 막지 않게. Debug 는 쿼리당 수십 ms 까지.
+
+	const NavGrid& grid = _level.GetNavGridForCollisionBox(boxCells, boxCells);
+	const int32 w = grid.GetWidth();
+	const int32 h = grid.GetHeight();
+
+	int64 jpsScanSum = 0, astScanSum = 0;
+	int64 jpsScanMax = 0, astScanMax = 0;
+	double jpsUsSum = 0.0, astUsSum = 0.0;
+	double jpsUsMax = 0.0, astUsMax = 0.0;
+	int32 jpsOk = 0, astOk = 0;
+	int32 done = 0;
+
+	Vector<TilePos> path;
+	LARGE_INTEGER freq = {};
+	::QueryPerformanceFrequency(OUT &freq);
+	const double toUs = (freq.QuadPart > 0) ? (1000000.0 / static_cast<double>(freq.QuadPart)) : 0.0;
+
+	_jps.SetRecordSearchNodes(false);
+	_astar.SetRecordSearchNodes(false);
+
+	int32 tries = 0;
+	while (done < count && tries < count * 40)
+	{
+		tries++;
+		const TilePos a{ RandomRange32(0, w - 1), RandomRange32(0, h - 1) };
+		const TilePos b{ RandomRange32(0, w - 1), RandomRange32(0, h - 1) };
+		if (grid.IsWalkable(a.x, a.y) == false || grid.IsWalkable(b.x, b.y) == false)
+			continue;
+		if (::abs(a.x - b.x) + ::abs(a.y - b.y) < 40)
+			continue;
+
+		auto timeOne = [&](IPathFinder& f) -> std::pair<bool, double>
+		{
+			LARGE_INTEGER t0 = {};
+			LARGE_INTEGER t1 = {};
+			::QueryPerformanceCounter(OUT &t0);
+			const bool ok = f.FindPath(grid, a, b, OUT path);
+			::QueryPerformanceCounter(OUT &t1);
+			return { ok, static_cast<double>(t1.QuadPart - t0.QuadPart) * toUs };
+		};
+
+		const auto rj = timeOne(_jps);
+		const int64 js = _jps.GetLastScannedCount();
+		const auto ra = timeOne(_astar);
+		const int64 as = _astar.GetLastScannedCount();
+
+		jpsScanSum += js; astScanSum += as;
+		if (js > jpsScanMax) jpsScanMax = js;
+		if (as > astScanMax) astScanMax = as;
+		jpsUsSum += rj.second; astUsSum += ra.second;
+		if (rj.second > jpsUsMax) jpsUsMax = rj.second;
+		if (ra.second > astUsMax) astUsMax = ra.second;
+		if (rj.first) jpsOk++;
+		if (ra.first) astOk++;
+		done++;
+	}
+
+	WCHAR buf[512];
+	std::wstring out;
+	::swprintf_s(buf, L"pathbench random  %d queries  box %d", done, boxCells);
+	out = buf;
+
+	if (done > 0)
+	{
+		::swprintf_s(buf, L"\n  JPS : %d ok | scanned avg %-8lld max %-8lld | %.1f us avg  %.1f us max",
+			jpsOk, static_cast<long long>(jpsScanSum / done), static_cast<long long>(jpsScanMax),
+			jpsUsSum / done, jpsUsMax);
+		out += buf;
+		::swprintf_s(buf, L"\n  A*  : %d ok | scanned avg %-8lld max %-8lld | %.1f us avg  %.1f us max",
+			astOk, static_cast<long long>(astScanSum / done), static_cast<long long>(astScanMax),
+			astUsSum / done, astUsMax);
+		out += buf;
+
+		const double sr = (jpsScanSum > 0) ? (static_cast<double>(astScanSum) / jpsScanSum) : 0.0;
+		const double tr = (jpsUsSum > 0.0) ? (astUsSum / jpsUsSum) : 0.0;
+		::swprintf_s(buf, L"\n  A* / JPS (avg) : scanned x%.2f , time x%.2f  (%ls)",
+			sr, tr, (tr > 1.0) ? L"JPS faster" : L"A* faster");
+		out += buf;
+	}
+
+	return out;
 }
 
 /*---------------
@@ -805,7 +1017,23 @@ bool Room::OrderMoveTo(uint64 objectId, int32 cellX, int32 cellY)
 	MovementComponent& m = object->Movement();
 	m.ClearPath();
 
-	if (_pathFinder.FindPath(grid, snappedStart, snappedGoal, OUT m.path) == false || m.path.empty())
+	// 구독자가 있을 때만 searchNodes 를 기록한다 (A* 는 open 이 수만 개).
+	_pathFinder->SetRecordSearchNodes(AnyPathSubscriber());
+
+	LARGE_INTEGER freq = {};
+	LARGE_INTEGER t0 = {};
+	LARGE_INTEGER t1 = {};
+	::QueryPerformanceFrequency(OUT &freq);
+	::QueryPerformanceCounter(OUT &t0);
+
+	const bool pathOk = _pathFinder->FindPath(grid, snappedStart, snappedGoal, OUT m.path);
+
+	::QueryPerformanceCounter(OUT &t1);
+	_lastPathMicros = (freq.QuadPart > 0)
+		? static_cast<uint32>((t1.QuadPart - t0.QuadPart) * 1000000 / freq.QuadPart)
+		: 0;
+
+	if (pathOk == false || m.path.empty())
 	{
 		m.state = MoveState::Idle;
 		m.dir = Protocol::DIR_NONE;
@@ -872,22 +1100,7 @@ void Room::BroadcastDebugPath(GameObject* object, bool cleared, bool includeSear
 		return;
 
 	// 구독 세션이 하나도 없으면 조립 비용조차 아낀다.
-	bool anySubscriber = false;
-	for (auto& item : _objects)
-	{
-		GameObject* o = item.second.get();
-		if (o == nullptr || o->GetObjType() != Protocol::OBJECT_PLAYER)
-			continue;
-		if (GameSessionRef s = static_cast<Player*>(o)->GetSession())
-		{
-			if (s->WantsPaths())
-			{
-				anySubscriber = true;
-				break;
-			}
-		}
-	}
-	if (anySubscriber == false)
+	if (AnyPathSubscriber() == false)
 		return;
 
 	const MovementComponent& m = object->Movement();
@@ -898,6 +1111,7 @@ void Room::BroadcastDebugPath(GameObject* object, bool cleared, bool includeSear
 	pkt.set_currentindex(static_cast<uint32>(m.pathIndex));
 	// 이 경로를 구운 액터 충돌 박스 = 길찾기 장애물 팽창 = 이동 충돌 박스 (셀). 클라가 테두리로 그린다.
 	pkt.set_boxcells(static_cast<uint32>(object->GetCollisionCellsWide()));
+	pkt.set_pathalgo(static_cast<uint32>(_pathFinderKind));
 
 	if (cleared == false)
 	{
@@ -917,9 +1131,9 @@ void Room::BroadcastDebugPath(GameObject* object, bool cleared, bool includeSear
 
 	if (includeSearchNodes)
 	{
-		// JPS 탐색 흔적 (open 에 넣은 모든 점프 포인트). 청크 제한 안에 들도록 상한.
+		// 탐색 흔적 (open 에 넣은 노드). 청크 제한 안에 들도록 상한. A* 는 수만 개라 잘려 나간다 (정상).
 		int32 emitted = 0;
-		for (const TilePos& tile : _pathFinder.GetLastOpenedJumpPoints())
+		for (const TilePos& tile : _pathFinder->GetLastOpenedNodes())
 		{
 			if (emitted++ >= 400)
 				break;
@@ -928,13 +1142,18 @@ void Room::BroadcastDebugPath(GameObject* object, bool cleared, bool includeSear
 			out->set_y(tile.y);
 		}
 
-		// 최종 경로가 실제로 지나는 점프 포인트 (start..goal). 클라가 오렌지 3x3 으로 강조.
-		for (const TilePos& tile : _pathFinder.GetLastPathJumpPoints())
+		// 최종 경로가 실제로 지나는 전환점 (start..goal). 클라가 오렌지 3x3 으로 강조.
+		for (const TilePos& tile : _pathFinder->GetLastPathNodes())
 		{
 			Protocol::Vector2* out = pkt.add_pathjumpnodes()->mutable_cell();
 			out->set_x(tile.x);
 			out->set_y(tile.y);
 		}
+
+		// 방금 탐색의 확장 노드 수 / 검사 셀 수 / 소요 시간. 클라 F5 라벨.
+		pkt.set_expandednodes(static_cast<uint32>(_pathFinder->GetLastExpandedCount()));
+		pkt.set_scannednodes(static_cast<uint32>(_pathFinder->GetLastScannedCount()));
+		pkt.set_computemicros(_lastPathMicros);
 	}
 
 	const SendBufferRef buffer = ClientPacketHandler::MakeSendBuffer(pkt);
@@ -1456,7 +1675,7 @@ std::wstring Room::DescribePath(const Vector<TilePos>& path, TilePos start, Tile
 	// 경로 위에 점프 포인트를 덧그린다.
 	// J가 *를 덮게 두는 이유 : 경로 위의 점프 포인트가 가장 보고 싶은 것인데
 	// *가 이기면 그게 전부 가려진다. 사이를 잇는 *는 그대로 남아 경로 모양도 읽힌다.
-	for (const TilePos& tile : _pathFinder.GetLastOpenedJumpPoints())
+	for (const TilePos& tile : _pathFinder->GetLastOpenedNodes())
 	{
 		if (tile.x < 0 || tile.y < 0 || tile.x >= width || tile.y >= height)
 			continue;
@@ -1467,7 +1686,7 @@ std::wstring Room::DescribePath(const Vector<TilePos>& path, TilePos start, Tile
 	// 경로가 실제로 지나는 점프 포인트는 J 위에 S로 덮어쓴다.
 	// 이러면 어느 점프 포인트가 실제 루트로 채택됐는지 한눈에 갈린다.
 	// 목록의 첫 원소가 출발 타일이라 시작 표시도 여기서 같이 칠해진다.
-	for (const TilePos& tile : _pathFinder.GetLastPathJumpPoints())
+	for (const TilePos& tile : _pathFinder->GetLastPathNodes())
 	{
 		if (tile.x < 0 || tile.y < 0 || tile.x >= width || tile.y >= height)
 			continue;

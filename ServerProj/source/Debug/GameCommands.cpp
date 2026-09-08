@@ -653,6 +653,76 @@ void GameCommands::Register()
 				context.Reply(L"level load failed, fell back to empty map. check the log");
 		}, CommandRunMode::GameThread);
 
+	GCommandRegistry->Register(L"pathalgo", L"pathalgo [jps|astar]",
+		L"show or switch the active pathfinder (AI + debug). default jps.",
+		[](CommandContext& context)
+		{
+			if (GRoom == nullptr)
+			{
+				context.Reply(L"room not created");
+				return;
+			}
+
+			if (context.ArgCount() < 2)
+			{
+				context.Reply(L"pathfinder : %s", GRoom->GetPathFinderName());
+				return;
+			}
+
+			const std::wstring& a = context.Arg(1);
+			if (a == L"jps")
+				GRoom->SetPathFinder(EPathFinder::Jps);
+			else if (a == L"astar" || a == L"a*")
+				GRoom->SetPathFinder(EPathFinder::AStar);
+			else
+			{
+				context.Reply(L"usage : pathalgo [jps|astar]");
+				return;
+			}
+
+			context.Reply(L"pathfinder -> %s", GRoom->GetPathFinderName());
+		}, CommandRunMode::GameThread);
+
+	GCommandRegistry->Register(L"pathbench",
+		L"pathbench <sx> <sy> <gx> <gy> [box=16] [iters=20]  |  pathbench random [count=200] [box=16]",
+		L"compare JPS vs A* : search-node count and compute time",
+		[](CommandContext& context)
+		{
+			if (GRoom == nullptr)
+			{
+				context.Reply(L"room not created");
+				return;
+			}
+
+			if (context.ArgCount() >= 2 && context.Arg(1) == L"random")
+			{
+				int32 count = 200;
+				int32 box = 16;
+				if (context.ArgCount() >= 3) ParseInt32(context.Arg(2), OUT count);
+				if (context.ArgCount() >= 4) ParseInt32(context.Arg(3), OUT box);
+				context.Reply(L"%s", GRoom->BenchPathRandom(count, box).c_str());
+				return;
+			}
+
+			int32 sx = 0, sy = 0, gx = 0, gy = 0;
+			if (context.ArgCount() < 5 ||
+				ParseInt32(context.Arg(1), OUT sx) == false ||
+				ParseInt32(context.Arg(2), OUT sy) == false ||
+				ParseInt32(context.Arg(3), OUT gx) == false ||
+				ParseInt32(context.Arg(4), OUT gy) == false)
+			{
+				context.Reply(L"usage : pathbench <sx> <sy> <gx> <gy> [box=16] [iters=20]  (or: pathbench random [count] [box])");
+				return;
+			}
+
+			int32 box = 16;
+			int32 iters = 20;
+			if (context.ArgCount() >= 6) ParseInt32(context.Arg(5), OUT box);
+			if (context.ArgCount() >= 7) ParseInt32(context.Arg(6), OUT iters);
+
+			context.Reply(L"%s", GRoom->BenchPath(TilePos{ sx, sy }, TilePos{ gx, gy }, box, iters).c_str());
+		}, CommandRunMode::GameThread);
+
 	GCommandRegistry->Register(L"path", L"path <startCellX> <startCellY> [objectId]",
 		L"find a path from a cell to a player using JPS (first player if objectId omitted)",
 		[](CommandContext& context)
@@ -717,16 +787,19 @@ void GameCommands::Register()
 
 			if (found == false)
 			{
-				context.Reply(L"path not found : start (%d, %d) -> objectId %llu   expanded %d nodes, %.1f us",
+				context.Reply(L"path not found : start (%d, %d) -> objectId %llu   expanded %d, scanned %lld cells, %.1f us",
 					rawStart.x, rawStart.y, targetId,
-					GRoom->GetLastExpandedCount(), elapsedUs);
+					GRoom->GetLastExpandedCount(),
+					static_cast<long long>(GRoom->GetLastScannedCount()), elapsedUs);
 				return;
 			}
 
 			WCHAR buffer[256];
-			::swprintf_s(buffer, L"path %d nodes (jump points), %d taken / %d opened, expanded %d nodes, %.1f us",
-				static_cast<int32>(path.size()), GRoom->GetLastPathJumpPointCount(),
-				GRoom->GetLastOpenedCount(), GRoom->GetLastExpandedCount(), elapsedUs);
+			::swprintf_s(buffer, L"path %d nodes, %d opened, expanded %d, scanned %lld cells, %.1f us  [%s]",
+				static_cast<int32>(path.size()),
+				GRoom->GetLastOpenedCount(), GRoom->GetLastExpandedCount(),
+				static_cast<long long>(GRoom->GetLastScannedCount()), elapsedUs,
+				GRoom->GetPathFinderName());
 
 			std::wstring header = buffer;
 

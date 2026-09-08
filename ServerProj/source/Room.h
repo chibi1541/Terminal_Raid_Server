@@ -3,6 +3,7 @@
 #include "Game/GameObject.h"
 #include "Game/Level.h"
 #include "Game/JpsPathFinder.h"
+#include "Game/AStarPathFinder.h"
 #include "Game/QuadTree.h"
 #include "Game/MonsterSpawner.h"
 #include "AI/BehaviorTreeManager.h"
@@ -217,15 +218,26 @@ public:
 	std::wstring	DescribeTree() const		{ return _collisionTree.Describe(); }
 	int32			GetTreeNodeCount() const	{ return _collisionTree.GetNodeCount(); }
 	int32			GetLastVisitedNodes() const	{ return _collisionTree.GetLastVisitedNodes(); }
-	int32			GetLastExpandedCount() const { return _pathFinder.GetLastExpandedCount(); }
+	int32			GetLastExpandedCount() const { return _pathFinder->GetLastExpandedCount(); }
+	int64			GetLastScannedCount() const { return _pathFinder->GetLastScannedCount(); }
 	int32			GetLastOpenedCount() const
 	{
-		return static_cast<int32>(_pathFinder.GetLastOpenedJumpPoints().size());
+		return static_cast<int32>(_pathFinder->GetLastOpenedNodes().size());
 	}
 	int32			GetLastPathJumpPointCount() const
 	{
-		return static_cast<int32>(_pathFinder.GetLastPathJumpPoints().size());
+		return static_cast<int32>(_pathFinder->GetLastPathNodes().size());
 	}
+	uint32			GetLastPathMicros() const { return _lastPathMicros; }
+
+	// 활성 길찾기 교체 / 조회. pathalgo 콘솔 명령이 쓴다.
+	void			SetPathFinder(EPathFinder kind);
+	EPathFinder		GetPathFinderKind() const { return _pathFinderKind; }
+	const wchar_t*	GetPathFinderName() const { return _pathFinder->Name(); }
+
+	// JPS vs A* 성능 비교. pathbench 콘솔 명령이 쓴다.
+	std::wstring	BenchPath(TilePos start, TilePos goal, int32 boxCells, int32 iters);
+	std::wstring	BenchPathRandom(int32 count, int32 boxCells);
 
 private:
 	// 갓 입장한 플레이어에게 룸 전체 스냅샷을 보낸다.
@@ -274,6 +286,9 @@ private:
 	// 탐색의 open 점프 포인트를 함께 싣는다(goto/path 명령 직후에만 의미 있음).
 	void	BroadcastDebugPath(GameObject* object, bool cleared, bool includeSearchNodes);
 
+	// WantsPaths 구독 세션이 하나라도 있는가. (BroadcastDebugPath / OrderMoveTo 공용)
+	bool	AnyPathSubscriber() const;
+
 	// 8방향 enum -> 정수 단위 벡터.
 	static void					DirUnit(Protocol::DirectionType dir, OUT int32& ux, OUT int32& uy);
 	// 두 셀의 부호 차이 -> 8방향 enum.
@@ -290,7 +305,12 @@ private:
 	HashMap<uint64, BtInstance> _behaviors;
 	bool						_behaviorAutoTick = true;
 
-	JpsPathFinder	_pathFinder;
+	JpsPathFinder	_jps;
+	AStarPathFinder	_astar;
+	IPathFinder*	_pathFinder = &_jps;	// 활성 길찾기. pathalgo 콘솔로 교체.
+	EPathFinder		_pathFinderKind = EPathFinder::Jps;
+	uint32			_lastPathMicros = 0;	// 마지막 OrderMoveTo 탐색 소요 (us). 디버그 오버레이용.
+
 	QuadTree		_collisionTree;
 
 	// 레벨 몬스터 배치 + 개체 수 유지. BeginPlay 에서 초기 스폰, Tick 끝에서 리젠 체크.

@@ -258,6 +258,18 @@ void JpsPathFinder::BuildPath(const NavGrid& grid, int32 goalIndex, OUT Vector<T
 bool JpsPathFinder::FindPath(const NavGrid& grid, TilePos start, TilePos goal,
 							 OUT Vector<TilePos>& outPath, int32 maxNodeCount)
 {
+	grid.ResetQueryCount();
+	const bool ok = FindPathImpl(grid, start, goal, OUT outPath, maxNodeCount);
+	_lastScanned = static_cast<int64>(grid.GetQueryCount());
+	return ok;
+}
+
+bool JpsPathFinder::FindPathImpl(const NavGrid& grid, TilePos start, TilePos goal,
+								OUT Vector<TilePos>& outPath, int32 maxNodeCount)
+{
+	if (maxNodeCount <= 0)
+		maxNodeCount = DEFAULT_MAX_NODE;
+
 	outPath.clear();
 	_lastExpanded = 0;
 	_lastOpened.clear();
@@ -368,7 +380,8 @@ bool JpsPathFinder::FindPath(const NavGrid& grid, TilePos start, TilePos goal,
 			jumpNode.closed = false;
 
 			_open.push(OpenNode{ jumpIndex, newG + Heuristic(jumpPos, goal) });
-			_lastOpened.push_back(jumpPos);
+			if (_recordSearch)
+				_lastOpened.push_back(jumpPos);
 		}
 	}
 

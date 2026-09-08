@@ -163,6 +163,10 @@ message S_DEBUG_PATH
 	bool cleared = 5;						// 경로 종료 통지
 	uint32 boxCells = 6;					// 이 경로를 구운 액터의 충돌 박스 한 변(셀). 길찾기 팽창 = 이동 충돌 박스와 동일
 	repeated DebugPathNode pathJumpNodes = 7;	// 최종 경로가 지나는 점프 포인트 (start..goal)
+	uint32 expandedNodes = 8;				// 마지막 탐색이 확장(open pop)한 노드 수 (JPS=점프포인트, A*=셀)
+	uint32 computeMicros = 9;				// 마지막 탐색 소요 시간 (us)
+	uint32 pathAlgo = 10;					// 활성 길찾기 : 0 = JPS, 1 = A*
+	uint32 scannedNodes = 11;				// 마지막 탐색이 검사한 셀 수 (IsWalkable 호출). 두 알고리즘 공통 척도
 }
 
 // 클라 -> 서버 : 공격(발사) 요청.

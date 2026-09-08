@@ -68,6 +68,9 @@ void NavGrid::Build(const Vector<uint8>& cells, int32 cellWidth, int32 cellHeigh
 
 bool NavGrid::IsWalkable(int32 tx, int32 ty) const
 {
+	// 길찾기 "탐색 노드 수" = 통행 판정 질의 수. JPS 는 Jump 스캔 안에서 이걸 수만 번 부른다.
+	++_queryCount;
+
 	if (tx < 0 || ty < 0 || tx >= _width || ty >= _height)
 		return false;
 
