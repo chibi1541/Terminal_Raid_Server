@@ -64,10 +64,67 @@ void NavGrid::Build(const Vector<uint8>& cells, int32 cellWidth, int32 cellHeigh
 			_walkable[static_cast<size_t>(y) * _width + x] = walkable ? 1 : 0;
 		}
 	}
+
+	// 연결 컴포넌트 라벨링 : 통행 셀을 4방향 flood-fill 로 묶는다. O(cells).
+	const size_t cellCount = static_cast<size_t>(_width) * _height;
+	_component.assign(cellCount, -1);
+
+	Vector<int32> stack;
+	stack.reserve(1024);
+	int32 nextId = 0;
+
+	for (int32 sy = 0; sy < _height; sy++)
+	{
+		for (int32 sx = 0; sx < _width; sx++)
+		{
+			const int32 seed = sy * _width + sx;
+			if (_walkable[seed] == 0 || _component[seed] != -1)
+				continue;
+
+			const int32 id = nextId++;
+			_component[seed] = id;
+			stack.clear();
+			stack.push_back(seed);
+
+			while (stack.empty() == false)
+			{
+				const int32 cur = stack.back();
+				stack.pop_back();
+				const int32 cx = cur % _width;
+				const int32 cy = cur / _width;
+
+				const int32 nb[4] = {
+					(cx + 1 < _width)  ? cur + 1       : -1,
+					(cx - 1 >= 0)      ? cur - 1       : -1,
+					(cy + 1 < _height) ? cur + _width  : -1,
+					(cy - 1 >= 0)      ? cur - _width  : -1,
+				};
+				for (int32 k = 0; k < 4; k++)
+				{
+					const int32 n = nb[k];
+					if (n < 0 || _walkable[n] == 0 || _component[n] != -1)
+						continue;
+					_component[n] = id;
+					stack.push_back(n);
+				}
+			}
+		}
+	}
+}
+
+int32 NavGrid::ComponentOf(int32 tx, int32 ty) const
+{
+	if (tx < 0 || ty < 0 || tx >= _width || ty >= _height)
+		return -1;
+
+	return _component[static_cast<size_t>(ty) * _width + tx];
 }
 
 bool NavGrid::IsWalkable(int32 tx, int32 ty) const
 {
+	// 길찾기 "탐색 노드 수" = 통행 판정 질의 수. JPS 는 Jump 스캔 안에서 이걸 수만 번 부른다.
+	++_queryCount;
+
 	if (tx < 0 || ty < 0 || tx >= _width || ty >= _height)
 		return false;
 

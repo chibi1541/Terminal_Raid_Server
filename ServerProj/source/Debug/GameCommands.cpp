@@ -653,6 +653,80 @@ void GameCommands::Register()
 				context.Reply(L"level load failed, fell back to empty map. check the log");
 		}, CommandRunMode::GameThread);
 
+	GCommandRegistry->Register(L"pathalgo", L"pathalgo [jps|jps_a|jps_b|astar]",
+		L"show or switch the active pathfinder (AI + debug). default jps. jps_a = +방향편향, jps_b = +점프상한.",
+		[](CommandContext& context)
+		{
+			if (GRoom == nullptr)
+			{
+				context.Reply(L"room not created");
+				return;
+			}
+
+			if (context.ArgCount() < 2)
+			{
+				context.Reply(L"pathfinder : %s", GRoom->GetPathFinderName());
+				return;
+			}
+
+			const std::wstring& a = context.Arg(1);
+			if (a == L"jps")
+				GRoom->SetPathFinder(EPathFinder::Jps);
+			else if (a == L"jps_a" || a == L"jpsa")
+				GRoom->SetPathFinder(EPathFinder::JpsA);
+			else if (a == L"jps_b" || a == L"jpsb")
+				GRoom->SetPathFinder(EPathFinder::JpsB);
+			else if (a == L"astar" || a == L"a*")
+				GRoom->SetPathFinder(EPathFinder::AStar);
+			else
+			{
+				context.Reply(L"usage : pathalgo [jps|jps_a|jps_b|astar]");
+				return;
+			}
+
+			context.Reply(L"pathfinder -> %s", GRoom->GetPathFinderName());
+		}, CommandRunMode::GameThread);
+
+	GCommandRegistry->Register(L"pathbench",
+		L"pathbench <sx> <sy> <gx> <gy> [box=16] [iters=20]  |  pathbench random [count=200] [box=16]",
+		L"compare JPS vs A* : search-node count and compute time",
+		[](CommandContext& context)
+		{
+			if (GRoom == nullptr)
+			{
+				context.Reply(L"room not created");
+				return;
+			}
+
+			if (context.ArgCount() >= 2 && context.Arg(1) == L"random")
+			{
+				int32 count = 200;
+				int32 box = 16;
+				if (context.ArgCount() >= 3) ParseInt32(context.Arg(2), OUT count);
+				if (context.ArgCount() >= 4) ParseInt32(context.Arg(3), OUT box);
+				context.Reply(L"%s", GRoom->BenchPathRandom(count, box).c_str());
+				return;
+			}
+
+			int32 sx = 0, sy = 0, gx = 0, gy = 0;
+			if (context.ArgCount() < 5 ||
+				ParseInt32(context.Arg(1), OUT sx) == false ||
+				ParseInt32(context.Arg(2), OUT sy) == false ||
+				ParseInt32(context.Arg(3), OUT gx) == false ||
+				ParseInt32(context.Arg(4), OUT gy) == false)
+			{
+				context.Reply(L"usage : pathbench <sx> <sy> <gx> <gy> [box=16] [iters=20]  (or: pathbench random [count] [box])");
+				return;
+			}
+
+			int32 box = 16;
+			int32 iters = 20;
+			if (context.ArgCount() >= 6) ParseInt32(context.Arg(5), OUT box);
+			if (context.ArgCount() >= 7) ParseInt32(context.Arg(6), OUT iters);
+
+			context.Reply(L"%s", GRoom->BenchPath(TilePos{ sx, sy }, TilePos{ gx, gy }, box, iters).c_str());
+		}, CommandRunMode::GameThread);
+
 	GCommandRegistry->Register(L"path", L"path <startCellX> <startCellY> [objectId]",
 		L"find a path from a cell to a player using JPS (first player if objectId omitted)",
 		[](CommandContext& context)
@@ -702,31 +776,42 @@ void GameCommands::Register()
 			TilePos usedGoal;
 
 			LARGE_INTEGER freq = {};
-			LARGE_INTEGER begin = {};
-			LARGE_INTEGER end = {};
 			::QueryPerformanceFrequency(OUT &freq);
-			::QueryPerformanceCounter(OUT &begin);
+			const double toUs = (freq.QuadPart > 0) ? (1000000.0 / static_cast<double>(freq.QuadPart)) : 0.0;
 
-			const bool found = GRoom->FindPathToObject(rawStart, targetId, OUT path, OUT usedStart, OUT usedGoal);
-
-			::QueryPerformanceCounter(OUT &end);
-
-			const double elapsedUs = (freq.QuadPart > 0)
-				? (static_cast<double>(end.QuadPart - begin.QuadPart) * 1000000.0 / freq.QuadPart)
-				: 0.0;
+			// 단발 측정은 노이즈가 커서 min/avg/max 로 본다. 결정적 탐색이라 결과는 매번 같다.
+			const int32 timeRuns = 25;
+			double usSum = 0.0, usMin = 0.0, usMax = 0.0;
+			bool found = false;
+			for (int32 i = 0; i < timeRuns; i++)
+			{
+				LARGE_INTEGER t0 = {};
+				LARGE_INTEGER t1 = {};
+				::QueryPerformanceCounter(OUT &t0);
+				found = GRoom->FindPathToObject(rawStart, targetId, OUT path, OUT usedStart, OUT usedGoal);
+				::QueryPerformanceCounter(OUT &t1);
+				const double us = static_cast<double>(t1.QuadPart - t0.QuadPart) * toUs;
+				usSum += us;
+				if (i == 0 || us < usMin) usMin = us;
+				if (i == 0 || us > usMax) usMax = us;
+			}
+			const double usAvg = usSum / timeRuns;
 
 			if (found == false)
 			{
-				context.Reply(L"path not found : start (%d, %d) -> objectId %llu   expanded %d nodes, %.1f us",
+				context.Reply(L"path not found : start (%d, %d) -> objectId %llu   expanded %d, scanned %lld cells, us %.1f/%.1f/%.1f min/avg/max",
 					rawStart.x, rawStart.y, targetId,
-					GRoom->GetLastExpandedCount(), elapsedUs);
+					GRoom->GetLastExpandedCount(),
+					static_cast<long long>(GRoom->GetLastScannedCount()), usMin, usAvg, usMax);
 				return;
 			}
 
 			WCHAR buffer[256];
-			::swprintf_s(buffer, L"path %d nodes (jump points), %d taken / %d opened, expanded %d nodes, %.1f us",
-				static_cast<int32>(path.size()), GRoom->GetLastPathJumpPointCount(),
-				GRoom->GetLastOpenedCount(), GRoom->GetLastExpandedCount(), elapsedUs);
+			::swprintf_s(buffer, L"path %d nodes, %d opened, expanded %d, scanned %lld cells, us %.1f/%.1f/%.1f min/avg/max  [%s]",
+				static_cast<int32>(path.size()),
+				GRoom->GetLastOpenedCount(), GRoom->GetLastExpandedCount(),
+				static_cast<long long>(GRoom->GetLastScannedCount()), usMin, usAvg, usMax,
+				GRoom->GetPathFinderName());
 
 			std::wstring header = buffer;
 

@@ -769,13 +769,16 @@ namespace
 
 			if (outside == false)
 			{
+				// 몬스터 충돌 박스가 실제로 들어갈 수 있는 칸만 후보로. raw 1x1 셀 판정이면
+				// 울타리 밖 통행-가능-하지만-도달-불가한 자투리를 골라 길찾기가 폭발한다.
+				const int32 box = context.self->GetCollisionCellsWide();
 				for (int32 i = 0; i < 16; i++)
 				{
 					int32 rx = hx + RandomRange32(-_radius, _radius);
 					int32 ry = hy + RandomRange32(-_radius, _radius);
 					rx = (rx < 0) ? 0 : ((rx >= w) ? w - 1 : rx);
 					ry = (ry < 0) ? 0 : ((ry >= h) ? h - 1 : ry);
-					if (level.IsCellBlocked(rx, ry) == false)
+					if (context.room->IsBoxWalkable(box, rx, ry))
 					{
 						px = rx;
 						py = ry;

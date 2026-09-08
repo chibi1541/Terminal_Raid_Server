@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "Game/NavGrid.h"
+#include "Game/IPathFinder.h"
 
 /*------------------
 	JpsPathFinder
@@ -13,7 +13,7 @@
 	Room이 JobQueue라 직렬 실행이 보장되므로 룸당 하나씩 두고 룸 잡 큐 안에서만 쓴다.
 -------------------*/
 
-class JpsPathFinder
+class JpsPathFinder : public IPathFinder
 {
 	enum
 	{
@@ -23,22 +23,28 @@ class JpsPathFinder
 	};
 
 public:
-	// 성공하면 outPath에 start부터 goal까지의 타일 경로가 채워진다. (양 끝 포함)
-	// 점프 포인트만이 아니라 그 사이를 한 칸씩 펼친 결과다.
+	// 성공하면 outPath에 start부터 goal까지의 점프 포인트(방향 전환점)가 채워진다. (양 끝 포함)
+	// 한 칸씩 펼치지 않는다 - 사이는 직선/대각이라 추종기가 한 방향으로 쭉 간다.
 	bool	FindPath(const NavGrid& grid, TilePos start, TilePos goal,
-					 OUT Vector<TilePos>& outPath, int32 maxNodeCount = DEFAULT_MAX_NODE);
+					 OUT Vector<TilePos>& outPath, int32 maxNodeCount = 0) override;
 
-	/* Debug : 마지막 탐색에서 확장한(=open에서 꺼낸) 노드 수 */
-	int32	GetLastExpandedCount() const { return _lastExpanded; }
+	/* Debug : 마지막 탐색에서 확장한(=open에서 꺼낸) 점프 포인트 수 */
+	int32	GetLastExpandedCount() const override { return _lastExpanded; }
+
+	/* Debug : 마지막 탐색에서 검사한 셀 수 (Jump 스캔 포함). A* 와 비교 가능한 "일한 양". */
+	int64	GetLastScannedCount() const override { return _lastScanned; }
 
 	// Debug : 마지막 탐색에서 _open에 넣은 점프 포인트들.
 	// 같은 타일이 더 나은 g로 다시 들어가면 중복으로 담긴다. 그리기용이라 걸러내지 않는다.
-	const Vector<TilePos>& GetLastOpenedJumpPoints() const { return _lastOpened; }
+	const Vector<TilePos>& GetLastOpenedNodes() const override { return _lastOpened; }
 
 	// Debug : 마지막 경로가 실제로 지나는 점프 포인트들. start -> goal 순서다.
 	// 첫 원소는 항상 출발 타일이고 마지막 원소는 도착 타일이다.
 	// 탐색에 실패하면 비어 있다.
-	const Vector<TilePos>& GetLastPathJumpPoints() const { return _jumpPoints; }
+	const Vector<TilePos>& GetLastPathNodes() const override { return _jumpPoints; }
+
+	void	SetRecordSearchNodes(bool on) override { _recordSearch = on; }
+	const wchar_t* Name() const override { return L"JPS"; }
 
 private:
 	struct NodeData
@@ -60,6 +66,10 @@ private:
 	};
 
 private:
+	// 실제 탐색. FindPath 가 NavGrid 질의 카운터를 리셋/수집하며 감싼다.
+	bool	FindPathImpl(const NavGrid& grid, TilePos start, TilePos goal,
+						 OUT Vector<TilePos>& outPath, int32 maxNodeCount);
+
 	int32	Jump(const NavGrid& grid, int32 x, int32 y, int32 dx, int32 dy, TilePos goal);
 	bool	HasForcedNeighbour(const NavGrid& grid, int32 x, int32 y, int32 dx, int32 dy);
 	void	GetPrunedDirections(const NavGrid& grid, int32 index, OUT Vector<TilePos>& outDirs);
@@ -77,4 +87,6 @@ private:
 	Vector<TilePos>			_lastOpened;	// Debug : _open에 넣은 점프 포인트 기록
 	uint32					_stamp = 0;
 	int32					_lastExpanded = 0;
+	int64					_lastScanned = 0;		// 마지막 탐색의 IsWalkable 호출 수
+	bool					_recordSearch = true;	// _lastOpened 기록 여부 (구독자 없으면 Room이 끈다)
 };
