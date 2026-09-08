@@ -1,68 +1,45 @@
 ﻿#include "pch.h"
-#include "Game/JpsPathFinder.h"
+#include "Game/JpsTunedPathFinder.h"
 #include <algorithm>
+#include <cstdint>
+
+// 원본 JpsPathFinder.cpp 의 복제 + (A) 방향 편향 / (B) 점프 상한.
+// 보조 함수(HasForcedNeighbour / CanStepDiagonal / Heuristic / StepCost / GetPrunedDirections / BuildPath)는
+// 원본과 100% 동일하다 - 손대면 안 된다.
 
 namespace
 {
 	int32 Sign(int32 value)
 	{
-		if (value > 0)
-			return 1;
-
-		if (value < 0)
-			return -1;
-
+		if (value > 0) return 1;
+		if (value < 0) return -1;
 		return 0;
 	}
 }
 
-/*---------------
-	보조 함수
-----------------*/
-
-bool JpsPathFinder::CanStepDiagonal(const NavGrid& grid, int32 x, int32 y, int32 dx, int32 dy)
+bool JpsTunedPathFinder::CanStepDiagonal(const NavGrid& grid, int32 x, int32 y, int32 dx, int32 dy)
 {
-	// 코너 커팅 금지 : 대각으로 가려면 인접한 두 직교 타일이 모두 열려 있어야 한다.
 	return grid.IsWalkable(x + dx, y) && grid.IsWalkable(x, y + dy);
 }
 
-int32 JpsPathFinder::Heuristic(TilePos a, TilePos b)
+int32 JpsTunedPathFinder::Heuristic(TilePos a, TilePos b)
 {
-	// 옥타일 거리. 8방향 이동에서 실제 비용을 절대 넘지 않는다(admissible).
 	const int32 dx = ::abs(a.x - b.x);
 	const int32 dy = ::abs(a.y - b.y);
-
 	return COST_STRAIGHT * (dx + dy) + (COST_DIAGONAL - 2 * COST_STRAIGHT) * ((dx < dy) ? dx : dy);
 }
 
-int32 JpsPathFinder::StepCost(TilePos from, TilePos to)
+int32 JpsTunedPathFinder::StepCost(TilePos from, TilePos to)
 {
-	// 점프 포인트는 항상 직선이나 대각선 위에 있으므로 이렇게 계산할 수 있다.
 	const int32 dx = ::abs(to.x - from.x);
 	const int32 dy = ::abs(to.y - from.y);
-
 	const int32 diagonal = (dx < dy) ? dx : dy;
 	const int32 straight = ((dx > dy) ? dx : dy) - diagonal;
-
 	return diagonal * COST_DIAGONAL + straight * COST_STRAIGHT;
 }
 
-/*-------------------
-	강제 이웃 판정
---------------------*/
-
-bool JpsPathFinder::HasForcedNeighbour(const NavGrid& grid, int32 x, int32 y, int32 dx, int32 dy)
+bool JpsTunedPathFinder::HasForcedNeighbour(const NavGrid& grid, int32 x, int32 y, int32 dx, int32 dy)
 {
-	// 코너 커팅을 금지하면 강제 이웃은 직선 이동에서만, 그리고 수직 방향으로만 생긴다.
-	//
-	// 수평으로 (dx,0) 이동해 n=(x,y)에 왔다고 하자. 부모는 p=(x-dx,y)다.
-	// (x,y+1)이 열려 있는데 (x-dx,y+1)이 막혀 있으면
-	// p에서 (x,y+1)로 곧장 가는 대각 이동이 코너 커팅이라 불가능하다.
-	// 즉 p -> n -> (x,y+1) 말고는 길이 없으므로 n이 점프 포인트가 된다.
-	//
-	// 대각 이동에는 강제 이웃 검사가 없다. 대각선 위의 점프 포인트는
-	// Jump()가 돌리는 두 직선 탐색이 대신 찾아준다.
-
 	if (dx != 0 && dy != 0)
 		return false;
 
@@ -70,32 +47,23 @@ bool JpsPathFinder::HasForcedNeighbour(const NavGrid& grid, int32 x, int32 y, in
 	{
 		if (grid.IsWalkable(x, y - 1) && grid.IsWalkable(x - dx, y - 1) == false)
 			return true;
-
 		if (grid.IsWalkable(x, y + 1) && grid.IsWalkable(x - dx, y + 1) == false)
 			return true;
-
 		return false;
 	}
 
 	if (grid.IsWalkable(x - 1, y) && grid.IsWalkable(x - 1, y - dy) == false)
 		return true;
-
 	if (grid.IsWalkable(x + 1, y) && grid.IsWalkable(x + 1, y - dy) == false)
 		return true;
-
 	return false;
 }
 
-/*---------
-	Jump
-----------*/
-
-int32 JpsPathFinder::Jump(const NavGrid& grid, int32 x, int32 y, int32 dx, int32 dy, TilePos goal)
+int32 JpsTunedPathFinder::Jump(const NavGrid& grid, int32 x, int32 y, int32 dx, int32 dy, TilePos goal,
+							   int32 budget, bool emitOnBudget)
 {
-	// (x, y)는 이미 한 칸 내디딘 결과다.
-	// 직선/대각 모두 루프로 전진한다. 재귀는 대각에서 직선 두 갈래를 볼 때만 쓴다.
-	// (직선까지 재귀로 짜면 긴 복도에서 스택 깊이가 복도 길이만큼 쌓인다)
 	const bool diagonal = (dx != 0 && dy != 0);
+	int32 scan = 0;
 
 	while (true)
 	{
@@ -105,19 +73,28 @@ int32 JpsPathFinder::Jump(const NavGrid& grid, int32 x, int32 y, int32 dx, int32
 		if (x == goal.x && y == goal.y)
 			return grid.ToIndex(x, y);
 
+		// 대각 점프가 골의 행/열에 닿으면 여기서 멈춘다 (여기서부터는 직선으로 가야 최단).
+		// 개활지에서 대각 점프가 맵 끝까지 걸어가는 것을 막는 핵심 조건. 장애물이 있어도 안전
+		// (경로에 안 쓰이면 여분 점프 포인트일 뿐).
+		if (dx != 0 && dy != 0 && (x == goal.x || y == goal.y))
+			return grid.ToIndex(x, y);
+
 		if (HasForcedNeighbour(grid, x, y, dx, dy))
 			return grid.ToIndex(x, y);
 
+		// (B) 예산 소진 : 확장 루프가 부른 점프면 이 자리 셀을 중간 노드로,
+		//                 대각의 재귀 서브점프면 "여긴 점프 포인트 없음"(-1).
+		if (++scan > budget)
+			return emitOnBudget ? grid.ToIndex(x, y) : -1;
+
 		if (diagonal)
 		{
-			// 대각선 위의 노드에서 직선 두 방향에 점프 포인트가 있으면 이 노드도 점프 포인트다.
-			if (Jump(grid, x + dx, y, dx, 0, goal) >= 0)
+			if (Jump(grid, x + dx, y, dx, 0, goal, JUMP_MAX_RECURSE, /*emit*/ false) >= 0)
 				return grid.ToIndex(x, y);
 
-			if (Jump(grid, x, y + dy, 0, dy, goal) >= 0)
+			if (Jump(grid, x, y + dy, 0, dy, goal, JUMP_MAX_RECURSE, /*emit*/ false) >= 0)
 				return grid.ToIndex(x, y);
 
-			// 다음 대각 칸으로 넘어갈 수 있는지 (코너 커팅 금지)
 			if (CanStepDiagonal(grid, x, y, dx, dy) == false)
 				return -1;
 		}
@@ -127,35 +104,26 @@ int32 JpsPathFinder::Jump(const NavGrid& grid, int32 x, int32 y, int32 dx, int32
 	}
 }
 
-/*------------------------
-	가지치기된 이웃 방향
--------------------------*/
-
-void JpsPathFinder::GetPrunedDirections(const NavGrid& grid, int32 index, OUT Vector<TilePos>& outDirs)
+void JpsTunedPathFinder::GetPrunedDirections(const NavGrid& grid, int32 index, OUT Vector<TilePos>& outDirs)
 {
 	const NodeData& node = _nodes[index];
 	const TilePos pos = grid.FromIndex(index);
 
 	if (node.parentIndex < 0)
 	{
-		// 시작 노드는 부모가 없으니 진입 방향도 없다. 8방향을 다 열어준다.
 		for (int32 dy = -1; dy <= 1; dy++)
 		{
 			for (int32 dx = -1; dx <= 1; dx++)
 			{
 				if (dx == 0 && dy == 0)
 					continue;
-
 				if (dx != 0 && dy != 0 && CanStepDiagonal(grid, pos.x, pos.y, dx, dy) == false)
 					continue;
-
 				if (grid.IsWalkable(pos.x + dx, pos.y + dy) == false)
 					continue;
-
 				outDirs.push_back(TilePos{ dx, dy });
 			}
 		}
-
 		return;
 	}
 
@@ -165,98 +133,89 @@ void JpsPathFinder::GetPrunedDirections(const NavGrid& grid, int32 index, OUT Ve
 
 	if (dx != 0 && dy != 0)
 	{
-		// 대각으로 진입
 		const bool vertical = grid.IsWalkable(pos.x, pos.y + dy);
 		const bool horizontal = grid.IsWalkable(pos.x + dx, pos.y);
 
 		if (vertical)
 			outDirs.push_back(TilePos{ 0, dy });
-
 		if (horizontal)
 			outDirs.push_back(TilePos{ dx, 0 });
-
-		// 코너 커팅 금지라 두 직교가 모두 열려 있을 때만 대각을 잇는다.
 		if (vertical && horizontal)
 			outDirs.push_back(TilePos{ dx, dy });
-
 		return;
 	}
 
-	// 직선으로 진입.
-	//
-	// 코너 커팅을 금지하면 가지치기가 약해진다. 대각 이동에 제약이 붙는 탓에
-	// 수직으로 한 칸 비켜가는 것이 유일한 우회로인 경우가 생기기 때문에,
-	// 수직 방향은 강제 이웃일 때만이 아니라 열려 있으면 항상 열어줘야 한다.
-	// 커팅 허용 버전보다 노드를 더 보지만 이쪽이 옳다.
 	if (dx != 0)
 	{
 		if (grid.IsWalkable(pos.x + dx, pos.y))
 		{
 			outDirs.push_back(TilePos{ dx, 0 });
-
 			if (grid.IsWalkable(pos.x, pos.y + 1))
 				outDirs.push_back(TilePos{ dx, 1 });
-
 			if (grid.IsWalkable(pos.x, pos.y - 1))
 				outDirs.push_back(TilePos{ dx, -1 });
 		}
-
 		if (grid.IsWalkable(pos.x, pos.y + 1))
 			outDirs.push_back(TilePos{ 0, 1 });
-
 		if (grid.IsWalkable(pos.x, pos.y - 1))
 			outDirs.push_back(TilePos{ 0, -1 });
-
 		return;
 	}
 
 	if (grid.IsWalkable(pos.x, pos.y + dy))
 	{
 		outDirs.push_back(TilePos{ 0, dy });
-
 		if (grid.IsWalkable(pos.x + 1, pos.y))
 			outDirs.push_back(TilePos{ 1, dy });
-
 		if (grid.IsWalkable(pos.x - 1, pos.y))
 			outDirs.push_back(TilePos{ -1, dy });
 	}
-
 	if (grid.IsWalkable(pos.x + 1, pos.y))
 		outDirs.push_back(TilePos{ 1, 0 });
-
 	if (grid.IsWalkable(pos.x - 1, pos.y))
 		outDirs.push_back(TilePos{ -1, 0 });
 }
 
-/*-------------
-	경로 복원
---------------*/
-
-void JpsPathFinder::BuildPath(const NavGrid& grid, int32 goalIndex, OUT Vector<TilePos>& outPath)
+void JpsTunedPathFinder::BuildPath(const NavGrid& grid, int32 goalIndex, OUT Vector<TilePos>& outPath)
 {
 	_jumpPoints.clear();
 
 	for (int32 index = goalIndex; index >= 0; index = _nodes[index].parentIndex)
 		_jumpPoints.push_back(grid.FromIndex(index));
 
-	// goal -> start 순으로 쌓였으니 뒤집는다.
 	std::reverse(_jumpPoints.begin(), _jumpPoints.end());
 
-	// 경로는 점프 포인트만 담는다 (한 칸씩 펼치지 않는다).
-	//
-	// 점프 포인트 사이는 항상 직선이나 대각선이라 추종하는 쪽에서 DirTo 로 한 방향으로 쭉 가면 된다.
-	// 셀 격자로 바뀐 뒤 한 칸씩 펼치면 웨이포인트 간격(1셀)이 몬스터의 틱당 이동량(~1.5셀)보다
-	// 촘촘해져서 추종기가 웨이포인트를 지나치고 pathIndex 가 뒤처지며 버벅인다.
 	for (const TilePos& jp : _jumpPoints)
 		outPath.push_back(jp);
 }
 
-/*-------------
-	FindPath
---------------*/
+void JpsTunedPathFinder::RelaxSuccessor(int32 currentIndex, TilePos currentPos, int32 currentG,
+									   int32 succIndex, TilePos succPos, TilePos goal)
+{
+	NodeData& node = _nodes[succIndex];
+	const bool visited = (node.stamp == _stamp);
 
-bool JpsPathFinder::FindPath(const NavGrid& grid, TilePos start, TilePos goal,
-							 OUT Vector<TilePos>& outPath, int32 maxNodeCount)
+	if (visited && node.closed)
+		return;
+
+	const int32 newG = currentG + StepCost(currentPos, succPos);
+
+	if (visited && newG >= node.g)
+		return;
+
+	node.g = newG;
+	node.parentIndex = currentIndex;
+	node.stamp = _stamp;
+	node.closed = false;
+
+	_open.push(OpenNode{ succIndex, newG + Heuristic(succPos, goal) });
+
+	if (_recordSearch)
+		_lastOpened.push_back(succPos);
+}
+
+bool JpsTunedPathFinder::FindPath(const NavGrid& grid, TilePos start, TilePos goal,
+								  OUT Vector<TilePos>& outPath, int32 maxNodeCount)
 {
 	grid.ResetQueryCount();
 	const bool ok = FindPathImpl(grid, start, goal, OUT outPath, maxNodeCount);
@@ -264,8 +223,8 @@ bool JpsPathFinder::FindPath(const NavGrid& grid, TilePos start, TilePos goal,
 	return ok;
 }
 
-bool JpsPathFinder::FindPathImpl(const NavGrid& grid, TilePos start, TilePos goal,
-								OUT Vector<TilePos>& outPath, int32 maxNodeCount)
+bool JpsTunedPathFinder::FindPathImpl(const NavGrid& grid, TilePos start, TilePos goal,
+									  OUT Vector<TilePos>& outPath, int32 maxNodeCount)
 {
 	if (maxNodeCount <= 0)
 		maxNodeCount = DEFAULT_MAX_NODE;
@@ -273,7 +232,6 @@ bool JpsPathFinder::FindPathImpl(const NavGrid& grid, TilePos start, TilePos goa
 	outPath.clear();
 	_lastExpanded = 0;
 	_lastOpened.clear();
-	// 실패하고 빠져나가는 경로에서도 지난 탐색 결과가 남아 있으면 안 된다.
 	_jumpPoints.clear();
 
 	const int32 width = grid.GetWidth();
@@ -299,14 +257,11 @@ bool JpsPathFinder::FindPathImpl(const NavGrid& grid, TilePos start, TilePos goa
 		_stamp = 0;
 	}
 
-	// 세대를 올려 지난 탐색 결과를 무효화한다. 배열을 매번 지우지 않기 위한 것.
-	// 한 바퀴를 다 돌았을 때만 실제로 초기화한다.
 	_stamp++;
 	if (_stamp == 0)
 	{
 		for (NodeData& node : _nodes)
 			node.stamp = 0;
-
 		_stamp = 1;
 	}
 
@@ -324,12 +279,19 @@ bool JpsPathFinder::FindPathImpl(const NavGrid& grid, TilePos start, TilePos goa
 
 	_open.push(OpenNode{ startIndex, Heuristic(start, goal) });
 
+	const int32 primaryBudget = _bound ? static_cast<int32>(JUMP_MAX_PRIMARY) : INT32_MAX;
+
+	// (A) 방향 편향에서 "지금까지 골에 가장 가까웠던" 휴리스틱. 이 값 이하인 노드(= 선두)만
+	//     점프 스캔하고, 뒤처진(우회 중인) 노드는 1칸씩만 확장한다 (A* 처럼). 이러면 개활지
+	//     직진은 점프로 빠르게, 장애물 우회는 A* 로 안전하게 - 미룬 노드가 값비싼 점프를 재발화
+	//     하는 폭주를 막는다.
+	int32 bestH = Heuristic(start, goal);
+
 	while (_open.empty() == false)
 	{
 		const OpenNode current = _open.top();
 		_open.pop();
 
-		// 같은 노드가 더 나은 g로 다시 들어갔던 경우, 낡은 항목은 여기서 버린다.
 		if (_nodes[current.index].closed)
 			continue;
 
@@ -342,10 +304,9 @@ bool JpsPathFinder::FindPathImpl(const NavGrid& grid, TilePos start, TilePos goa
 			return true;
 		}
 
-		// 길찾기 하나가 룸 틱을 통째로 잡아먹지 않게 끊는다.
 		if (_lastExpanded >= maxNodeCount)
 		{
-			LOG_WARN(L"[jps] search aborted : node limit %d reached", maxNodeCount);
+			LOG_WARN(L"[jps*] search aborted : node limit %d reached", maxNodeCount);
 			return false;
 		}
 
@@ -355,37 +316,47 @@ bool JpsPathFinder::FindPathImpl(const NavGrid& grid, TilePos start, TilePos goa
 		_dirs.clear();
 		GetPrunedDirections(grid, current.index, OUT _dirs);
 
-		// JPS 개선 방안
-		// 여기서 해당 현재 타일은 가장 휴리스틱이 낮은 한 방향만 탐색하고 나머지는 방향으로 한 칸 떨어진 노드들은 오픈리스트에 추가
-		// _open에서 휴리스틱이 낫은 순서대로 재탐색(굳이 반대 방향으로 점프 포인트를 찾을 이유가 없음)
+		// (A) 방향 편향 : 이 노드가 선두(휴리스틱 <= bestH)면 골 쪽 최소-h 방향(들)만 Jump,
+		//     나머지 방향은 1칸 노드로 미룬다. 뒤처진 노드는 전 방향 1칸만 (A* 처럼).
+		const int32 curH = Heuristic(currentPos, goal);
+		if (curH < bestH)
+			bestH = curH;
+
+		int32 minStepH = INT32_MAX;
+		const bool atFrontier = (curH <= bestH);
+		if (_bias)
+		{
+			for (const TilePos& d : _dirs)
+			{
+				const int32 h = Heuristic(TilePos{ currentPos.x + d.x, currentPos.y + d.y }, goal);
+				if (h < minStepH)
+					minStepH = h;
+			}
+		}
 
 		for (const TilePos& dir : _dirs)
 		{
-			const int32 jumpIndex = Jump(grid, currentPos.x + dir.x, currentPos.y + dir.y,
-										 dir.x, dir.y, goal);
+			const TilePos step{ currentPos.x + dir.x, currentPos.y + dir.y };
+
+			const bool jumpThisDir =
+				(_bias == false) ||
+				(atFrontier && Heuristic(step, goal) == minStepH);
+
+			if (jumpThisDir == false)
+			{
+				// 미룬 방향 : 1칸 노드 그대로 push. _dirs 원소는 이미 walkable.
+				RelaxSuccessor(current.index, currentPos, currentG,
+							   grid.ToIndex(step.x, step.y), step, goal);
+				continue;
+			}
+
+			const int32 jumpIndex = Jump(grid, step.x, step.y, dir.x, dir.y, goal,
+										 primaryBudget, /*emitOnBudget*/ true);
 			if (jumpIndex < 0)
 				continue;
 
-			NodeData& jumpNode = _nodes[jumpIndex];
-			const bool visited = (jumpNode.stamp == _stamp);
-
-			if (visited && jumpNode.closed)
-				continue;
-
-			const TilePos jumpPos = grid.FromIndex(jumpIndex);
-			const int32 newG = currentG + StepCost(currentPos, jumpPos);
-
-			if (visited && newG >= jumpNode.g)
-				continue;
-
-			jumpNode.g = newG;
-			jumpNode.parentIndex = current.index;
-			jumpNode.stamp = _stamp;
-			jumpNode.closed = false;
-
-			_open.push(OpenNode{ jumpIndex, newG + Heuristic(jumpPos, goal) });
-			if (_recordSearch)
-				_lastOpened.push_back(jumpPos);
+			RelaxSuccessor(current.index, currentPos, currentG,
+						   jumpIndex, grid.FromIndex(jumpIndex), goal);
 		}
 	}
 

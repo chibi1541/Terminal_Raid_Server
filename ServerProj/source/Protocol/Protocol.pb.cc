@@ -311,6 +311,8 @@ PROTOBUF_CONSTEXPR S_DEBUG_PATH::S_DEBUG_PATH(
   , /*decltype(_impl_.computemicros_)*/0u
   , /*decltype(_impl_.pathalgo_)*/0u
   , /*decltype(_impl_.scannednodes_)*/0u
+  , /*decltype(_impl_.computemicrosmin_)*/0u
+  , /*decltype(_impl_.computemicrosmax_)*/0u
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct S_DEBUG_PATHDefaultTypeInternal {
   PROTOBUF_CONSTEXPR S_DEBUG_PATHDefaultTypeInternal()
@@ -582,6 +584,8 @@ const uint32_t TableStruct_Protocol_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE
   PROTOBUF_FIELD_OFFSET(::Protocol::S_DEBUG_PATH, _impl_.computemicros_),
   PROTOBUF_FIELD_OFFSET(::Protocol::S_DEBUG_PATH, _impl_.pathalgo_),
   PROTOBUF_FIELD_OFFSET(::Protocol::S_DEBUG_PATH, _impl_.scannednodes_),
+  PROTOBUF_FIELD_OFFSET(::Protocol::S_DEBUG_PATH, _impl_.computemicrosmin_),
+  PROTOBUF_FIELD_OFFSET(::Protocol::S_DEBUG_PATH, _impl_.computemicrosmax_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::Protocol::C_ATTACK, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -648,11 +652,11 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 146, -1, -1, sizeof(::Protocol::S_DEBUG_LEVEL)},
   { 158, -1, -1, sizeof(::Protocol::DebugPathNode)},
   { 165, -1, -1, sizeof(::Protocol::S_DEBUG_PATH)},
-  { 182, -1, -1, sizeof(::Protocol::C_ATTACK)},
-  { 191, -1, -1, sizeof(::Protocol::DebugRect)},
-  { 201, -1, -1, sizeof(::Protocol::S_DEBUG_QUADTREE)},
-  { 212, -1, -1, sizeof(::Protocol::C_RESPAWN)},
-  { 218, -1, -1, sizeof(::Protocol::S_RESPAWN)},
+  { 184, -1, -1, sizeof(::Protocol::C_ATTACK)},
+  { 193, -1, -1, sizeof(::Protocol::DebugRect)},
+  { 203, -1, -1, sizeof(::Protocol::S_DEBUG_QUADTREE)},
+  { 214, -1, -1, sizeof(::Protocol::C_RESPAWN)},
+  { 220, -1, -1, sizeof(::Protocol::S_RESPAWN)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -719,7 +723,7 @@ const char descriptor_table_protodef_Protocol_2eproto[] PROTOBUF_SECTION_VARIABL
   "\r\n\005width\030\001 \001(\r\022\016\n\006height\030\002 \001(\r\022\020\n\010tileSi"
   "ze\030\003 \001(\r\022\020\n\010startRow\030\004 \001(\r\022\020\n\010rowCount\030\005"
   " \001(\r\022\023\n\013blockedBits\030\006 \001(\014\"0\n\rDebugPathNo"
-  "de\022\037\n\004cell\030\001 \001(\0132\021.Protocol.Vector2\"\271\002\n\014"
+  "de\022\037\n\004cell\030\001 \001(\0132\021.Protocol.Vector2\"\355\002\n\014"
   "S_DEBUG_PATH\022\020\n\010objectId\030\001 \001(\004\022*\n\twaypoi"
   "nts\030\002 \003(\0132\027.Protocol.DebugPathNode\022\024\n\014cu"
   "rrentIndex\030\003 \001(\r\022,\n\013searchNodes\030\004 \003(\0132\027."
@@ -727,18 +731,19 @@ const char descriptor_table_protodef_Protocol_2eproto[] PROTOBUF_SECTION_VARIABL
   "\020\n\010boxCells\030\006 \001(\r\022.\n\rpathJumpNodes\030\007 \003(\013"
   "2\027.Protocol.DebugPathNode\022\025\n\rexpandedNod"
   "es\030\010 \001(\r\022\025\n\rcomputeMicros\030\t \001(\r\022\020\n\010pathA"
-  "lgo\030\n \001(\r\022\024\n\014scannedNodes\030\013 \001(\r\"k\n\010C_ATT"
-  "ACK\022\"\n\007aimCell\030\001 \001(\0132\021.Protocol.Vector2\022"
-  "%\n\nmuzzleCell\030\002 \001(\0132\021.Protocol.Vector2\022\024"
-  "\n\014clientTimeMs\030\003 \001(\r\"C\n\tDebugRect\022\014\n\004min"
-  "X\030\001 \001(\005\022\014\n\004minY\030\002 \001(\005\022\014\n\004maxX\030\003 \001(\005\022\014\n\004m"
-  "axY\030\004 \001(\005\"\215\001\n\020S_DEBUG_QUADTREE\022\"\n\005nodes\030"
-  "\001 \003(\0132\023.Protocol.DebugRect\022\023\n\013objectCoun"
-  "t\030\002 \001(\r\022\023\n\013buildMicros\030\003 \001(\r\022\027\n\017collisio"
-  "nMicros\030\004 \001(\r\022\022\n\nserverTick\030\005 \001(\r\"\013\n\tC_R"
-  "ESPAWN\"E\n\tS_RESPAWN\022$\n\006object\030\001 \001(\0132\024.Pr"
-  "otocol.ObjectInfo\022\022\n\nserverTick\030\002 \001(\rb\006p"
-  "roto3"
+  "lgo\030\n \001(\r\022\024\n\014scannedNodes\030\013 \001(\r\022\030\n\020compu"
+  "teMicrosMin\030\014 \001(\r\022\030\n\020computeMicrosMax\030\r "
+  "\001(\r\"k\n\010C_ATTACK\022\"\n\007aimCell\030\001 \001(\0132\021.Proto"
+  "col.Vector2\022%\n\nmuzzleCell\030\002 \001(\0132\021.Protoc"
+  "ol.Vector2\022\024\n\014clientTimeMs\030\003 \001(\r\"C\n\tDebu"
+  "gRect\022\014\n\004minX\030\001 \001(\005\022\014\n\004minY\030\002 \001(\005\022\014\n\004max"
+  "X\030\003 \001(\005\022\014\n\004maxY\030\004 \001(\005\"\215\001\n\020S_DEBUG_QUADTR"
+  "EE\022\"\n\005nodes\030\001 \003(\0132\023.Protocol.DebugRect\022\023"
+  "\n\013objectCount\030\002 \001(\r\022\023\n\013buildMicros\030\003 \001(\r"
+  "\022\027\n\017collisionMicros\030\004 \001(\r\022\022\n\nserverTick\030"
+  "\005 \001(\r\"\013\n\tC_RESPAWN\"E\n\tS_RESPAWN\022$\n\006objec"
+  "t\030\001 \001(\0132\024.Protocol.ObjectInfo\022\022\n\nserverT"
+  "ick\030\002 \001(\rb\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_Protocol_2eproto_deps[2] = {
   &::descriptor_table_Enum_2eproto,
@@ -746,7 +751,7 @@ static const ::_pbi::DescriptorTable* const descriptor_table_Protocol_2eproto_de
 };
 static ::_pbi::once_flag descriptor_table_Protocol_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_Protocol_2eproto = {
-    false, false, 2165, descriptor_table_protodef_Protocol_2eproto,
+    false, false, 2217, descriptor_table_protodef_Protocol_2eproto,
     "Protocol.proto",
     &descriptor_table_Protocol_2eproto_once, descriptor_table_Protocol_2eproto_deps, 2, 25,
     schemas, file_default_instances, TableStruct_Protocol_2eproto::offsets,
@@ -4892,12 +4897,14 @@ S_DEBUG_PATH::S_DEBUG_PATH(const S_DEBUG_PATH& from)
     , decltype(_impl_.computemicros_){}
     , decltype(_impl_.pathalgo_){}
     , decltype(_impl_.scannednodes_){}
+    , decltype(_impl_.computemicrosmin_){}
+    , decltype(_impl_.computemicrosmax_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   ::memcpy(&_impl_.objectid_, &from._impl_.objectid_,
-    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.scannednodes_) -
-    reinterpret_cast<char*>(&_impl_.objectid_)) + sizeof(_impl_.scannednodes_));
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.computemicrosmax_) -
+    reinterpret_cast<char*>(&_impl_.objectid_)) + sizeof(_impl_.computemicrosmax_));
   // @@protoc_insertion_point(copy_constructor:Protocol.S_DEBUG_PATH)
 }
 
@@ -4917,6 +4924,8 @@ inline void S_DEBUG_PATH::SharedCtor(
     , decltype(_impl_.computemicros_){0u}
     , decltype(_impl_.pathalgo_){0u}
     , decltype(_impl_.scannednodes_){0u}
+    , decltype(_impl_.computemicrosmin_){0u}
+    , decltype(_impl_.computemicrosmax_){0u}
     , /*decltype(_impl_._cached_size_)*/{}
   };
 }
@@ -4951,8 +4960,8 @@ void S_DEBUG_PATH::Clear() {
   _impl_.searchnodes_.Clear();
   _impl_.pathjumpnodes_.Clear();
   ::memset(&_impl_.objectid_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&_impl_.scannednodes_) -
-      reinterpret_cast<char*>(&_impl_.objectid_)) + sizeof(_impl_.scannednodes_));
+      reinterpret_cast<char*>(&_impl_.computemicrosmax_) -
+      reinterpret_cast<char*>(&_impl_.objectid_)) + sizeof(_impl_.computemicrosmax_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -5065,6 +5074,22 @@ const char* S_DEBUG_PATH::_InternalParse(const char* ptr, ::_pbi::ParseContext* 
         } else
           goto handle_unusual;
         continue;
+      // uint32 computeMicrosMin = 12;
+      case 12:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 96)) {
+          _impl_.computemicrosmin_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // uint32 computeMicrosMax = 13;
+      case 13:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 104)) {
+          _impl_.computemicrosmax_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
       default:
         goto handle_unusual;
     }  // switch
@@ -5166,6 +5191,18 @@ uint8_t* S_DEBUG_PATH::_InternalSerialize(
     target = ::_pbi::WireFormatLite::WriteUInt32ToArray(11, this->_internal_scannednodes(), target);
   }
 
+  // uint32 computeMicrosMin = 12;
+  if (this->_internal_computemicrosmin() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(12, this->_internal_computemicrosmin(), target);
+  }
+
+  // uint32 computeMicrosMax = 13;
+  if (this->_internal_computemicrosmax() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(13, this->_internal_computemicrosmax(), target);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -5243,6 +5280,16 @@ size_t S_DEBUG_PATH::ByteSizeLong() const {
     total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_scannednodes());
   }
 
+  // uint32 computeMicrosMin = 12;
+  if (this->_internal_computemicrosmin() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_computemicrosmin());
+  }
+
+  // uint32 computeMicrosMax = 13;
+  if (this->_internal_computemicrosmax() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_computemicrosmax());
+  }
+
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
@@ -5288,6 +5335,12 @@ void S_DEBUG_PATH::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::P
   if (from._internal_scannednodes() != 0) {
     _this->_internal_set_scannednodes(from._internal_scannednodes());
   }
+  if (from._internal_computemicrosmin() != 0) {
+    _this->_internal_set_computemicrosmin(from._internal_computemicrosmin());
+  }
+  if (from._internal_computemicrosmax() != 0) {
+    _this->_internal_set_computemicrosmax(from._internal_computemicrosmax());
+  }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
@@ -5309,8 +5362,8 @@ void S_DEBUG_PATH::InternalSwap(S_DEBUG_PATH* other) {
   _impl_.searchnodes_.InternalSwap(&other->_impl_.searchnodes_);
   _impl_.pathjumpnodes_.InternalSwap(&other->_impl_.pathjumpnodes_);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(S_DEBUG_PATH, _impl_.scannednodes_)
-      + sizeof(S_DEBUG_PATH::_impl_.scannednodes_)
+      PROTOBUF_FIELD_OFFSET(S_DEBUG_PATH, _impl_.computemicrosmax_)
+      + sizeof(S_DEBUG_PATH::_impl_.computemicrosmax_)
       - PROTOBUF_FIELD_OFFSET(S_DEBUG_PATH, _impl_.objectid_)>(
           reinterpret_cast<char*>(&_impl_.objectid_),
           reinterpret_cast<char*>(&other->_impl_.objectid_));

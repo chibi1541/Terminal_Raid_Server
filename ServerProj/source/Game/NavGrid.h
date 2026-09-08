@@ -58,9 +58,14 @@ public:
 	// from이 이미 통행 가능하면 그대로 돌려준다.
 	bool	FindNearestWalkable(TilePos from, int32 maxRadius, OUT TilePos& outTile) const;
 
+	// 연결 컴포넌트 id (Build 에서 4방향 flood-fill 로 라벨링). 벽/범위밖은 -1.
+	// start 와 goal 이 서로 다른 컴포넌트면 길이 없다 - FindPath 를 부르지 않고 조기 반환.
+	int32	ComponentOf(int32 tx, int32 ty) const;
+
 private:
 	int32			_width = 0;
 	int32			_height = 0;
 	Vector<uint8>	_walkable;	// 1 = 통행 가능
+	Vector<int32>	_component;	// 통행 셀의 연결 컴포넌트 id, 벽 = -1
 	mutable uint64	_queryCount = 0;	// IsWalkable 호출 횟수 (탐색 노드 수 계측용)
 };

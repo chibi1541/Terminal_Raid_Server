@@ -3481,6 +3481,8 @@ class S_DEBUG_PATH final :
     kComputeMicrosFieldNumber = 9,
     kPathAlgoFieldNumber = 10,
     kScannedNodesFieldNumber = 11,
+    kComputeMicrosMinFieldNumber = 12,
+    kComputeMicrosMaxFieldNumber = 13,
   };
   // repeated .Protocol.DebugPathNode waypoints = 2;
   int waypoints_size() const;
@@ -3608,6 +3610,24 @@ class S_DEBUG_PATH final :
   void _internal_set_scannednodes(uint32_t value);
   public:
 
+  // uint32 computeMicrosMin = 12;
+  void clear_computemicrosmin();
+  uint32_t computemicrosmin() const;
+  void set_computemicrosmin(uint32_t value);
+  private:
+  uint32_t _internal_computemicrosmin() const;
+  void _internal_set_computemicrosmin(uint32_t value);
+  public:
+
+  // uint32 computeMicrosMax = 13;
+  void clear_computemicrosmax();
+  uint32_t computemicrosmax() const;
+  void set_computemicrosmax(uint32_t value);
+  private:
+  uint32_t _internal_computemicrosmax() const;
+  void _internal_set_computemicrosmax(uint32_t value);
+  public:
+
   // @@protoc_insertion_point(class_scope:Protocol.S_DEBUG_PATH)
  private:
   class _Internal;
@@ -3627,6 +3647,8 @@ class S_DEBUG_PATH final :
     uint32_t computemicros_;
     uint32_t pathalgo_;
     uint32_t scannednodes_;
+    uint32_t computemicrosmin_;
+    uint32_t computemicrosmax_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -6271,6 +6293,46 @@ inline void S_DEBUG_PATH::_internal_set_scannednodes(uint32_t value) {
 inline void S_DEBUG_PATH::set_scannednodes(uint32_t value) {
   _internal_set_scannednodes(value);
   // @@protoc_insertion_point(field_set:Protocol.S_DEBUG_PATH.scannedNodes)
+}
+
+// uint32 computeMicrosMin = 12;
+inline void S_DEBUG_PATH::clear_computemicrosmin() {
+  _impl_.computemicrosmin_ = 0u;
+}
+inline uint32_t S_DEBUG_PATH::_internal_computemicrosmin() const {
+  return _impl_.computemicrosmin_;
+}
+inline uint32_t S_DEBUG_PATH::computemicrosmin() const {
+  // @@protoc_insertion_point(field_get:Protocol.S_DEBUG_PATH.computeMicrosMin)
+  return _internal_computemicrosmin();
+}
+inline void S_DEBUG_PATH::_internal_set_computemicrosmin(uint32_t value) {
+  
+  _impl_.computemicrosmin_ = value;
+}
+inline void S_DEBUG_PATH::set_computemicrosmin(uint32_t value) {
+  _internal_set_computemicrosmin(value);
+  // @@protoc_insertion_point(field_set:Protocol.S_DEBUG_PATH.computeMicrosMin)
+}
+
+// uint32 computeMicrosMax = 13;
+inline void S_DEBUG_PATH::clear_computemicrosmax() {
+  _impl_.computemicrosmax_ = 0u;
+}
+inline uint32_t S_DEBUG_PATH::_internal_computemicrosmax() const {
+  return _impl_.computemicrosmax_;
+}
+inline uint32_t S_DEBUG_PATH::computemicrosmax() const {
+  // @@protoc_insertion_point(field_get:Protocol.S_DEBUG_PATH.computeMicrosMax)
+  return _internal_computemicrosmax();
+}
+inline void S_DEBUG_PATH::_internal_set_computemicrosmax(uint32_t value) {
+  
+  _impl_.computemicrosmax_ = value;
+}
+inline void S_DEBUG_PATH::set_computemicrosmax(uint32_t value) {
+  _internal_set_computemicrosmax(value);
+  // @@protoc_insertion_point(field_set:Protocol.S_DEBUG_PATH.computeMicrosMax)
 }
 
 // -------------------------------------------------------------------

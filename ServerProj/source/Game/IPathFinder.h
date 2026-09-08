@@ -12,8 +12,10 @@
 
 enum class EPathFinder : uint8
 {
-	Jps   = 0,
-	AStar = 1,
+	Jps   = 0,	// 원본 JPS
+	JpsA  = 1,	// JPS + 방향 편향 확장
+	JpsB  = 2,	// JPS + 방향 편향 + 점프 길이 상한
+	AStar = 3,
 };
 
 class IPathFinder

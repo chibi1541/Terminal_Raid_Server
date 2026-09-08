@@ -19,6 +19,8 @@ shared_ptr<Room> GRoom;
 
 Room::Room()
 {
+	_jpsA.Configure(/*bias*/ true,  /*bound*/ false);	// 방향 편향만
+	_jpsB.Configure(/*bias*/ false, /*bound*/ true);		// 점프 상한만 (편향과 조합하면 노드 폭발)
 }
 
 Room::~Room()
@@ -388,6 +390,10 @@ bool Room::FindPathToObject(TilePos start, uint64 targetObjectId,
 	if (grid.FindNearestWalkable(rawGoal, SNAP_MAX_RADIUS, OUT outGoal) == false)
 		return false;
 
+	// 다른 연결 컴포넌트면 길이 없다 - 컴포넌트 전체를 스캔하지 않고 조기 반환.
+	if (grid.ComponentOf(outStart.x, outStart.y) != grid.ComponentOf(outGoal.x, outGoal.y))
+		return false;
+
 	_pathFinder->SetRecordSearchNodes(true);	// 콘솔 path 명령 - DescribePath 가 open 노드를 그린다
 	return _pathFinder->FindPath(grid, outStart, outGoal, OUT outPath);
 }
@@ -395,8 +401,21 @@ bool Room::FindPathToObject(TilePos start, uint64 targetObjectId,
 void Room::SetPathFinder(EPathFinder kind)
 {
 	_pathFinderKind = kind;
-	_pathFinder = (kind == EPathFinder::Jps) ? static_cast<IPathFinder*>(&_jps)
-											 : static_cast<IPathFinder*>(&_astar);
+
+	// 새 알고리즘의 통계를 섞어 재지 않게 리셋.
+	_pathMicrosMin = 0xFFFFFFFFu;
+	_pathMicrosMax = 0;
+	_pathMicrosSum = 0.0;
+	_pathMicrosCount = 0;
+
+	switch (kind)
+	{
+	case EPathFinder::JpsA:  _pathFinder = &_jpsA;  break;
+	case EPathFinder::JpsB:  _pathFinder = &_jpsB;  break;
+	case EPathFinder::AStar: _pathFinder = &_astar; break;
+	case EPathFinder::Jps:
+	default:                 _pathFinder = &_jps;   break;
+	}
 }
 
 bool Room::AnyPathSubscriber() const
@@ -417,7 +436,7 @@ bool Room::AnyPathSubscriber() const
 
 namespace
 {
-	// finder 를 iters 회 돌려 min / 평균 us 를 잰다. 마지막 회의 경로/노드 수를 out 에 남긴다.
+	// finder 를 iters 회 돌려 min / avg / max us 를 잰다. 마지막 회의 경로/노드 수를 out 에 남긴다.
 	struct BenchResult
 	{
 		bool	ok = false;
@@ -427,6 +446,7 @@ namespace
 		int32	pathCost = 0;
 		double	minUs = 0.0;
 		double	avgUs = 0.0;
+		double	maxUs = 0.0;
 	};
 
 	BenchResult RunBench(IPathFinder& finder, const NavGrid& grid, TilePos start, TilePos goal, int32 iters)
@@ -440,6 +460,7 @@ namespace
 
 		double sum = 0.0;
 		double best = 0.0;
+		double worst = 0.0;
 		Vector<TilePos> path;
 
 		for (int32 i = 0; i < iters; i++)
@@ -452,18 +473,24 @@ namespace
 
 			const double us = static_cast<double>(t1.QuadPart - t0.QuadPart) * toUs;
 			sum += us;
-			if (i == 0 || us < best)
-				best = us;
+			if (i == 0 || us < best)  best = us;
+			if (i == 0 || us > worst) worst = us;
 		}
 
 		r.minUs = best;
 		r.avgUs = (iters > 0) ? (sum / iters) : 0.0;
+		r.maxUs = worst;
 		r.pathNodes = static_cast<int32>(path.size());
 		r.expanded = finder.GetLastExpandedCount();
 		r.scanned = finder.GetLastScannedCount();
 		r.pathCost = PathTotalCost(path);
 		return r;
 	}
+}
+
+namespace
+{
+	struct BenchAlgo { const wchar_t* name; IPathFinder* f; };
 }
 
 std::wstring Room::BenchPath(TilePos start, TilePos goal, int32 boxCells, int32 iters)
@@ -482,34 +509,34 @@ std::wstring Room::BenchPath(TilePos start, TilePos goal, int32 boxCells, int32 
 		return L"pathbench : start or goal has no walkable cell within snap radius";
 	}
 
-	const BenchResult jps = RunBench(_jps, grid, s, g, iters);
-	const BenchResult ast = RunBench(_astar, grid, s, g, iters);
+	const BenchAlgo algos[] = {
+		{ L"JPS  ", &_jps }, { L"JPS_A", &_jpsA }, { L"JPS_B", &_jpsB }, { L"A*   ", &_astar }
+	};
 
 	WCHAR buf[512];
 	std::wstring out;
-
 	::swprintf_s(buf, L"pathbench (%d,%d)->(%d,%d)  box %d  %d iters%ls",
 		s.x, s.y, g.x, g.y, boxCells, iters,
 		(s != start || g != goal) ? L"  (snapped)" : L"");
 	out = buf;
 
-	::swprintf_s(buf, L"\n  JPS : path %d | expanded %-6d | scanned %-8lld | %.1f us min  %.1f us avg | cost %d%ls",
-		jps.pathNodes, jps.expanded, static_cast<long long>(jps.scanned),
-		jps.minUs, jps.avgUs, jps.pathCost, jps.ok ? L"" : L"  (FAIL)");
-	out += buf;
+	int64 baseScan = 0;
+	double baseUs = 0.0;
+	for (int32 i = 0; i < 4; i++)
+	{
+		const BenchResult r = RunBench(*algos[i].f, grid, s, g, iters);
+		if (i == 0) { baseScan = r.scanned; baseUs = r.avgUs; }
 
-	::swprintf_s(buf, L"\n  A*  : path %d | expanded %-6d | scanned %-8lld | %.1f us min  %.1f us avg | cost %d%ls",
-		ast.pathNodes, ast.expanded, static_cast<long long>(ast.scanned),
-		ast.minUs, ast.avgUs, ast.pathCost, ast.ok ? L"" : L"  (FAIL)");
-	out += buf;
+		const double sr = (baseScan > 0) ? (static_cast<double>(r.scanned) / baseScan) : 0.0;
+		const double tr = (baseUs > 0.0) ? (r.avgUs / baseUs) : 0.0;
 
-	// scanned(= 검사한 셀 수)가 두 알고리즘을 사과 대 사과로 비교하는 값.
-	const double scanRatio = (jps.scanned > 0) ? (static_cast<double>(ast.scanned) / jps.scanned) : 0.0;
-	const double timeRatio = (jps.avgUs > 0.0) ? (ast.avgUs / jps.avgUs) : 0.0;
-	::swprintf_s(buf, L"\n  A* / JPS : scanned x%.2f , time x%.2f  (%ls)",
-		scanRatio, timeRatio,
-		(timeRatio > 1.0) ? L"JPS faster" : L"A* faster");
-	out += buf;
+		::swprintf_s(buf,
+			L"\n  %ls : path %-3d | expanded %-6d | scanned %-8lld (x%.2f) | us %.1f/%.1f/%.1f min/avg/max (avg x%.2f) | cost %d%ls",
+			algos[i].name, r.pathNodes, r.expanded, static_cast<long long>(r.scanned), sr,
+			r.minUs, r.avgUs, r.maxUs, tr, r.pathCost, r.ok ? L"" : L"  (FAIL)");
+		out += buf;
+	}
+	out += L"\n  (x.. = ratio vs JPS ; all 'cost' must match)";
 
 	return out;
 }
@@ -524,20 +551,22 @@ std::wstring Room::BenchPathRandom(int32 count, int32 boxCells)
 	const int32 w = grid.GetWidth();
 	const int32 h = grid.GetHeight();
 
-	int64 jpsScanSum = 0, astScanSum = 0;
-	int64 jpsScanMax = 0, astScanMax = 0;
-	double jpsUsSum = 0.0, astUsSum = 0.0;
-	double jpsUsMax = 0.0, astUsMax = 0.0;
-	int32 jpsOk = 0, astOk = 0;
-	int32 done = 0;
+	const BenchAlgo algos[] = {
+		{ L"JPS  ", &_jps }, { L"JPS_A", &_jpsA }, { L"JPS_B", &_jpsB }, { L"A*   ", &_astar }
+	};
+
+	int64  scanSum[4] = {}, scanMax[4] = {};
+	double usSum[4] = {}, usMin[4] = {}, usMax[4] = {};
+	int32  okCount[4] = {};
+	int32  done = 0;
 
 	Vector<TilePos> path;
 	LARGE_INTEGER freq = {};
 	::QueryPerformanceFrequency(OUT &freq);
 	const double toUs = (freq.QuadPart > 0) ? (1000000.0 / static_cast<double>(freq.QuadPart)) : 0.0;
 
-	_jps.SetRecordSearchNodes(false);
-	_astar.SetRecordSearchNodes(false);
+	for (const BenchAlgo& a : algos)
+		a.f->SetRecordSearchNodes(false);
 
 	int32 tries = 0;
 	while (done < count && tries < count * 40)
@@ -550,29 +579,24 @@ std::wstring Room::BenchPathRandom(int32 count, int32 boxCells)
 		if (::abs(a.x - b.x) + ::abs(a.y - b.y) < 40)
 			continue;
 
-		auto timeOne = [&](IPathFinder& f) -> std::pair<bool, double>
+		for (int32 i = 0; i < 4; i++)
 		{
 			LARGE_INTEGER t0 = {};
 			LARGE_INTEGER t1 = {};
 			::QueryPerformanceCounter(OUT &t0);
-			const bool ok = f.FindPath(grid, a, b, OUT path);
+			const bool ok = algos[i].f->FindPath(grid, a, b, OUT path);
 			::QueryPerformanceCounter(OUT &t1);
-			return { ok, static_cast<double>(t1.QuadPart - t0.QuadPart) * toUs };
-		};
 
-		const auto rj = timeOne(_jps);
-		const int64 js = _jps.GetLastScannedCount();
-		const auto ra = timeOne(_astar);
-		const int64 as = _astar.GetLastScannedCount();
+			const double us = static_cast<double>(t1.QuadPart - t0.QuadPart) * toUs;
+			const int64 sc = algos[i].f->GetLastScannedCount();
 
-		jpsScanSum += js; astScanSum += as;
-		if (js > jpsScanMax) jpsScanMax = js;
-		if (as > astScanMax) astScanMax = as;
-		jpsUsSum += rj.second; astUsSum += ra.second;
-		if (rj.second > jpsUsMax) jpsUsMax = rj.second;
-		if (ra.second > astUsMax) astUsMax = ra.second;
-		if (rj.first) jpsOk++;
-		if (ra.first) astOk++;
+			scanSum[i] += sc;
+			if (sc > scanMax[i]) scanMax[i] = sc;
+			usSum[i] += us;
+			if (done == 0 || us < usMin[i]) usMin[i] = us;
+			if (us > usMax[i]) usMax[i] = us;
+			if (ok) okCount[i]++;
+		}
 		done++;
 	}
 
@@ -583,20 +607,18 @@ std::wstring Room::BenchPathRandom(int32 count, int32 boxCells)
 
 	if (done > 0)
 	{
-		::swprintf_s(buf, L"\n  JPS : %d ok | scanned avg %-8lld max %-8lld | %.1f us avg  %.1f us max",
-			jpsOk, static_cast<long long>(jpsScanSum / done), static_cast<long long>(jpsScanMax),
-			jpsUsSum / done, jpsUsMax);
-		out += buf;
-		::swprintf_s(buf, L"\n  A*  : %d ok | scanned avg %-8lld max %-8lld | %.1f us avg  %.1f us max",
-			astOk, static_cast<long long>(astScanSum / done), static_cast<long long>(astScanMax),
-			astUsSum / done, astUsMax);
-		out += buf;
-
-		const double sr = (jpsScanSum > 0) ? (static_cast<double>(astScanSum) / jpsScanSum) : 0.0;
-		const double tr = (jpsUsSum > 0.0) ? (astUsSum / jpsUsSum) : 0.0;
-		::swprintf_s(buf, L"\n  A* / JPS (avg) : scanned x%.2f , time x%.2f  (%ls)",
-			sr, tr, (tr > 1.0) ? L"JPS faster" : L"A* faster");
-		out += buf;
+		for (int32 i = 0; i < 4; i++)
+		{
+			const double sr = (scanSum[0] > 0) ? (static_cast<double>(scanSum[i]) / scanSum[0]) : 0.0;
+			const double tr = (usSum[0] > 0.0) ? (usSum[i] / usSum[0]) : 0.0;
+			::swprintf_s(buf,
+				L"\n  %ls : %d ok | scanned avg %-8lld max %-8lld (x%.2f) | us %.1f/%.1f/%.1f min/avg/max (avg x%.2f)",
+				algos[i].name, okCount[i],
+				static_cast<long long>(scanSum[i] / done), static_cast<long long>(scanMax[i]), sr,
+				usMin[i], usSum[i] / done, usMax[i], tr);
+			out += buf;
+		}
+		out += L"\n  (x.. = avg ratio vs JPS)";
 	}
 
 	return out;
@@ -1014,6 +1036,18 @@ bool Room::OrderMoveTo(uint64 objectId, int32 cellX, int32 cellY)
 	if (grid.FindNearestWalkable(goalCell, SNAP_MAX_RADIUS, OUT snappedGoal) == false)
 		return false;
 
+	// 목표가 출발지와 다른 연결 컴포넌트(섬)면 길이 아예 없다. FindPath 를 부르면
+	// 도달 불가한 목표를 향해 컴포넌트 전체를 스캔하다 노드 한계에 부딪혀 수만 µs 를 태운다.
+	if (grid.ComponentOf(snappedStart.x, snappedStart.y)
+		!= grid.ComponentOf(snappedGoal.x, snappedGoal.y))
+	{
+		MovementComponent& mm = object->Movement();
+		mm.ClearPath();
+		mm.state = MoveState::Idle;
+		mm.dir = Protocol::DIR_NONE;
+		return false;
+	}
+
 	MovementComponent& m = object->Movement();
 	m.ClearPath();
 
@@ -1032,6 +1066,12 @@ bool Room::OrderMoveTo(uint64 objectId, int32 cellX, int32 cellY)
 	_lastPathMicros = (freq.QuadPart > 0)
 		? static_cast<uint32>((t1.QuadPart - t0.QuadPart) * 1000000 / freq.QuadPart)
 		: 0;
+
+	// F5 오버레이용 min/avg/max (전환 이후 누적).
+	if (_lastPathMicros < _pathMicrosMin) _pathMicrosMin = _lastPathMicros;
+	if (_lastPathMicros > _pathMicrosMax) _pathMicrosMax = _lastPathMicros;
+	_pathMicrosSum += _lastPathMicros;
+	_pathMicrosCount++;
 
 	if (pathOk == false || m.path.empty())
 	{
@@ -1150,10 +1190,13 @@ void Room::BroadcastDebugPath(GameObject* object, bool cleared, bool includeSear
 			out->set_y(tile.y);
 		}
 
-		// 방금 탐색의 확장 노드 수 / 검사 셀 수 / 소요 시간. 클라 F5 라벨.
+		// 방금 탐색의 확장/검사 노드 수 + 전환 이후 소요 시간 min/avg/max. 클라 F5 라벨.
 		pkt.set_expandednodes(static_cast<uint32>(_pathFinder->GetLastExpandedCount()));
 		pkt.set_scannednodes(static_cast<uint32>(_pathFinder->GetLastScannedCount()));
-		pkt.set_computemicros(_lastPathMicros);
+		pkt.set_computemicros(_pathMicrosCount > 0
+			? static_cast<uint32>(_pathMicrosSum / _pathMicrosCount) : _lastPathMicros);
+		pkt.set_computemicrosmin(_pathMicrosCount > 0 ? _pathMicrosMin : _lastPathMicros);
+		pkt.set_computemicrosmax(_pathMicrosMax);
 	}
 
 	const SendBufferRef buffer = ClientPacketHandler::MakeSendBuffer(pkt);

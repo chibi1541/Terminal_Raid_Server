@@ -3,6 +3,7 @@
 #include "Game/GameObject.h"
 #include "Game/Level.h"
 #include "Game/JpsPathFinder.h"
+#include "Game/JpsTunedPathFinder.h"
 #include "Game/AStarPathFinder.h"
 #include "Game/QuadTree.h"
 #include "Game/MonsterSpawner.h"
@@ -305,11 +306,18 @@ private:
 	HashMap<uint64, BtInstance> _behaviors;
 	bool						_behaviorAutoTick = true;
 
-	JpsPathFinder	_jps;
-	AStarPathFinder	_astar;
+	JpsPathFinder		_jps;		// 원본
+	JpsTunedPathFinder	_jpsA;		// + 방향 편향 (Room 생성자에서 Configure)
+	JpsTunedPathFinder	_jpsB;		// + 방향 편향 + 점프 상한
+	AStarPathFinder		_astar;
 	IPathFinder*	_pathFinder = &_jps;	// 활성 길찾기. pathalgo 콘솔로 교체.
 	EPathFinder		_pathFinderKind = EPathFinder::Jps;
-	uint32			_lastPathMicros = 0;	// 마지막 OrderMoveTo 탐색 소요 (us). 디버그 오버레이용.
+	// 디버그 오버레이(F5)용 repath 소요 시간 통계. pathalgo 전환 시 리셋.
+	uint32			_lastPathMicros = 0;
+	uint32			_pathMicrosMin = 0xFFFFFFFFu;
+	uint32			_pathMicrosMax = 0;
+	double			_pathMicrosSum = 0.0;
+	uint32			_pathMicrosCount = 0;
 
 	QuadTree		_collisionTree;
 

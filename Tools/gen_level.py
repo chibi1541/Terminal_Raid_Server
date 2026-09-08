@@ -13,8 +13,8 @@
 
 막힘 셀 :
     1. 각 프롭의 타일 영역 (엔진 StaticPropActor::GetTileBounds 와 동일한 산수)
-    2. 아레나 중앙에서 flood-fill 해서 닿지 않는 칸 전부 (링 바깥 여백 + 갇힌 구석).
-       울타리 코너에 1칸 틈이 있어도 이걸로 새지 않는다.
+    2. 울타리(FENCE/GATE/GATEPOST) 바운딩 사각형 밖은 전부 (게이트 틈으로 flood 가 새는 것과 무관하게).
+    3. 아레나 중앙에서 flood-fill 해서 닿지 않는 칸 전부 (갇힌 구석 자투리 정리).
 
 ★ 프롭 타일 영역 산수 (StaticPropActor::GetTileBounds / TileMapLevel::SpawnProp) ★
     spanInCells = tileSpan * tileSize
@@ -103,6 +103,30 @@ def main():
 
     if unknown:
         sys.exit(f"placement refers to props missing from prop.xml: {sorted(unknown)}")
+
+    # 1.5 울타리 링 바운딩 사각형 밖을 명시적으로 막는다.
+    #     게이트에 몇 칸짜리 틈이 있어도(측면 GATE 프롭이 게이트포스트 간격을 다 못 덮음)
+    #     아래 중앙 flood-fill 이 그 틈으로 새어 바깥 여백을 통행 가능으로 남기지 않도록.
+    FENCE_NAMES = ("FENCE", "GATE", "GATEPOST")
+    fx0 = fy0 = 10 ** 9
+    fx1 = fy1 = 0
+    for name, x, y, facing in placements:
+        if name not in FENCE_NAMES:
+            continue
+        rx, ry, rw, rh = prop_rect(name, x, y, facing, spans[name], tile_size)
+        fx0 = min(fx0, rx)
+        fy0 = min(fy0, ry)
+        fx1 = max(fx1, rx + rw)
+        fy1 = max(fy1, ry + rh)
+
+    if fx1 > fx0 and fy1 > fy0:
+        for yy in range(HEIGHT):
+            row_g = grid[yy]
+            outside_row = yy < fy0 or yy >= fy1
+            for xx in range(WIDTH):
+                if outside_row or xx < fx0 or xx >= fx1:
+                    row_g[xx] = True
+        print(f"  fence bbox [{fx0},{fy0})-[{fx1},{fy1}) - exterior sealed")
 
     # 2. 아레나 중앙에서 flood-fill. 닿지 않는 칸을 전부 막는다
     #    (링 바깥 여백 + 코너 틈으로 샌 자투리 + 갇힌 구석).

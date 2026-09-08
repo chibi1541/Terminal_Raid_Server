@@ -125,6 +125,7 @@
     <ClCompile Include="source\Game\MonsterData.cpp" />
     <ClCompile Include="source\Game\GameObject.cpp" />
     <ClCompile Include="source\Game\JpsPathFinder.cpp" />
+    <ClCompile Include="source\Game\JpsTunedPathFinder.cpp" />
     <ClCompile Include="source\Game\AStarPathFinder.cpp" />
     <ClCompile Include="source\Game\PathFinderCommon.cpp" />
     <ClCompile Include="source\Game\Level.cpp" />
@@ -178,6 +179,7 @@
     <ClInclude Include="source\Game\MonsterData.h" />
     <ClInclude Include="source\Game\GameObject.h" />
     <ClInclude Include="source\Game\JpsPathFinder.h" />
+    <ClInclude Include="source\Game\JpsTunedPathFinder.h" />
     <ClInclude Include="source\Game\AStarPathFinder.h" />
     <ClInclude Include="source\Game\IPathFinder.h" />
     <ClInclude Include="source\Game\PathFinderCommon.h" />
