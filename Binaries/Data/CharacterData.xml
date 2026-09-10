@@ -11,10 +11,10 @@
 	     moveSpeedCells : 이동 속도 (셀/초).
 	     hitStunMs      : 피격 경직 시간(ms). 이 동안 이동 입력 무시. 클라 Hit 클립 길이에 맞춘다. -->
 	<Character id="CHARACTER_KNIGHT" animClip="Knight"
-	           collisionCells="8" radius="2" maxHp="130" attackPower="10" moveSpeedCells="20" hitStunMs="300" />
+	           collisionCells="8" radius="2" maxHp="130" attackPower="10" moveSpeedCells="30" hitStunMs="300" />
 	<Character id="CHARACTER_MAGE"   animClip="Mage"
-	           collisionCells="8" radius="2" maxHp="90"  attackPower="16" moveSpeedCells="20" hitStunMs="300" />
+	           collisionCells="8" radius="2" maxHp="90"  attackPower="16" moveSpeedCells="30" hitStunMs="300" />
 	<Character id="CHARACTER_ACHER"  animClip="Archer"
-	           collisionCells="8" radius="2" maxHp="105" attackPower="13" moveSpeedCells="22" hitStunMs="280" />
+	           collisionCells="8" radius="2" maxHp="105" attackPower="13" moveSpeedCells="35" hitStunMs="280" />
 
 </CharacterData>

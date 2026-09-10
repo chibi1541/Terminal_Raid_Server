@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 
 class RecvBuffer
@@ -11,14 +11,14 @@ public:
 
 public:
 	void Clean();
-	// index¸¦ ÃÖ½ÅÈ­ÇÏ´Â ÇÔ¼ö
+	// indexë¥¼ ìµœì‹ í™”í•˜ëŠ” í•¨ìˆ˜
 	bool OnWrite(int32 numOfBytes);
 	bool OnRead(int32 numOfBytes);
 
 	BYTE* WritePos() {return &_buffer[_writeIndex]; }
 	BYTE* ReadPos() {return &_buffer[_readIndex]; }
 	int32 DataSize() {return _writeIndex - _readIndex; }
-	int32 FreeSize() {return _capacity - _writeIndex; }
+	int32 FreeSize() { return (_capacity - 1) - _writeIndex; }
 
 private:
 
