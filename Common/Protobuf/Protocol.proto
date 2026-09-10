@@ -8,6 +8,7 @@ import "Struct.proto";
 message C_LOGIN
 {
 	string name = 1;
+	CharacterType charType = 2;	// 메뉴에서 고른 캐릭터. CHARACTER_NONE 이면 서버가 KNIGHT 로.
 }
 
 message S_LOGIN

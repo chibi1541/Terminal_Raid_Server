@@ -24,6 +24,7 @@ namespace Protocol {
 PROTOBUF_CONSTEXPR C_LOGIN::C_LOGIN(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.name_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.chartype_)*/0
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct C_LOGINDefaultTypeInternal {
   PROTOBUF_CONSTEXPR C_LOGINDefaultTypeInternal()
@@ -409,6 +410,7 @@ const uint32_t TableStruct_Protocol_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::Protocol::C_LOGIN, _impl_.name_),
+  PROTOBUF_FIELD_OFFSET(::Protocol::C_LOGIN, _impl_.chartype_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::Protocol::S_LOGIN, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -633,30 +635,30 @@ const uint32_t TableStruct_Protocol_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE
 };
 static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, -1, sizeof(::Protocol::C_LOGIN)},
-  { 7, -1, -1, sizeof(::Protocol::S_LOGIN)},
-  { 15, -1, -1, sizeof(::Protocol::C_PING)},
-  { 22, -1, -1, sizeof(::Protocol::S_PONG)},
-  { 31, -1, -1, sizeof(::Protocol::C_ENTER_ROOM)},
-  { 37, -1, -1, sizeof(::Protocol::S_ENTER_ROOM)},
-  { 49, -1, -1, sizeof(::Protocol::C_EXIT_ROOM)},
-  { 55, -1, -1, sizeof(::Protocol::S_EXIT_ROOM)},
-  { 61, -1, -1, sizeof(::Protocol::S_SPAWN)},
-  { 69, -1, -1, sizeof(::Protocol::S_DESPAWN)},
-  { 76, -1, -1, sizeof(::Protocol::C_MOVE)},
-  { 85, -1, -1, sizeof(::Protocol::S_MOVE)},
-  { 95, -1, -1, sizeof(::Protocol::S_MOVE_ACK)},
-  { 107, -1, -1, sizeof(::Protocol::S_HIT)},
-  { 119, -1, -1, sizeof(::Protocol::S_DEATH)},
-  { 128, -1, -1, sizeof(::Protocol::S_ATTACK_START)},
-  { 137, -1, -1, sizeof(::Protocol::C_DEBUG_CONFIG)},
-  { 146, -1, -1, sizeof(::Protocol::S_DEBUG_LEVEL)},
-  { 158, -1, -1, sizeof(::Protocol::DebugPathNode)},
-  { 165, -1, -1, sizeof(::Protocol::S_DEBUG_PATH)},
-  { 184, -1, -1, sizeof(::Protocol::C_ATTACK)},
-  { 193, -1, -1, sizeof(::Protocol::DebugRect)},
-  { 203, -1, -1, sizeof(::Protocol::S_DEBUG_QUADTREE)},
-  { 214, -1, -1, sizeof(::Protocol::C_RESPAWN)},
-  { 220, -1, -1, sizeof(::Protocol::S_RESPAWN)},
+  { 8, -1, -1, sizeof(::Protocol::S_LOGIN)},
+  { 16, -1, -1, sizeof(::Protocol::C_PING)},
+  { 23, -1, -1, sizeof(::Protocol::S_PONG)},
+  { 32, -1, -1, sizeof(::Protocol::C_ENTER_ROOM)},
+  { 38, -1, -1, sizeof(::Protocol::S_ENTER_ROOM)},
+  { 50, -1, -1, sizeof(::Protocol::C_EXIT_ROOM)},
+  { 56, -1, -1, sizeof(::Protocol::S_EXIT_ROOM)},
+  { 62, -1, -1, sizeof(::Protocol::S_SPAWN)},
+  { 70, -1, -1, sizeof(::Protocol::S_DESPAWN)},
+  { 77, -1, -1, sizeof(::Protocol::C_MOVE)},
+  { 86, -1, -1, sizeof(::Protocol::S_MOVE)},
+  { 96, -1, -1, sizeof(::Protocol::S_MOVE_ACK)},
+  { 108, -1, -1, sizeof(::Protocol::S_HIT)},
+  { 120, -1, -1, sizeof(::Protocol::S_DEATH)},
+  { 129, -1, -1, sizeof(::Protocol::S_ATTACK_START)},
+  { 138, -1, -1, sizeof(::Protocol::C_DEBUG_CONFIG)},
+  { 147, -1, -1, sizeof(::Protocol::S_DEBUG_LEVEL)},
+  { 159, -1, -1, sizeof(::Protocol::DebugPathNode)},
+  { 166, -1, -1, sizeof(::Protocol::S_DEBUG_PATH)},
+  { 185, -1, -1, sizeof(::Protocol::C_ATTACK)},
+  { 194, -1, -1, sizeof(::Protocol::DebugRect)},
+  { 204, -1, -1, sizeof(::Protocol::S_DEBUG_QUADTREE)},
+  { 215, -1, -1, sizeof(::Protocol::C_RESPAWN)},
+  { 221, -1, -1, sizeof(::Protocol::S_RESPAWN)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -689,61 +691,62 @@ static const ::_pb::Message* const file_default_instances[] = {
 
 const char descriptor_table_protodef_Protocol_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
   "\n\016Protocol.proto\022\010Protocol\032\nEnum.proto\032\014"
-  "Struct.proto\"\027\n\007C_LOGIN\022\014\n\004name\030\001 \001(\t\"8\n"
-  "\007S_LOGIN\022\017\n\007success\030\001 \001(\010\022\034\n\004user\030\002 \001(\0132"
-  "\016.Protocol.User\"\034\n\006C_PING\022\022\n\nclientTime\030"
-  "\001 \001(\004\"D\n\006S_PONG\022\022\n\nclientTime\030\001 \001(\004\022\022\n\ns"
-  "erverTime\030\002 \001(\004\022\022\n\nserverTick\030\003 \001(\r\"\016\n\014C"
-  "_ENTER_ROOM\"\241\001\n\014S_ENTER_ROOM\022\017\n\007success\030"
-  "\001 \001(\010\022\r\n\005width\030\002 \001(\r\022\016\n\006height\030\003 \001(\r\022&\n\010"
-  "myObject\030\004 \001(\0132\024.Protocol.ObjectInfo\022%\n\007"
-  "objects\030\005 \003(\0132\024.Protocol.ObjectInfo\022\022\n\ns"
-  "erverTick\030\006 \001(\r\"\r\n\013C_EXIT_ROOM\"\r\n\013S_EXIT"
-  "_ROOM\"D\n\007S_SPAWN\022%\n\007objects\030\001 \003(\0132\024.Prot"
-  "ocol.ObjectInfo\022\022\n\nserverTick\030\002 \001(\r\"\036\n\tS"
-  "_DESPAWN\022\021\n\tobjectIds\030\001 \003(\004\"T\n\006C_MOVE\022\020\n"
-  "\010inputSeq\030\001 \001(\r\022\022\n\nclientTick\030\002 \001(\r\022$\n\003d"
-  "ir\030\003 \001(\0162\027.Protocol.DirectionType\"d\n\006S_M"
-  "OVE\022\022\n\nserverTick\030\001 \001(\r\022!\n\005moves\030\002 \003(\0132\022"
-  ".Protocol.MoveInfo\022\017\n\007deltaMs\030\003 \001(\r\022\022\n\ns"
-  "erverTime\030\004 \001(\004\"\247\001\n\nS_MOVE_ACK\022\035\n\025lastPr"
-  "ocessedInputSeq\030\001 \001(\r\022\022\n\nserverTick\030\002 \001("
-  "\r\022\036\n\003pos\030\003 \001(\0132\021.Protocol.Vector2\022$\n\003dir"
-  "\030\004 \001(\0162\027.Protocol.DirectionType\022\017\n\007posSu"
-  "bX\030\005 \001(\005\022\017\n\007posSubY\030\006 \001(\005\"p\n\005S_HIT\022\020\n\010ta"
-  "rgetId\030\001 \001(\004\022\022\n\nattackerId\030\002 \001(\004\022\016\n\006dama"
-  "ge\030\003 \001(\005\022\r\n\005newHp\030\004 \001(\005\022\022\n\nserverTick\030\005 "
-  "\001(\r\022\016\n\006stunMs\030\006 \001(\r\"A\n\007S_DEATH\022\020\n\010object"
-  "Id\030\001 \001(\004\022\020\n\010killerId\030\002 \001(\004\022\022\n\nserverTick"
-  "\030\003 \001(\r\"\\\n\016S_ATTACK_START\022\020\n\010objectId\030\001 \001"
-  "(\004\022$\n\003dir\030\002 \001(\0162\027.Protocol.DirectionType"
-  "\022\022\n\nserverTick\030\003 \001(\r\"P\n\016C_DEBUG_CONFIG\022\025"
-  "\n\rwantLevelGrid\030\001 \001(\010\022\021\n\twantPaths\030\002 \001(\010"
-  "\022\024\n\014wantQuadtree\030\003 \001(\010\"y\n\rS_DEBUG_LEVEL\022"
-  "\r\n\005width\030\001 \001(\r\022\016\n\006height\030\002 \001(\r\022\020\n\010tileSi"
-  "ze\030\003 \001(\r\022\020\n\010startRow\030\004 \001(\r\022\020\n\010rowCount\030\005"
-  " \001(\r\022\023\n\013blockedBits\030\006 \001(\014\"0\n\rDebugPathNo"
-  "de\022\037\n\004cell\030\001 \001(\0132\021.Protocol.Vector2\"\355\002\n\014"
-  "S_DEBUG_PATH\022\020\n\010objectId\030\001 \001(\004\022*\n\twaypoi"
-  "nts\030\002 \003(\0132\027.Protocol.DebugPathNode\022\024\n\014cu"
-  "rrentIndex\030\003 \001(\r\022,\n\013searchNodes\030\004 \003(\0132\027."
-  "Protocol.DebugPathNode\022\017\n\007cleared\030\005 \001(\010\022"
-  "\020\n\010boxCells\030\006 \001(\r\022.\n\rpathJumpNodes\030\007 \003(\013"
-  "2\027.Protocol.DebugPathNode\022\025\n\rexpandedNod"
-  "es\030\010 \001(\r\022\025\n\rcomputeMicros\030\t \001(\r\022\020\n\010pathA"
-  "lgo\030\n \001(\r\022\024\n\014scannedNodes\030\013 \001(\r\022\030\n\020compu"
-  "teMicrosMin\030\014 \001(\r\022\030\n\020computeMicrosMax\030\r "
-  "\001(\r\"k\n\010C_ATTACK\022\"\n\007aimCell\030\001 \001(\0132\021.Proto"
-  "col.Vector2\022%\n\nmuzzleCell\030\002 \001(\0132\021.Protoc"
-  "ol.Vector2\022\024\n\014clientTimeMs\030\003 \001(\r\"C\n\tDebu"
-  "gRect\022\014\n\004minX\030\001 \001(\005\022\014\n\004minY\030\002 \001(\005\022\014\n\004max"
-  "X\030\003 \001(\005\022\014\n\004maxY\030\004 \001(\005\"\215\001\n\020S_DEBUG_QUADTR"
-  "EE\022\"\n\005nodes\030\001 \003(\0132\023.Protocol.DebugRect\022\023"
-  "\n\013objectCount\030\002 \001(\r\022\023\n\013buildMicros\030\003 \001(\r"
-  "\022\027\n\017collisionMicros\030\004 \001(\r\022\022\n\nserverTick\030"
-  "\005 \001(\r\"\013\n\tC_RESPAWN\"E\n\tS_RESPAWN\022$\n\006objec"
-  "t\030\001 \001(\0132\024.Protocol.ObjectInfo\022\022\n\nserverT"
-  "ick\030\002 \001(\rb\006proto3"
+  "Struct.proto\"B\n\007C_LOGIN\022\014\n\004name\030\001 \001(\t\022)\n"
+  "\010charType\030\002 \001(\0162\027.Protocol.CharacterType"
+  "\"8\n\007S_LOGIN\022\017\n\007success\030\001 \001(\010\022\034\n\004user\030\002 \001"
+  "(\0132\016.Protocol.User\"\034\n\006C_PING\022\022\n\nclientTi"
+  "me\030\001 \001(\004\"D\n\006S_PONG\022\022\n\nclientTime\030\001 \001(\004\022\022"
+  "\n\nserverTime\030\002 \001(\004\022\022\n\nserverTick\030\003 \001(\r\"\016"
+  "\n\014C_ENTER_ROOM\"\241\001\n\014S_ENTER_ROOM\022\017\n\007succe"
+  "ss\030\001 \001(\010\022\r\n\005width\030\002 \001(\r\022\016\n\006height\030\003 \001(\r\022"
+  "&\n\010myObject\030\004 \001(\0132\024.Protocol.ObjectInfo\022"
+  "%\n\007objects\030\005 \003(\0132\024.Protocol.ObjectInfo\022\022"
+  "\n\nserverTick\030\006 \001(\r\"\r\n\013C_EXIT_ROOM\"\r\n\013S_E"
+  "XIT_ROOM\"D\n\007S_SPAWN\022%\n\007objects\030\001 \003(\0132\024.P"
+  "rotocol.ObjectInfo\022\022\n\nserverTick\030\002 \001(\r\"\036"
+  "\n\tS_DESPAWN\022\021\n\tobjectIds\030\001 \003(\004\"T\n\006C_MOVE"
+  "\022\020\n\010inputSeq\030\001 \001(\r\022\022\n\nclientTick\030\002 \001(\r\022$"
+  "\n\003dir\030\003 \001(\0162\027.Protocol.DirectionType\"d\n\006"
+  "S_MOVE\022\022\n\nserverTick\030\001 \001(\r\022!\n\005moves\030\002 \003("
+  "\0132\022.Protocol.MoveInfo\022\017\n\007deltaMs\030\003 \001(\r\022\022"
+  "\n\nserverTime\030\004 \001(\004\"\247\001\n\nS_MOVE_ACK\022\035\n\025las"
+  "tProcessedInputSeq\030\001 \001(\r\022\022\n\nserverTick\030\002"
+  " \001(\r\022\036\n\003pos\030\003 \001(\0132\021.Protocol.Vector2\022$\n\003"
+  "dir\030\004 \001(\0162\027.Protocol.DirectionType\022\017\n\007po"
+  "sSubX\030\005 \001(\005\022\017\n\007posSubY\030\006 \001(\005\"p\n\005S_HIT\022\020\n"
+  "\010targetId\030\001 \001(\004\022\022\n\nattackerId\030\002 \001(\004\022\016\n\006d"
+  "amage\030\003 \001(\005\022\r\n\005newHp\030\004 \001(\005\022\022\n\nserverTick"
+  "\030\005 \001(\r\022\016\n\006stunMs\030\006 \001(\r\"A\n\007S_DEATH\022\020\n\010obj"
+  "ectId\030\001 \001(\004\022\020\n\010killerId\030\002 \001(\004\022\022\n\nserverT"
+  "ick\030\003 \001(\r\"\\\n\016S_ATTACK_START\022\020\n\010objectId\030"
+  "\001 \001(\004\022$\n\003dir\030\002 \001(\0162\027.Protocol.DirectionT"
+  "ype\022\022\n\nserverTick\030\003 \001(\r\"P\n\016C_DEBUG_CONFI"
+  "G\022\025\n\rwantLevelGrid\030\001 \001(\010\022\021\n\twantPaths\030\002 "
+  "\001(\010\022\024\n\014wantQuadtree\030\003 \001(\010\"y\n\rS_DEBUG_LEV"
+  "EL\022\r\n\005width\030\001 \001(\r\022\016\n\006height\030\002 \001(\r\022\020\n\010til"
+  "eSize\030\003 \001(\r\022\020\n\010startRow\030\004 \001(\r\022\020\n\010rowCoun"
+  "t\030\005 \001(\r\022\023\n\013blockedBits\030\006 \001(\014\"0\n\rDebugPat"
+  "hNode\022\037\n\004cell\030\001 \001(\0132\021.Protocol.Vector2\"\355"
+  "\002\n\014S_DEBUG_PATH\022\020\n\010objectId\030\001 \001(\004\022*\n\tway"
+  "points\030\002 \003(\0132\027.Protocol.DebugPathNode\022\024\n"
+  "\014currentIndex\030\003 \001(\r\022,\n\013searchNodes\030\004 \003(\013"
+  "2\027.Protocol.DebugPathNode\022\017\n\007cleared\030\005 \001"
+  "(\010\022\020\n\010boxCells\030\006 \001(\r\022.\n\rpathJumpNodes\030\007 "
+  "\003(\0132\027.Protocol.DebugPathNode\022\025\n\rexpanded"
+  "Nodes\030\010 \001(\r\022\025\n\rcomputeMicros\030\t \001(\r\022\020\n\010pa"
+  "thAlgo\030\n \001(\r\022\024\n\014scannedNodes\030\013 \001(\r\022\030\n\020co"
+  "mputeMicrosMin\030\014 \001(\r\022\030\n\020computeMicrosMax"
+  "\030\r \001(\r\"k\n\010C_ATTACK\022\"\n\007aimCell\030\001 \001(\0132\021.Pr"
+  "otocol.Vector2\022%\n\nmuzzleCell\030\002 \001(\0132\021.Pro"
+  "tocol.Vector2\022\024\n\014clientTimeMs\030\003 \001(\r\"C\n\tD"
+  "ebugRect\022\014\n\004minX\030\001 \001(\005\022\014\n\004minY\030\002 \001(\005\022\014\n\004"
+  "maxX\030\003 \001(\005\022\014\n\004maxY\030\004 \001(\005\"\215\001\n\020S_DEBUG_QUA"
+  "DTREE\022\"\n\005nodes\030\001 \003(\0132\023.Protocol.DebugRec"
+  "t\022\023\n\013objectCount\030\002 \001(\r\022\023\n\013buildMicros\030\003 "
+  "\001(\r\022\027\n\017collisionMicros\030\004 \001(\r\022\022\n\nserverTi"
+  "ck\030\005 \001(\r\"\013\n\tC_RESPAWN\"E\n\tS_RESPAWN\022$\n\006ob"
+  "ject\030\001 \001(\0132\024.Protocol.ObjectInfo\022\022\n\nserv"
+  "erTick\030\002 \001(\rb\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_Protocol_2eproto_deps[2] = {
   &::descriptor_table_Enum_2eproto,
@@ -751,7 +754,7 @@ static const ::_pbi::DescriptorTable* const descriptor_table_Protocol_2eproto_de
 };
 static ::_pbi::once_flag descriptor_table_Protocol_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_Protocol_2eproto = {
-    false, false, 2217, descriptor_table_protodef_Protocol_2eproto,
+    false, false, 2260, descriptor_table_protodef_Protocol_2eproto,
     "Protocol.proto",
     &descriptor_table_Protocol_2eproto_once, descriptor_table_Protocol_2eproto_deps, 2, 25,
     schemas, file_default_instances, TableStruct_Protocol_2eproto::offsets,
@@ -783,6 +786,7 @@ C_LOGIN::C_LOGIN(const C_LOGIN& from)
   C_LOGIN* const _this = this; (void)_this;
   new (&_impl_) Impl_{
       decltype(_impl_.name_){}
+    , decltype(_impl_.chartype_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
@@ -794,6 +798,7 @@ C_LOGIN::C_LOGIN(const C_LOGIN& from)
     _this->_impl_.name_.Set(from._internal_name(), 
       _this->GetArenaForAllocation());
   }
+  _this->_impl_.chartype_ = from._impl_.chartype_;
   // @@protoc_insertion_point(copy_constructor:Protocol.C_LOGIN)
 }
 
@@ -803,6 +808,7 @@ inline void C_LOGIN::SharedCtor(
   (void)is_message_owned;
   new (&_impl_) Impl_{
       decltype(_impl_.name_){}
+    , decltype(_impl_.chartype_){0}
     , /*decltype(_impl_._cached_size_)*/{}
   };
   _impl_.name_.InitDefault();
@@ -836,6 +842,7 @@ void C_LOGIN::Clear() {
   (void) cached_has_bits;
 
   _impl_.name_.ClearToEmpty();
+  _impl_.chartype_ = 0;
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -852,6 +859,15 @@ const char* C_LOGIN::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) 
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
           CHK_(::_pbi::VerifyUTF8(str, "Protocol.C_LOGIN.name"));
+        } else
+          goto handle_unusual;
+        continue;
+      // .Protocol.CharacterType charType = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
+          uint64_t val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+          _internal_set_chartype(static_cast<::Protocol::CharacterType>(val));
         } else
           goto handle_unusual;
         continue;
@@ -894,6 +910,13 @@ uint8_t* C_LOGIN::_InternalSerialize(
         1, this->_internal_name(), target);
   }
 
+  // .Protocol.CharacterType charType = 2;
+  if (this->_internal_chartype() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteEnumToArray(
+      2, this->_internal_chartype(), target);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -917,6 +940,12 @@ size_t C_LOGIN::ByteSizeLong() const {
         this->_internal_name());
   }
 
+  // .Protocol.CharacterType charType = 2;
+  if (this->_internal_chartype() != 0) {
+    total_size += 1 +
+      ::_pbi::WireFormatLite::EnumSize(this->_internal_chartype());
+  }
+
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
@@ -937,6 +966,9 @@ void C_LOGIN::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOB
 
   if (!from._internal_name().empty()) {
     _this->_internal_set_name(from._internal_name());
+  }
+  if (from._internal_chartype() != 0) {
+    _this->_internal_set_chartype(from._internal_chartype());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -961,6 +993,7 @@ void C_LOGIN::InternalSwap(C_LOGIN* other) {
       &_impl_.name_, lhs_arena,
       &other->_impl_.name_, rhs_arena
   );
+  swap(_impl_.chartype_, other->_impl_.chartype_);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata C_LOGIN::GetMetadata() const {

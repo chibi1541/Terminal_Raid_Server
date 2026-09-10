@@ -277,6 +277,7 @@ class C_LOGIN final :
 
   enum : int {
     kNameFieldNumber = 1,
+    kCharTypeFieldNumber = 2,
   };
   // string name = 1;
   void clear_name();
@@ -292,6 +293,15 @@ class C_LOGIN final :
   std::string* _internal_mutable_name();
   public:
 
+  // .Protocol.CharacterType charType = 2;
+  void clear_chartype();
+  ::Protocol::CharacterType chartype() const;
+  void set_chartype(::Protocol::CharacterType value);
+  private:
+  ::Protocol::CharacterType _internal_chartype() const;
+  void _internal_set_chartype(::Protocol::CharacterType value);
+  public:
+
   // @@protoc_insertion_point(class_scope:Protocol.C_LOGIN)
  private:
   class _Internal;
@@ -301,6 +311,7 @@ class C_LOGIN final :
   typedef void DestructorSkippable_;
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr name_;
+    int chartype_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -4569,6 +4580,26 @@ inline void C_LOGIN::set_allocated_name(std::string* name) {
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   // @@protoc_insertion_point(field_set_allocated:Protocol.C_LOGIN.name)
+}
+
+// .Protocol.CharacterType charType = 2;
+inline void C_LOGIN::clear_chartype() {
+  _impl_.chartype_ = 0;
+}
+inline ::Protocol::CharacterType C_LOGIN::_internal_chartype() const {
+  return static_cast< ::Protocol::CharacterType >(_impl_.chartype_);
+}
+inline ::Protocol::CharacterType C_LOGIN::chartype() const {
+  // @@protoc_insertion_point(field_get:Protocol.C_LOGIN.charType)
+  return _internal_chartype();
+}
+inline void C_LOGIN::_internal_set_chartype(::Protocol::CharacterType value) {
+  
+  _impl_.chartype_ = value;
+}
+inline void C_LOGIN::set_chartype(::Protocol::CharacterType value) {
+  _internal_set_chartype(value);
+  // @@protoc_insertion_point(field_set:Protocol.C_LOGIN.charType)
 }
 
 // -------------------------------------------------------------------

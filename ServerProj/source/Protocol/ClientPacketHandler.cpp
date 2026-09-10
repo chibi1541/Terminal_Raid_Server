@@ -40,22 +40,32 @@ bool Handle_C_LOGIN(PacketSessionRef& session, Protocol::C_LOGIN& pkt)
 		return true;
 	}
 
-	const string& name = pkt.name();
+	// 이름은 빈칸이면 "Player" 로. 길이 초과만 거른다.
+	string name = pkt.name();
 
-	if (name.empty() || name.size() > MAX_NAME_LENGTH)
+	if (name.empty())
+		name = "Player";
+
+	if (name.size() > MAX_NAME_LENGTH)
 	{
 		loginPkt.set_success(false);
 		gameSession->Send(ClientPacketHandler::MakeSendBuffer(loginPkt));
 
-		LOG_WARN(L"[login] invalid name (len=%d) from %s",
+		LOG_WARN(L"[login] name too long (len=%d) from %s",
 			static_cast<int32>(name.size()),
 			gameSession->GetAddress().GetIpAddress().c_str());
 		return true;
 	}
 
+	// 캐릭터 타입. 클라가 안 보냈거나 범위 밖이면 KNIGHT.
+	Protocol::CharacterType charType = pkt.chartype();
+	if (charType < Protocol::CHARACTER_KNIGHT || charType > Protocol::CHARACTER_MAGE)
+		charType = Protocol::CHARACTER_KNIGHT;
+
 	// objectId는 Player 생성자가 ObjectIdGenerator로 발급한다.
 	PlayerRef player = MakeShared<Player>();
 	player->SetName(name);
+	player->SetCharacterType(charType);
 	player->SetSession(gameSession);
 
 	gameSession->SetPlayer(player);
@@ -68,8 +78,8 @@ bool Handle_C_LOGIN(PacketSessionRef& session, Protocol::C_LOGIN& pkt)
 
 	gameSession->Send(ClientPacketHandler::MakeSendBuffer(loginPkt));
 
-	LOG_INFO(L"[login] objectId=%llu name=%hs from %s",
-		player->GetObjId(), player->GetName().c_str(),
+	LOG_INFO(L"[login] objectId=%llu name=%hs charType=%d from %s",
+		player->GetObjId(), player->GetName().c_str(), static_cast<int32>(charType),
 		gameSession->GetAddress().GetIpAddress().c_str());
 
 	return true;
