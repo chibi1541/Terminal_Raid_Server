@@ -687,6 +687,36 @@ void GameCommands::Register()
 			context.Reply(L"pathfinder -> %s", GRoom->GetPathFinderName());
 		}, CommandRunMode::GameThread);
 
+	GCommandRegistry->Register(L"pvp", L"pvp [on|off]",
+		L"toggle player-vs-player projectile damage (free-for-all, shooter excluded). default off.",
+		[](CommandContext& context)
+		{
+			if (GRoom == nullptr)
+			{
+				context.Reply(L"room not created");
+				return;
+			}
+
+			if (context.ArgCount() < 2)
+			{
+				context.Reply(L"pvp : %s", GRoom->IsPvpEnabled() ? L"on" : L"off");
+				return;
+			}
+
+			const std::wstring& a = context.Arg(1);
+			if (a == L"on" || a == L"1" || a == L"true")
+				GRoom->SetPvpEnabled(true);
+			else if (a == L"off" || a == L"0" || a == L"false")
+				GRoom->SetPvpEnabled(false);
+			else
+			{
+				context.Reply(L"usage : pvp [on|off]");
+				return;
+			}
+
+			context.Reply(L"pvp -> %s", GRoom->IsPvpEnabled() ? L"on" : L"off");
+		}, CommandRunMode::GameThread);
+
 	GCommandRegistry->Register(L"pathbench",
 		L"pathbench <sx> <sy> <gx> <gy> [box=16] [iters=20]  |  pathbench random [count=200] [box=16]",
 		L"compare JPS vs A* : search-node count and compute time",

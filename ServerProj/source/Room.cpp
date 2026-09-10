@@ -1520,17 +1520,24 @@ void Room::ResolveProjectileHits()
 
 		Projectile* proj = static_cast<Projectile*>(object);
 
-		// 발사자 진영 -> 맞힐 대상 타입. ownerId 0(디버그 스폰)은 아무도 안 맞힌다.
+		// 발사자 진영 -> 맞힐 대상. ownerId 0(디버그 스폰)은 아무도 안 맞힌다.
 		const Protocol::ObjectType ownerType =
 			ObjectIdGenerator::GetObjectType(proj->GetOwnerId());
 
-		Protocol::ObjectType targetType;
-		if (ownerType == Protocol::OBJECT_PLAYER)
-			targetType = Protocol::OBJECT_MONSTER;
-		else if (ownerType == Protocol::OBJECT_MONSTER)
-			targetType = Protocol::OBJECT_PLAYER;
-		else
+		if (ownerType != Protocol::OBJECT_PLAYER && ownerType != Protocol::OBJECT_MONSTER)
 			continue;
+
+		// 플레이어 투사체 : 몬스터는 항상, 다른 플레이어는 PvP 가 켜졌을 때만 (쏜 본인 제외).
+		// 몬스터 투사체 : 플레이어만.
+		auto canHit = [&](const GameObject* c) -> bool
+		{
+			if (ownerType == Protocol::OBJECT_PLAYER)
+			{
+				return c->GetObjType() == Protocol::OBJECT_MONSTER
+					|| (_pvpEnabled && c->GetObjType() == Protocol::OBJECT_PLAYER);
+			}
+			return c->GetObjType() == Protocol::OBJECT_PLAYER;	// ownerType == MONSTER
+		};
 
 		// QueryCircle 은 (대상._radius + 질의반경) 겹침까지 이미 걸러 준다.
 		// 질의반경 = 투사체 반경 => 결과 = 투사체 원과 겹치는 액터들.
@@ -1540,7 +1547,7 @@ void Room::ResolveProjectileHits()
 		{
 			if (c == nullptr || c->GetObjId() == proj->GetOwnerId())
 				continue;
-			if (c->GetObjType() != targetType || c->IsAlive() == false)
+			if (c->IsAlive() == false || canHit(c) == false)
 				continue;
 
 			hits.push_back({ proj->GetOwnerId(), c->GetObjId(), proj->GetDamage() });

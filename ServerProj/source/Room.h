@@ -240,6 +240,11 @@ public:
 	std::wstring	BenchPath(TilePos start, TilePos goal, int32 boxCells, int32 iters);
 	std::wstring	BenchPathRandom(int32 count, int32 boxCells);
 
+	// PvP: 켜면 플레이어 투사체가 다른 플레이어에게도 피해를 준다(쏜 본인 제외, 팀 개념 없음).
+	// pvp 콘솔 명령이 토글한다. 기본 off.
+	void	SetPvpEnabled(bool on)	{ _pvpEnabled = on; }
+	bool	IsPvpEnabled() const	{ return _pvpEnabled; }
+
 private:
 	// 갓 입장한 플레이어에게 룸 전체 스냅샷을 보낸다.
 	void	SendEnterRoom(shared_ptr<Player> player);
@@ -305,6 +310,9 @@ private:
 	// 지금은 몬스터가 없어 더미 플레이어에 붙여 검증한다.
 	HashMap<uint64, BtInstance> _behaviors;
 	bool						_behaviorAutoTick = true;
+
+	// PvP 프리포올 토글. off 면 플레이어 투사체는 몬스터만 맞힌다(기존 동작).
+	bool						_pvpEnabled = false;
 
 	JpsPathFinder		_jps;		// 원본
 	JpsTunedPathFinder	_jpsA;		// + 방향 편향 (Room 생성자에서 Configure)
